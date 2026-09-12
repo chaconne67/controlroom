@@ -514,6 +514,25 @@ class WindowsInstallerTests(unittest.TestCase):
             legacy_skill.parent.mkdir(parents=True)
             legacy_skill.write_text("legacy preflight\n", encoding="utf-8")
 
+            # Old Hermes junctions pointed at the profile's relative symlink.
+            # Repair kit-owned links, but preserve private and foreign skills.
+            import _winapi
+
+            hermes_skills = home / ".hermes" / "skills"
+            hermes_skills.mkdir(parents=True)
+            managed_skill = hermes_skills / "agent-script-role"
+            _winapi.CreateJunction(
+                str(repo / "codex" / "skills" / managed_skill.name), str(managed_skill)
+            )
+            private_skill = hermes_skills / "preflight" / "SKILL.md"
+            private_skill.parent.mkdir()
+            private_skill.write_text("private skill\n", encoding="utf-8")
+            foreign_source = repo / "skills-external" / "smart-ux"
+            foreign_source.mkdir(parents=True)
+            (foreign_source / "SKILL.md").write_text("foreign skill\n", encoding="utf-8")
+            foreign_link = hermes_skills / "smart-ux"
+            _winapi.CreateJunction(str(foreign_source), str(foreign_link))
+
             venture_seed = temp / "venture-seed"
             venture_origin = temp / "venture.git"
             run("git", "init", "--initial-branch=main", venture_seed)
@@ -561,6 +580,15 @@ class WindowsInstallerTests(unittest.TestCase):
             )
 
             run(*command, env=env)
+            self.assertEqual(
+                os.readlink(managed_skill).removeprefix("\\\\?\\"),
+                str(repo / "skills" / "common" / managed_skill.name),
+            )
+            self.assertEqual(
+                (managed_skill / "SKILL.md").read_bytes(),
+                (repo / "skills" / "common" / managed_skill.name / "SKILL.md").read_bytes(),
+            )
+            managed_link_mtime = managed_skill.lstat().st_mtime_ns
             backups_after_first_install = set(home.glob(".kmh-agent-kit-backup-*"))
             wrappers: dict[str, Path] = {}
             wrapper_contents: dict[str, bytes] = {}
@@ -584,6 +612,12 @@ class WindowsInstallerTests(unittest.TestCase):
             venture = home / "projects" / "venture"
             (venture / "AGENTS.md").write_text("local venture work\n", encoding="utf-8")
             run(*command, env=env)
+            self.assertEqual(managed_skill.lstat().st_mtime_ns, managed_link_mtime)
+            self.assertEqual(private_skill.read_text(encoding="utf-8"), "private skill\n")
+            self.assertTrue(os.path.samefile(foreign_source, foreign_link))
+            self.assertEqual(
+                (foreign_link / "SKILL.md").read_text(encoding="utf-8"), "foreign skill\n"
+            )
             self.assertEqual(
                 set(home.glob(".kmh-agent-kit-backup-*")), backups_after_first_install
             )

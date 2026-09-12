@@ -216,6 +216,10 @@ function Link-Profile {
         New-Item -ItemType Directory -Path $Live -Force | Out-Null
     }
 
+    $skillsRoot = (Join-Path $repoDir 'skills').TrimEnd('\')
+    $profileRoot = ([System.IO.Path]::GetFullPath($Profile)).TrimEnd('\')
+    $skillsPrefix = $skillsRoot + [System.IO.Path]::DirectorySeparatorChar
+    $profilePrefix = $profileRoot + [System.IO.Path]::DirectorySeparatorChar
     $linked = @{}
     foreach ($entry in Get-ChildItem -LiteralPath $Profile -Force) {
         $target = Resolve-ProfileTarget -Entry $entry.FullName
@@ -226,9 +230,10 @@ function Link-Profile {
         $linkPath = Join-Path $Live $entry.Name
         if ($PreserveExisting -and (Test-Path -LiteralPath $linkPath)) {
             $existing = Get-Item -LiteralPath $linkPath -Force
-            $skillsRoot = (Join-Path $repoDir 'skills').TrimEnd('\')
             $existingTarget = Get-LinkTargetPath -Item $existing
-            $managed = $existingTarget -and $existingTarget.StartsWith($skillsRoot, 'OrdinalIgnoreCase')
+            $managed = $existingTarget -and (
+                $existingTarget.StartsWith($skillsPrefix, 'OrdinalIgnoreCase') -or
+                $existingTarget.StartsWith($profilePrefix, 'OrdinalIgnoreCase'))
             if (-not $managed) {
                 Write-Host "  Hermes 기존 스킬 유지: $linkPath"
                 $linked[$entry.Name] = $true
@@ -239,10 +244,6 @@ function Link-Profile {
         $linked[$entry.Name] = $true
     }
 
-    $skillsRoot = (Join-Path $repoDir 'skills').TrimEnd('\')
-    $profileRoot = ([System.IO.Path]::GetFullPath($Profile)).TrimEnd('\')
-    $skillsPrefix = $skillsRoot + [System.IO.Path]::DirectorySeparatorChar
-    $profilePrefix = $profileRoot + [System.IO.Path]::DirectorySeparatorChar
     foreach ($liveEntry in Get-ChildItem -LiteralPath $Live -Force) {
         if ($liveEntry.LinkType -notin 'SymbolicLink', 'Junction' -or $linked.ContainsKey($liveEntry.Name)) { continue }
         $target = Get-LinkTargetPath -Item $liveEntry
