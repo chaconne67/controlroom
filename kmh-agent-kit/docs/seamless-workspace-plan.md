@@ -44,45 +44,46 @@
 - Windows PowerShell/CMD/Git Bash와 Linux의 실제 실행을 구분해 확인한다. macOS의 실제 호스트/CI 검증을 할 수 없으면 POSIX 호환 검사와 실기 검증의 한계를 따로 기록한다.
 - 최종 code-review-loop는 주 에이전트가 수행한다. 필요한 결함을 수정하고 같은 경계에서 재검증한다.
 
-## 확인된 결과와 남은 검증 — 2026-09-13
+## 최종 검증·게시 결과 — 2026-09-13
 
-- 최신 검증 코드의 로컬 검증 브랜치 커밋은 `e4ab16d8a2305240fcbe0d21759bfc18d042ef79`다. 로컬 main은 `e909d582816547e702816b5bfff5e087fe93e490`을 유지하며 기존 사용자 index를 보존했다. 검증 브랜치의 존재가 공개 게시나 main 반영을 뜻하지 않는다.
-- Windows workspace 검사 9개가 모두 통과했다(168.838초). 기존 KitSync 관련 검사 8개도 모두 통과했다(41.810초). 스킬 검사 50개가 통과했다.
-- 실제 설치된 `kitpush.cmd`와 `kitpull.cmd`가 설치기를 거쳐 두 Windows 시험 조정실의 키트·문서·Venture 커밋을 주고받는 것을 확인했다. 성공한 push/pull 중 실제 설치기 완료는 각각 3회/2회였고, docs 연결 10개·문서 바이트·커밋 일치와 dirty 코드의 index/작업트리 보존을 확인했다. 이 왕복은 로컬 bare Git 원격과 SSH 성공 대체물을 사용했다. 최신 검증 판본 e4ab16d8로 재실행하여 동일한 결과를 확인했고, 실제 프로그램 3파일의 해시가 현재 소스와 일치했다. 최종 실행 시간은 81.64초다.
-- 별도 pushurl 보호는 최신 9개 검사와 실제 사용자 설치, 최신 CMD 왕복 검증으로 확인했다. 최신 live install에서는 프로젝트 프로필 5개·docs 연결·GBrain 카드·CMD 래퍼가 정확했고 키트·문서·Venture의 기존 Git·사용자 변경 상태가 유지됐다. 이 사실을 실제 Linux/macOS 실행 검증으로 확대하지 않는다.
-- 리뷰에서 동기화 후 원본 연결 검증 누락과 별도 pushurl 전송 대상 검사 누락을 재현했다. 두 결함을 수정하고 최신 Windows 검사 9개를 통과했다. 3 OS 검증 후 필요한 재검토까지 포함한 최종 code-review-loop 종료는 남아 있다.
-- 공용 GBrain 최신 운영 계약은 실제 capture 후 다시 읽어 저장 본문과 기존 본문 보존을 확인했다. 증거는 `gbrain-capture-verification.json`이며 저장본 SHA-256은 `79359cda14ea9a23921df58e3c4cfd152bc312752d3f5b8af6a4f13faa8216dd`다.
-- 공개 GitHub 검증 브랜치 push와 기존 Linux 서버로 검증 bundle을 보내는 SCP는 모두 자동 승인 심사에서 외부 전송으로 거절됐다. 실행 위치·전송 대상을 바꿔 우회하지 않았다. 공개할 기존 미게시 5커밋과 이번 1커밋, 3 OS CI 및 통과 후 main 반영에 대한 사용자 승인을 기다린다.
-- Linux와 macOS의 실제 실행은 미검증이다. CI 파일은 작성했지만 공개 브랜치에 게시하거나 CI를 실행한 상태가 아니다. 전체 작업은 완료하지 않았다.
+- 사용자가 두 GitHub 저장소의 push와 3 OS CI 통과 후 키트 main 반영을 승인했다. 검증 브랜치 `e4ab16d8a2305240fcbe0d21759bfc18d042ef79`와 비공개 문서 `ce93329f823caa9261c61bf6e73f49924f4a7680`를 게시하고 원격 일치를 확인했다. 앞서 공개 push와 Linux 서버 SCP가 자동 승인 심사에서 거절된 기록은 과거 경과다. SCP로 우회하지 않았으며 승인 후 GitHub의 공식 CI를 사용했다.
+- 최종 판본 `db275cb1ad48871c55e7337b8d1703d7babe7f86`의 [3 OS CI](https://github.com/chaconne67/kmh-agent-kit/actions/runs/34754868442)가 모두 성공했다. Windows·Linux·macOS에서 실제 설치기 진입점과 두 조정실 간 동기화·실패 시 작업 보존을 검증했다. 기존 POSIX 명령 검사는 Linux·macOS에서 실행했으며 Windows에서는 해당 단계만 예정대로 제외했다. 공개 main 게시 후 같은 SHA의 [자동 재실행](https://github.com/chaconne67/kmh-agent-kit/actions/runs/34755052958)도 3 OS 모두 성공했다.
+- CI에서 확인한 Windows 경로의 8.3 표기 차이는 `Get-Item.FullName`으로 경로를 비교하도록 수정했다. macOS Bash의 변수 뒤 한글 경계 문제는 두 곳의 `$file`을 `${file}`로 명시해 수정했다. 검사의 바이트 진단과 기대 정본 경로는 유지했다.
+- 최종 검증한 판본을 공개 키트 main에 게시하고 실제 원격 SHA가 `db275cb1ad48871c55e7337b8d1703d7babe7f86`과 일치함을 확인했다. 최종 code-review-loop를 마쳤으며 남은 finding은 없다.
+- 현재 Windows PC의 키트 main은 `c73ca499621f145188bb8e99ffe730a5259d9f84`다. 별도 브라우저 작업 `4d9fec762d9bcce3114fc785e50aec1f256e3ec9`의 3파일을 보존하며 게시 판본을 병합한 결과다. 이번 통합의 15파일은 게시 판본과 같고 사용자 staging·모든 변경 파일 바이트와 동시에 진행된 CRETOP 변경도 보존했다. 현재 PC 전체와 공개 main이 같은 판본이라고 간주하지 않는다.
+- Windows 중간 검증 이력은 workspace 9/9 통과(168.838초), 기존 KitSync 8/8 통과(41.810초), 스킬 검사 50개 통과다. 검증 브랜치 e4ab16d8를 만들 당시에는 기존 main e909d582와 사용자 index를 유지했다. 당시 CMD 재실행은 81.64초였으며 아래 최종 왕복 검증으로 갱신했다.
+- 최종 실제 `kitpush.cmd`·`kitpull.cmd` 왕복은 74.536초에 통과했다. 성공한 push/pull에서 실제 설치기 완료는 각각 3회/2회였고, 두 Windows 시험 조정실의 키트·문서·Venture 커밋, docs 연결 10개와 문서 바이트가 일치했다. dirty 코드 사례에서는 명령이 완료로 처리되지 않았고 코드 index·작업트리·HEAD를 보존하면서 독립된 문서 변경은 저장했다. 시험 원격은 로컬 bare Git이며 SSH는 성공 대체물을 사용했다.
+- 최종 현재 PC 설치 재실행은 exit 0, 전체 검증 통과다. 프로젝트 프로필 5개의 AGENTS 원본·docs 원본 연결, 공용 GBrain 카드와 CMD 래퍼 2개가 정확했고 키트·문서·Venture의 Git·변경 파일 상태가 전후 동일했다. 실제 DB의 GBrain SSH 조회도 통과했다.
+- 리뷰에서 동기화 후 원본 연결 검증 누락과 별도 pushurl 전송 대상 검사 누락을 재현해 수정했다. 최신 Windows 검사 9개, 공식 CMD 왕복, 3 OS CI와 최종 리뷰에서 같은 범위를 다시 확인했다.
+- 공용 GBrain 운영 계약은 capture 후 다시 읽어 저장 내용과 기존 본문 보존을 확인했다. 저장본 SHA-256은 `79359cda14ea9a23921df58e3c4cfd152bc312752d3f5b8af6a4f13faa8216dd`다. 실행별 진행 로그는 추가하지 않는다.
 
 ## 작업 목록
 
 - [x] 현재 코드와 프로젝트/GBrain 연결 감사
 - [x] 사용자의 기기 간 이어받기 범위 확인
 - [x] 기준선·보호할 사용자 변경과 파일 상태 잠금
-- [x] manifest·복원·docs 연결 통합 및 Windows 검증
-- [x] kitpull·kitpush의 조정실 저장소 동기화 통합 및 Windows 검증
+- [x] manifest·복원·docs 연결 통합
+- [x] kitpull·kitpush의 조정실 저장소 동기화 통합
 - [x] OS 무관 지침과 작업 계획 재개 정보 연결
 - [x] Windows 설치·공식 CMD 왕복·dirty 작업 보존 확인
 - [x] 리뷰 지적 2개 재현·수정과 최신 Windows 검사 재검증
 - [x] 기존 사용자 index와 분리한 로컬 검증 브랜치 커밋
 - [x] 공용 GBrain 운영 계약 저장 및 기존 본문 보존 검증
-- [ ] 공개 전송 승인 후 검증 브랜치 push
-- [ ] Windows·Linux·macOS CI 실행 및 필요한 수정·재검증
-- [ ] 최종 code-review-loop 종료
-- [ ] 승인 범위 내 main 반영과 키트·문서 원격 상태 확인
-- [ ] 최종 결과 보고
+- [x] 사용자 승인 후 공개 검증 브랜치와 비공개 문서 게시·원격 확인
+- [x] Windows·Linux·macOS CI 실행과 필요한 수정·재검증
+- [x] 최종 code-review-loop 종료
+- [x] 검증한 키트 main 게시·원격 확인과 별도 로컬 작업 보존
+- [x] 게시 판본 반영 후 현재 Windows 조정실 설치·연결·작업 보존 검증
 
 ## 재개 정보
 
-확인일: 2026-09-13. Windows에서의 통합 구현·검증과 로컬 커밋, 공용 운영 계약 저장을 마쳤지만 공개 게시와 Linux/macOS 실증이 남아 있다. 전체 완료 상태가 아니다.
+확인일: 2026-09-13. 통합 구현, 3 OS CI, 최종 리뷰, 공개 main 게시와 현재 Windows 조정실 적용을 완료했다. 아래 Git 상태는 확인 시점의 기록이며 후속 작업 시작 시 실제 상태를 다시 대조한다.
 
 - 목표·승인 범위: OS가 다른 조정실 사이에서 기존 설치·kitpull·kitpush로 키트, 기획 문서, 프로젝트 진입점과 현재 작업을 이어받는다. 대화 원문·프로그램 설정·인증값 복제와 원격 제품 배포는 포함하지 않는다.
-- 코드 위치·ref: 현재 조정실의 `~/kmh-agent-kit`. 최신 검증 브랜치 코드 `e4ab16d8a2305240fcbe0d21759bfc18d042ef79`와 main `e909d582816547e702816b5bfff5e087fe93e490`을 구분한다. 실제 브랜치명과 작업트리·index를 확인하고 기존 사용자 변경을 보존한다.
-- 문서 위치·상태: 이 비공개 문서 저장소의 편집 전 main은 `68ca191a7e6fccb7203910ed42041993ba5be1e4`다. 이 계획과 README 두 장은 검증한 문서 변경만 분리해 저장한다. 최신 문서 판본과 전송 여부는 이 저장소의 HEAD·origin/main 및 실제 원격 ref 일치로 확인한다.
-- 마지막 실제 검증: 위 결과 절의 Windows 9/9, 기존 KitSync 8/8, 스킬 50, 실제 CMD 왕복, 최신 live install과 GBrain readback을 기준으로 한다. 최신 CMD 왕복도 e4ab16d8의 실제 프로그램과 같은 해시로 재실행해 통과했다. Linux/macOS 실증으로 확대하지 않는다.
-- 근거 위치: 이 작업을 수행한 Codex 작업 폴더의 `work/seamless-kit-audit/`. `installed-cmd-sync-verification.json`, `live-install-verification.json`, `guidance-verification.json`, `gbrain-capture-verification.json`과 현재 프로젝트 사용자 상태 보존 증거를 참조한다. 로컬 증거 파일의 새 장비 동기화 자체는 보장하지 않으며 필요한 확인 결과는 이 계획에 남긴다.
-- 보호 상태: CEO Loan 기존 사용자 파일·staged IROS 링크·신규 IROS 스킬, Venture의 기존 미커밋 코드, 문서 작업과 사용자 index를 보존했다. 새 작업자는 최신 Git 상태를 대조하고 이를 자동 포함·되돌림하지 않는다.
-- 현재 막힌 단계: 검증 코드를 공개 GitHub 또는 Linux 검증 호스트로 보내는 외부 전송이 자동 승인 심사에서 거절됐다. 공개할 기존 5커밋과 이번 1커밋, 3 OS CI 및 통과 후 main 반영에 대한 사용자 승인 질문이 대기 중이다.
-- 정확한 다음 순서: 공개 전송 승인 확인 → 검증 브랜치 push → 3 OS CI 실행 → 필요한 수정과 같은 범위 재검증 → 최종 리뷰 루프 종료 → 승인 범위에서 main 반영 → 키트와 비공개 문서의 원격 상태 확인.
-- 미완료 경계: Linux/macOS 실행, CI 실행, 공개 게시, 최종 리뷰 종료, main 반영과 비공개 문서 전송 확인은 남아 있다. Windows의 실제 설치 성공이나 CI 파일 작성만으로 이를 완료로 표시하지 않는다. 제품 기능·로그인·배포는 각 프로젝트의 별도 검증·승인 계약을 따른다.
+- 코드 위치·ref: 현재 조정실의 `~/kmh-agent-kit`. 공개 main은 `db275cb1ad48871c55e7337b8d1703d7babe7f86`, 현재 PC main은 별도 브라우저 작업을 보존한 `c73ca499621f145188bb8e99ffe730a5259d9f84`다. 이번 통합의 15파일만 게시 판본과 일치함을 검증했다. 실제 브랜치·작업트리·index를 확인하고 다른 사용자 작업은 자동 포함하거나 되돌리지 않는다.
+- 문서 위치·상태: 비공개 `chaconne67/control-room-docs`의 기본 위치는 `~/projects/_control-docs`다. 초기 구조 정리 68ca191의 원문 79개·전체 93개와 이후 통합 계획을 보존한다. 앞선 문서 판본 ce93329는 원격 일치를 확인했다. 이 최종 기록의 최신 판본·전송 여부는 문서 저장소의 HEAD·origin/main과 실제 원격 main ref를 대조해 확인하며 자체 커밋 SHA를 미리 기록하지 않는다.
+- 마지막 실제 검증: 위 결과 절의 3 OS CI와 main CI 재실행, 최종 CMD 왕복 74.536초, 현재 PC 설치·연결·작업 보존과 실제 DB GBrain SSH 조회, 최종 리뷰 종료를 기준으로 한다. CI 성공은 각 OS의 모든 제품 앱·로그인이나 사용자 소유 Mac/Linux 장비까지 검증했다는 뜻은 아니다.
+- 근거 위치: 작업을 수행한 Codex 작업 폴더의 `work/seamless-kit-audit/`. `publication-verification.json`, `main-ci-verification.json`, `installed-cmd-sync-verification.json`, `live-install-verification.json`, `guidance-verification.json`, `gbrain-capture-verification.json`과 사용자 상태 보존 증거를 참조한다. 문서 전송 결과는 `private-publication-verification.json`에 남긴다. 로컬 증거 파일 자체의 새 장비 동기화는 보장하지 않으므로 확인 결과는 이 계획에도 기록했다.
+- 보호 상태: CEO Loan 기존 사용자 파일·staged IROS 링크·신규 IROS 스킬, Venture 미커밋 코드, 별도 브라우저 3파일 커밋과 동시 CRETOP 작업을 보존했다. 설치 전후 키트·문서·Venture Git 상태가 동일했다. 새 작업자는 최신 Git 상태를 대조하고 사용자 변경을 자동 stage·삭제·초기화하지 않는다.
+- 다음 작업 진입점: 새 장비에서는 해당 장비의 Git·SSH·앱 인증을 준비하고 공식 `windows-control` 설치 경로를 실행한다. 기존 장비는 `kitpull` 결과와 실제 Git 상태를 확인한 뒤 프로젝트 docs/README의 진행 중 계획을 연다. 계획의 재개 정보와 원격 코드 상태를 대조한 뒤 해당 작업을 계속한다.
+- 남은 범위: 이번 통합의 구현·검증·게시를 막는 승인 대기는 해소됐다. 개별 장비 인증, OS 전용 기능과 제품 기능·배포는 각 프로젝트의 기존 검증·승인 계약을 따른다. 별도 사용자 미커밋 작업과 로컬 브라우저 커밋의 후속 처리는 이번 통합과 구분해 보존한다.

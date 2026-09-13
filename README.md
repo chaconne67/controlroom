@@ -24,13 +24,13 @@
 
 ## 이력과 다른 조정실에서 복구
 
-편집할 때 변경 문서와 비밀값 혼입 여부를 검토합니다. Git 원격은 비공개 `chaconne67/control-room-docs`입니다. 통합 중인 조정실 명령 `kitpush`는 검토한 기획·재개 정보를 저장하고 `kitpull`은 다른 장비에서 이를 받는 경로입니다. 직접 Git을 사용할 때는 해당 경로만 `git add -- <경로>`로 추가하고 기존 사용자 변경을 함께 올리지 않습니다.
+편집할 때 변경 문서와 비밀값 혼입 여부를 검토합니다. Git 원격은 비공개 `chaconne67/control-room-docs`입니다. 조정실 명령 `kitpush`는 검토한 기획·재개 정보를 저장하고 `kitpull`은 다른 장비에서 이를 받는 경로입니다. 직접 Git을 사용할 때는 해당 경로만 `git add -- <경로>`로 추가하고 기존 사용자 변경을 함께 올리지 않습니다.
 
-첫 설치의 기존 공식 경로는 `curl -fsSL https://raw.githubusercontent.com/chaconne67/kmh-agent-kit/main/install.sh | bash -s -- windows-control`이며, 이미 받은 키트에서는 `./install.sh windows-control`입니다. 이 경로에서 비공개 문서 저장소 복원과 각 프로젝트 `docs` 연결까지 함께 수행하도록 통합 중입니다. 공개 키트 다운로드와 별개로 비공개 Git 인증이 필요하며 각 프로젝트 서버의 SSH 인증은 따로 준비합니다.
+첫 설치의 기존 공식 경로는 `curl -fsSL https://raw.githubusercontent.com/chaconne67/kmh-agent-kit/main/install.sh | bash -s -- windows-control`이며, 이미 받은 키트에서는 `./install.sh windows-control`입니다. 이 경로에서 비공개 문서 저장소 복원과 각 프로젝트 `docs` 연결까지 함께 수행합니다. 공개 키트 다운로드와 별개로 비공개 Git 인증이 필요하며 각 프로젝트 서버의 SSH 인증은 따로 준비합니다.
 
-기존 문서 복구 방식인 인증된 Git clone과 docs 연결은 이 설치 경로에 통합합니다. 이미 있는 자료는 내용과 이력을 비교하기 전에 덮어쓰지 않습니다. 이 저장소의 이력·원격 저장은 프로젝트 코드·고객자료·비밀값의 백업을 대신하지 않습니다.
+기존 문서 복구 방식인 인증된 Git clone과 docs 연결을 이 설치 경로에 통합했습니다. 이미 있는 자료는 내용과 이력을 비교하기 전에 덮어쓰지 않습니다. 이 저장소의 이력·원격 저장은 프로젝트 코드·고객자료·비밀값의 백업을 대신하지 않습니다.
 
-현재 구현·검증 상태는 [조정실 작업 환경 통합 계획](kmh-agent-kit/docs/seamless-workspace-plan.md)에서 확인합니다. Windows의 로컬 설치·동기화 검증은 수행했지만 공개 검증 브랜치 게시와 3 OS CI, 통과 후 main 반영은 남아 있어 통합 중입니다. 현재 공개 main의 설치 명령으로 새 통합 기능까지 전달됐다고 판단하지 않습니다.
+2026-09-13 통합 구현을 완료하고 Windows·Linux·macOS CI를 통과한 키트를 공개 main에 게시했습니다. 현재 Windows 조정실에서도 설치·연결과 기존 작업 보존을 확인했습니다. [조정실 작업 환경 통합 계획](kmh-agent-kit/docs/seamless-workspace-plan.md)에 검증 범위와 게시 판본을 기록했습니다. 새 장비의 Git·SSH·앱 인증과 OS 전용 기능은 각 장비에서 준비·확인합니다.
 
 ## 현재 작업 이어받기
 
