@@ -58,3 +58,5 @@
 - [2026-07-30-cretop-local-primary-replication-design.md](<superpowers/specs/2026-07-30-cretop-local-primary-replication-design.md>)
 - [2026-08-04-rndlog-ceoloan-clone-design.md](<superpowers/specs/2026-08-04-rndlog-ceoloan-clone-design.md>)
 - [2026-08-08-funding-outbox-controls-design.md](<superpowers/specs/2026-08-08-funding-outbox-controls-design.md>)
+
+- [작업공간과 서버 자료 경계](WORKSPACE.md)
