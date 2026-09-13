@@ -1,4 +1,5 @@
 # directory	kind	target
+_control-docs	docs	https://github.com/chaconne67/control-room-docs.git
 ceoloan	profile	ceoloan
 exdigm	profile	exdigm
 fundkeeper	profile	fundkeeper

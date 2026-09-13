@@ -24,7 +24,7 @@ curl -fsSL https://raw.githubusercontent.com/chaconne67/kmh-agent-kit/main/insta
 curl -fsSL https://raw.githubusercontent.com/chaconne67/kmh-agent-kit/main/install.sh | bash -s -- windows-control
 ```
 
-세 운영체제 모두 같은 조정실 등록 이름인 `windows-control`을 사용합니다. 이 이름은 호환용 역할 이름이며 Windows에서만 쓸 수 있다는 뜻이 아닙니다.
+세 운영체제의 데스크톱·노트북 모두 같은 조정실 등록 이름인 `windows-control`을 사용합니다. 이 이름은 호환용 역할 이름입니다. 문서의 `~`는 Windows의 `USERPROFILE`, macOS·Linux의 `HOME`을 뜻하며 이미 등록한 프로젝트 경로를 우선합니다.
 
 설치가 끝나면 터미널을 새로 엽니다. 이후에는 모든 운영체제에서 다음 두 명령만 사용합니다.
 
@@ -33,7 +33,7 @@ kitpull
 kitpush
 ```
 
-위 세 기본 명령의 첫 다운로드와 clone은 공개 HTTPS를 사용하므로 GitHub SSH 키가 없어도 시작할 수 있습니다. GitHub 쓰기 인증과 GBrain·프로젝트 서버의 새 장비 SSH 등록은 각각 해당 기능을 사용하기 전에 준비합니다.
+키트의 첫 다운로드와 clone은 공개 HTTPS를 사용합니다. 조정실 전체 설치에는 비공개 `chaconne67/control-room-docs`를 읽는 Git 인증도 필요합니다. GitHub 쓰기 인증, GBrain·각 프로젝트 서버의 새 장비 SSH 등록, 에이전트 앱 로그인은 장비별로 준비합니다.
 
 ### 조정실에서 복원되는 범위
 
@@ -43,10 +43,11 @@ kitpush
 | Codex·Claude Code·Hermes | 전역 지침과 공용 스킬 연결 |
 | GBrain | `windows-control` 카드를 연결하고, 장비 SSH 등록이 되어 있으면 공용 문서 조회까지 검증 |
 | 프로젝트 폴더 | 다섯 조정 폴더를 만들고 kit 프로필 연결. `venture`가 없으면 GitHub에서 clone |
+| 기획·현재 작업 | 비공개 `_control-docs` 저장소를 복원하고 각 프로젝트 `docs`를 연결. 진행 중 작업은 기존 계획의 재개 정보로 이어받음 |
 | 대화 세션 | 동기화하지 않음 |
 
 스킬 동기화 대상은 직접 만든 사용자 스킬과 키트의 프로젝트 스킬입니다. Codex 기본 스킬,
-플러그인 캐시, 키트에 없는 별도 프로그램 스킬은 해당 프로그램이 관리합니다. 같은 이름의 옛
+플러그인 캐시, 키트에 없는 별도 프로그램 스킬은 해당 프로그램이 관리합니다. 실제 앱 설치·로그인과 Windows 전용 기능은 장비별 검증 대상입니다. 같은 이름의 옛
 사용자 스킬이 남아 있으면 최초 설치가 삭제하지 않고 백업한 뒤 키트 원본을 연결합니다.
 
 ## 개요
@@ -112,8 +113,8 @@ curl -fsSL https://raw.githubusercontent.com/chaconne67/kmh-agent-kit/main/insta
 
 | 명령 | 용도 |
 |---|---|
-| `kitpull` | `origin/main`을 fast-forward로 받은 뒤 등록 자산과 프로젝트 프로필 재설치 |
-| `kitpush` | 허용 범위를 검사하고 원격 변경 위에 재배치한 뒤 `origin/main`으로 push |
+| `kitpull` | 키트와 조정실 계약의 문서·Venture 커밋을 받은 뒤 프로필·docs 연결 검증 |
+| `kitpush` | 키트 허용 범위와 검토한 문서 변경을 저장·전송하고 Venture는 기존 커밋만 전송 |
 | `./install.sh main` | 중앙 DB·GBrain 역할 설치 |
 | `./install.sh fundkeeper` | FundKeeper 역할 설치 |
 | `./install.sh judy` | Judy WSL 역할 설치 |
@@ -133,9 +134,10 @@ curl -fsSL https://raw.githubusercontent.com/chaconne67/kmh-agent-kit/main/insta
 
 Linux·macOS의 기존 심볼릭 링크 설치는 첫 `kitpull` 또는 `kitpush`에서 현재 GBrain 카드 경로를 읽어 등록 이름을 한 번 복구할 수 있습니다. Windows 카드는 하드링크라서 경로를 역으로 읽을 수 없습니다. Windows의 Git 로컬 등록값이 없으면 README 첫 화면의 Git Bash 한 줄을 다시 실행합니다.
 
-- 두 명령은 항상 로컬 `main`과 `origin/main`만 사용합니다. 추적 브랜치가 없거나 잘못돼 있으면 `origin/main`으로 복구합니다.
-- `kitpull`: 작업 폴더가 깨끗할 때만 fast-forward한 뒤 등록 자산과 저장된 프로젝트 프로필을 실제 환경에 다시 연결합니다.
-- `kitpush`: 공용 파일, 현재 등록 이름의 카드, 매칭 도메인만 커밋·push합니다. `main`과 `windows-control` 등록은 중앙 조정 역할이므로 모든 도메인을 다룰 수 있습니다.
+- 키트는 로컬 `main`과 `origin/main`을 사용합니다. 조정실의 별도 Git 저장소는 프로젝트 계약의 원격과 브랜치를 확인합니다. 이 규칙을 원격 제품 코드의 브랜치에 적용하지 않습니다.
+- `kitpull`: 키트·문서·Venture를 안전하게 fast-forward할 수 있을 때 받은 뒤 프로필과 docs를 다시 연결합니다. 로컬 변경·미전송 커밋·다른 브랜치·분기 상태는 보존하고 필요한 조치를 알립니다.
+- `kitpush`: 키트는 공용 파일, 현재 등록 이름의 카드, 매칭 도메인의 기존 허용 범위를 유지합니다. `main`과 `windows-control` 등록은 모든 키트 도메인을 다룰 수 있습니다.
+- `windows-control`의 문서 변경은 내용을 검토한 뒤 저장·전송합니다. Venture는 이미 만든 커밋만 push하며 미커밋 코드와 미추적 파일을 자동으로 stage하지 않습니다. 실패하면 완료한 저장소와 남은 저장소를 구분합니다.
 - 프로젝트 전용 등록에 다른 도메인의 변경이 함께 있으면 `kitpush`는 변경 경로를 표시하고 중단합니다.
 - 원격 변경이 먼저 있으면 `kitpush`가 로컬 커밋을 `origin/main` 위에 재배치합니다. 충돌하면 재배치를 취소하고 로컬 커밋을 보존한 채 중단합니다.
 
@@ -154,18 +156,20 @@ Linux·macOS의 기존 심볼릭 링크 설치는 첫 `kitpull` 또는 `kitpush`
 
 생성된 카드는 저장소의 신규 파일로 남습니다. 다른 서버도 같은 카드를 받게 하려면 내용을 검토한 뒤 커밋·push합니다.
 
-### 서버별 자동 프로젝트 연결
+### 역할별 자동 프로젝트 연결
 
 | 등록 이름 | 자동 연결되는 프로젝트 프로필 |
 |---|---|
 | `main` | `~/projects/<프로필명>`과 저장소 프로필 이름이 일치하는 모든 프로젝트 |
-| `windows-control` | 계약에 적힌 다섯 조정 폴더를 생성·연결하고, `venture`가 없으면 공식 저장소 clone |
+| `windows-control` | 다섯 프로젝트 프로필, 비공개 문서 저장소와 docs 연결, Venture 저장소 복원 |
 | `fundkeeper` | `~/fundkeeper`의 `fundkeeper` 프로필 |
 | 그 외 | 같은 이름의 프로젝트 폴더와 프로필이 모두 있을 때 연결 |
 
-`./install.sh --project <경로> <프로필>`로 연결한 위치는 저장소의 로컬 Git 설정에 기록됩니다. 이후 `kitpull`과 `kitpush`가 해당 프로필을 다시 연결합니다.
+`./install.sh --project <경로> <프로필>`로 연결한 위치는 저장소의 로컬 Git 설정에 기록됩니다. 이후 설치·`kitpull`·`kitpush`는 이 경로를 우선하고 해당 프로필과 docs를 다시 연결합니다.
 
-`windows-control`의 폴더 정본은 `manifests/windows-control-projects.tsv`입니다. `ceoloan`, `exdigm`, `fundkeeper`, `rndlog`, `ziin`은 폴더를 만든 뒤 kit의 프로젝트 지침과 스킬을 연결합니다. `venture`는 자체 `AGENTS.md`, `CLAUDE.md`, 스킬과 소스 코드를 함께 가진 별도 Git 저장소이므로, 폴더가 없을 때만 공개 HTTPS로 clone하고 기존 폴더나 미커밋 작업은 건드리지 않습니다.
+`windows-control`의 복원 정본은 `manifests/windows-control-projects.tsv`입니다. 다섯 프로젝트는 kit 지침·스킬을 사용하고 `docs`는 비공개 `control-room-docs`의 같은 프로젝트 문서에 연결됩니다. 문서 저장소의 기본 위치는 `~/projects/_control-docs`입니다. 기존의 다른 docs 폴더를 자동으로 이동하거나 덮어쓰지 않습니다.
+
+`venture`는 지침·스킬·소스 코드를 가진 별도 Git 저장소입니다. 최초 설치는 없는 저장소만 clone하고, 이후 `kitpull`은 안전한 fast-forward로 커밋을 받으며 `kitpush`는 이미 만든 커밋만 전송합니다. 원격 제품 서버의 코드 Git·배포는 이 동기화에 포함하지 않고 각 프로젝트의 기존 절차를 따릅니다.
 
 FundKeeper 조정 폴더에는 코스콤 Testbed의 공통·알고리즘 설명서·ETF·리밸런싱 스킬도 함께 연결됩니다.
 
@@ -197,6 +201,14 @@ kitpull
 kitpush
 kitpush "설명할 커밋 메시지"
 ```
+
+### 다른 장비에서 작업 이어받기
+
+1. 작업을 마치거나 장비를 옮기기 전에 기존 작업 계획의 재개 정보를 갱신합니다. 목표·승인 범위, 실제 실행 서버/저장소와 branch/commit, 남은 변경, 마지막 검증 결과, 다음 행동을 적습니다.
+2. 프로젝트 `docs/README.md`에서 진행 중인 계획을 연결하고 `kitpush`로 키트·기획 변경을 저장합니다. 병렬 작업은 각 계획에서 관리합니다. Venture 코드 커밋과 서버 코드 Git·배포는 해당 프로젝트 절차로 먼저 처리합니다.
+3. 다른 조정실에서 `kitpull` 후 현재 카드·공용 최신 운영 맥락·프로젝트 문맥을 읽습니다. 진행 중 계획의 재개 정보와 실제 코드 저장소의 상태를 대조하고 이어갑니다.
+
+단순 진행 로그나 대화 원문을 복제하지 않습니다. GBrain에는 확정한 장기 결정과 재사용 지식을 남기고, 현재 작업 상태는 계획에서 관리합니다.
 
 ### 설치 확인
 

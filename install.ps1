@@ -477,6 +477,15 @@ function Install-ProjectProfile {
         throw "[error] 프로젝트 경로 없음: $ProjectPath"
     }
     $projectPath = (Resolve-Path -LiteralPath $ProjectPath).Path
+    $docsSource = Get-ControlRoomDocsSource -Profile $Profile
+    $hasDocsSource = $docsSource -and (Test-Path -LiteralPath $docsSource -PathType Container)
+    if ($hasDocsSource) {
+        $docsPath = Join-Path $projectPath 'docs'
+        $existingDocs = Get-Item -LiteralPath $docsPath -Force -ErrorAction SilentlyContinue
+        if ($existingDocs -and $existingDocs.LinkType -notin 'SymbolicLink', 'Junction') {
+            throw "[error] 기존 프로젝트 문서를 보존하여 연결을 중단합니다: $docsPath"
+        }
+    }
 
     Remove-KitSkillLinks -Live "$projectPath\.codex\skills"
     if (Test-Path -LiteralPath "$profileDir\skills") {
@@ -489,6 +498,9 @@ function Install-ProjectProfile {
         $target = Resolve-ProfileTarget -Entry $profileFile
         if (-not $target) { $target = $profileFile }
         Link-Entry -Target $target -Link "$projectPath\$file"
+    }
+    if ($hasDocsSource) {
+        Link-Entry -Target $docsSource -Link $docsPath
     }
     Write-Host "project '$Profile' linked into $projectPath"
 }
@@ -516,10 +528,12 @@ function Get-ControlRoomProjects {
             throw "[error] 프로젝트 계약 형식 오류: $manifest ${lineNumber}행"
         }
         $directory, $kind, $target = @($columns | ForEach-Object { $_.Trim() })
-        Assert-Name -Name $directory -Kind '프로젝트 폴더'
+        if ($directory -notmatch '^[A-Za-z0-9_-]+$') {
+            throw "[error] 프로젝트 폴더는 단일 상대 폴더 이름이어야 합니다: $directory"
+        }
         if ($kind -eq 'profile') {
             Assert-Name -Name $target -Kind '프로필'
-        } elseif ($kind -eq 'git') {
+        } elseif ($kind -in 'git', 'docs') {
             if ($target -notmatch '^https://github\.com/[^/]+/[^/]+\.git$') {
                 throw "[error] 프로젝트 Git 주소는 GitHub HTTPS 주소여야 합니다: $target"
             }
@@ -530,39 +544,47 @@ function Get-ControlRoomProjects {
     }
 }
 
-function Restore-ControlRoomProjects {
-    $projectsRoot = Join-Path $homeDir 'projects'
-    if (-not (Test-Path -LiteralPath $projectsRoot)) {
-        New-Item -ItemType Directory -Path $projectsRoot -Force | Out-Null
+function Get-ControlRoomProjectPath {
+    param($Entry)
+
+    if ($Entry.Kind -eq 'profile') {
+        $savedPath = & $script:gitExe -C $repoDir config --local --get "kmh-agent-kit.project.$($Entry.Target)" 2>$null
+        if ($LASTEXITCODE -eq 0 -and $savedPath) { return $savedPath.Trim() }
+        if ($LASTEXITCODE -ne 0 -and $LASTEXITCODE -ne 1) {
+            throw "[error] 프로젝트 등록 정보 조회 실패: $($Entry.Target)"
+        }
     }
+    return Join-Path (Join-Path $homeDir 'projects') $Entry.Directory
+}
+
+function Get-ControlRoomDocsSource {
+    param([string]$Profile)
+
+    $entries = @(Get-ControlRoomProjects | Where-Object { $_.Kind -eq 'docs' })
+    if ($entries.Count -eq 0) { return $null }
+    if ($entries.Count -ne 1) { throw '[error] 기획 문서 저장소는 하나여야 합니다.' }
+    $docsRoot = Get-ControlRoomProjectPath -Entry $entries[0]
+    return Join-Path (Join-Path $docsRoot $Profile) 'docs'
+}
+
+function Restore-ControlRoomProjects {
+    $bash = Get-GitBashExecutable
+    $aliasScript = Convert-ToGitBashPath -Path (Join-Path $repoDir 'shell\kit-aliases.sh')
+    $bashRepo = Convert-ToGitBashPath -Path $repoDir
+    $bashHome = Convert-ToGitBashPath -Path $homeDir
+    & $bash --noprofile --norc $aliasScript restore-repositories $bashRepo $bashHome
+    if ($LASTEXITCODE -ne 0) { throw '[error] 조정실 저장소 복원 실패' }
 
     foreach ($entry in Get-ControlRoomProjects) {
-        $projectPath = Join-Path $projectsRoot $entry.Directory
-        if ($entry.Kind -eq 'profile') {
-            if (-not (Test-Path -LiteralPath $projectPath)) {
-                New-Item -ItemType Directory -Path $projectPath -Force | Out-Null
-                Write-Host "project folder created: $projectPath"
-            } elseif (-not (Test-Path -LiteralPath $projectPath -PathType Container)) {
-                throw "[error] 프로젝트 경로가 폴더가 아닙니다: $projectPath"
-            }
-            Register-ProjectProfile -ProjectPath $projectPath -Profile $entry.Target
-            continue
+        if ($entry.Kind -ne 'profile') { continue }
+        $projectPath = Get-ControlRoomProjectPath -Entry $entry
+        if (-not (Test-Path -LiteralPath $projectPath)) {
+            New-Item -ItemType Directory -Path $projectPath -Force | Out-Null
+            Write-Host "project folder created: $projectPath"
+        } elseif (-not (Test-Path -LiteralPath $projectPath -PathType Container)) {
+            throw "[error] 프로젝트 경로가 폴더가 아닙니다: $projectPath"
         }
-
-        if (Test-Path -LiteralPath $projectPath) {
-            if (-not (Test-Path -LiteralPath $projectPath -PathType Container)) {
-                throw "[error] 프로젝트 경로가 폴더가 아닙니다: $projectPath"
-            }
-            if (-not (Test-Path -LiteralPath (Join-Path $projectPath '.git') -PathType Container)) {
-                throw "[error] 기존 프로젝트 폴더를 보존했지만 Git 저장소가 아닙니다: $projectPath"
-            }
-            Write-Host "project repository preserved: $projectPath"
-            continue
-        }
-
-        & $script:gitExe clone --branch main --single-branch $entry.Target $projectPath
-        if ($LASTEXITCODE -ne 0) { throw "[error] 프로젝트 clone 실패: $($entry.Directory)" }
-        Write-Host "project repository cloned: $projectPath"
+        Register-ProjectProfile -ProjectPath $projectPath -Profile $entry.Target
     }
 }
 
@@ -647,16 +669,11 @@ function Assert-Install {
         }
         if ($AgentName -eq 'windows-control') {
             foreach ($entry in Get-ControlRoomProjects) {
-                $projectPath = Join-Path (Join-Path $homeDir 'projects') $entry.Directory
+                $projectPath = Get-ControlRoomProjectPath -Entry $entry
                 if (-not (Test-Path -LiteralPath $projectPath -PathType Container)) {
                     throw "[error] 프로젝트 폴더 검증 실패: $projectPath"
                 }
-                if ($entry.Kind -eq 'git') {
-                    if (-not (Test-Path -LiteralPath (Join-Path $projectPath '.git') -PathType Container)) {
-                        throw "[error] 프로젝트 Git 검증 실패: $projectPath"
-                    }
-                    continue
-                }
+                if ($entry.Kind -in 'git', 'docs') { continue }
                 $savedPath = (& $script:gitExe -C $repoDir config --local --get "kmh-agent-kit.project.$($entry.Target)").Trim()
                 $resolvedPath = (Resolve-Path -LiteralPath $projectPath).Path
                 if ($LASTEXITCODE -ne 0 -or $savedPath -ne $resolvedPath) {
@@ -668,6 +685,17 @@ function Assert-Install {
                     if ($liveFile.LinkType -ne 'HardLink') {
                         throw "[error] 프로젝트 지침 링크 검증 실패: $($liveFile.FullName)"
                     }
+                }
+                $docsSource = Get-ControlRoomDocsSource -Profile $entry.Target
+                if (-not $docsSource -or -not (Test-Path -LiteralPath $docsSource -PathType Container)) {
+                    throw "[error] 프로젝트 문서 원본 없음: $($entry.Target)"
+                }
+                $docsPath = Join-Path $projectPath 'docs'
+                $docsItem = Get-Item -LiteralPath $docsPath -Force
+                $docsTarget = Get-LinkTargetPath -Item $docsItem
+                $expectedDocsTarget = (Resolve-Path -LiteralPath $docsSource).Path
+                if (-not $docsTarget -or $docsTarget.TrimEnd('\') -ne $expectedDocsTarget.TrimEnd('\')) {
+                    throw "[error] 프로젝트 문서 링크 검증 실패: $docsPath"
                 }
             }
             $gbrainHost = if ($env:GBRAIN_HOST) { $env:GBRAIN_HOST } else { 'chaconne@49.247.45.243' }

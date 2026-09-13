@@ -1,20 +1,20 @@
 # ZiiN 프로젝트
 
-## Windows 조정실
+## 조정실
 
-- 작업 위치: `C:\Users\chaconne\projects\ziin`. 애플리케이션 코드·Git·검증·배포는 아래 원격 서버의 기존 경로를 사용합니다.
-- 새 세션은 대화 이식 없이 `~/.gbrain-agent.md`의 현재 래퍼로 공용 `project/ziin-operating-context`를 먼저 읽습니다.
-- GBrain은 전역 컨트롤타워 카드의 공용 조회 경로로 `project/ziin-operating-context`를 읽습니다. GBrain 본체는 DB 서버에 유지합니다.
-- 아래 Linux 경로와 명령은 명시된 원격 호스트의 셸에서 실행합니다. Windows에 운영 코드를 복제하지 않습니다.
-- 기획·리서치·작업 계획은 조정실의 `docs/README.md`에서 찾습니다. 이 폴더는 `../_control-docs/ziin/docs`의 같은 원본으로 연결되며, 문서 Git 이력은 `_control-docs`에서 관리합니다.
-
+- 작업 위치는 이 프로필을 연결한 현재 프로젝트 폴더이며 기본값은 `~/projects/ziin`입니다. `~`는 Windows의 `USERPROFILE`, macOS·Linux의 `HOME`입니다. 이미 등록된 사용자 지정 경로를 우선합니다.
+- 개발 에이전트는 선택한 조정실 장비에서만 실행합니다. 아래 서버의 코드·Git·검증·배포 경로는 SSH로 사용하며 제품 기능의 기존 AI·LLM 실행은 보존합니다.
+- 새 세션은 `~/.gbrain-agent.md`를 읽고, 공용 최신 `project/windows-control-tower-operating-context`와 `project/ziin-operating-context`를 확인합니다.
+- 아래 Linux 경로와 명령은 명시된 원격 호스트의 셸에서 실행합니다. 조정실 OS에 맞춰 서버 경로를 바꾸거나 운영 코드를 조정실에 복제하지 않습니다.
+- 기획·리서치·작업 계획은 `docs/README.md`에서 찾습니다. `docs`는 비공개 문서 저장소의 `ziin/docs`에 연결되며 기본 정본은 `~/projects/_control-docs/ziin/docs`입니다.
+- 작업을 이어받을 때는 `docs/README.md`의 진행 중 작업 링크와 해당 계획의 재개 정보를 읽고 실제 서버 Git 상태와 대조합니다. 작업을 마치거나 옮기기 전에 그 계획에 재개 정보를 갱신하며 병렬 작업은 각 계획에서 관리합니다.
 
 ## 역할
 
-- 이 폴더는 ZiiN의 Windows 조정실입니다. 실제 코드·실행 및 검증 자료·코드 Git·배포는 DB 서버 `chaconne@49.247.45.243:/home/chaconne/projects/ziin`에 유지합니다.
+- 이 폴더는 ZiiN의 조정실입니다. 실제 코드·실행 및 검증 자료·코드 Git·배포는 DB 서버 `chaconne@49.247.45.243:/home/chaconne/projects/ziin`에 유지합니다.
 - ZiiN은 Exdigm에서 운영 중인 헤드헌팅 업무 시스템을 다른 헤드헌팅 회사에도 제공할 수 있도록 범용화한 제품입니다.
 - 제품 사실의 최종 기준은 검증된 Exdigm 운영 코드입니다. ZiiN 문서와 코드가 다르면 실제 코드를 확인한 뒤 문서와 GBrain을 갱신합니다.
-- Windows 조정 에이전트가 SSH로 DB의 `/home/chaconne/projects/ziin`에서 개발·검증합니다. `docs/implementation/`과 `docs/product/`의 기획 원본은 조정실 문서 경로이며, 나머지 코드·디자인·운영 문서 경로는 원격 저장소 기준입니다. 배포는 별도 명시적 요청이 있을 때 기존 `scripts/deploy.sh`로 실행합니다.
+- 조정실 에이전트가 SSH로 DB의 `/home/chaconne/projects/ziin`에서 개발·검증합니다. `docs/implementation/`과 `docs/product/`의 기획 원본은 조정실 문서 경로이며, 나머지 코드·디자인·운영 문서 경로는 원격 저장소 기준입니다. 배포는 별도 명시적 요청이 있을 때 기존 `scripts/deploy.sh`로 실행합니다.
 
 ## 정본
 
@@ -85,7 +85,7 @@
 
 ## Git
 
-- Windows 조정실의 `AGENTS.md`는 로컬 KMH Agent Kit의 지침에 연결합니다. 원격 저장소의 기존 지침 링크·Git 제외 상태는 이번 이전에서 변경하지 않습니다.
+- 현재 조정실의 `AGENTS.md`는 로컬 KMH Agent Kit의 지침에 연결합니다. 원격 저장소의 기존 지침 링크·Git 제외 상태는 이번 이전에서 변경하지 않습니다.
 - `.env`, 인증서, 런타임 상태 파일을 커밋하거나 이미지에 넣지 않습니다.
 - 강제 푸시, 기존 이력 삭제, 사용자 변경 되돌리기를 하지 않습니다.
 
