@@ -250,13 +250,13 @@ append_shell_line() {
     ' "$file" > "$tmp"
     if ! cmp -s "$tmp" "$file"; then
       cp "$tmp" "$file"
-      echo "$file의 $marker 갱신"
+      echo "${file}의 $marker 갱신"
     fi
     rm -f "$tmp"
     return 0
   fi
   printf '\n# %s\n%s\n' "$marker" "$line" >> "$file"
-  echo "$file에 $marker 추가"
+  echo "${file}에 $marker 추가"
 }
 
 install_shell_commands() {

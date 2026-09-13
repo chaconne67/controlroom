@@ -646,7 +646,7 @@ class WindowsInstallerTests(unittest.TestCase):
             run(*command, env=env)
             self.assertEqual(
                 os.readlink(managed_skill).removeprefix("\\\\?\\"),
-                str(repo / "skills" / "common" / managed_skill.name),
+                str((repo / "skills" / "common" / managed_skill.name).resolve()),
             )
             self.assertEqual(
                 (managed_skill / "SKILL.md").read_bytes(),
