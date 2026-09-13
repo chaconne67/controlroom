@@ -1,0 +1,547 @@
+{
+  "remote": [
+    {
+      "root": "/home/chaconne/exdigm-debug",
+      "head": "d7a6f905a7e7bebec5a95716dcd418ea6f89f725",
+      "status": "",
+      "files": [
+        {
+          "path": "docs/auto_posting_consultant_profile_plan.md",
+          "bytes": 6294,
+          "sha256": "dd41cf81fce2346e1b94fbec5812e0be9ce5ce4381189cedf705ced95f1c6d76",
+          "stored_sha256": "dd41cf81fce2346e1b94fbec5812e0be9ce5ce4381189cedf705ced95f1c6d76"
+        },
+        {
+          "path": "docs/auto_posting_root_cause_fix_plan_20260806.md",
+          "bytes": 14157,
+          "sha256": "a0a803c51f721b9426639fba28d7e3d2fe387c750820a196c23e61b16fe49b5a",
+          "stored_sha256": "a0a803c51f721b9426639fba28d7e3d2fe387c750820a196c23e61b16fe49b5a"
+        },
+        {
+          "path": "docs/auto_posting_status_visibility_plan.md",
+          "bytes": 8031,
+          "sha256": "040438114bfec55b1973480733b6a00068d82b3dceb4e97e6c2dbac322aa55e4",
+          "stored_sha256": "040438114bfec55b1973480733b6a00068d82b3dceb4e97e6c2dbac322aa55e4"
+        },
+        {
+          "path": "docs/candidate_contact_search_plan_20260806.md",
+          "bytes": 7622,
+          "sha256": "b6983adae39a3f6a67be761875ccb68a3d5d88493fdc6784b3093c131d5d682d",
+          "stored_sha256": "b6983adae39a3f6a67be761875ccb68a3d5d88493fdc6784b3093c131d5d682d"
+        },
+        {
+          "path": "docs/client_industry_detail_select_plan_20260809.md",
+          "bytes": 6256,
+          "sha256": "b221e73bde7fa06f44a745e9d0c484ab18cdecaad7a3b386d67bdf444adcf2bc",
+          "stored_sha256": "b221e73bde7fa06f44a745e9d0c484ab18cdecaad7a3b386d67bdf444adcf2bc"
+        },
+        {
+          "path": "docs/exdigm-introduction-video-script.md",
+          "bytes": 28919,
+          "sha256": "f8d382bdfad837bc7967641ef6a751cec91439e87e2a576299be37f7a9b424ca",
+          "stored_sha256": "e12e1e53ad6c9c79ffb1a86ad51c9b6427cad4910da18988a3be1ab7b59ae33e",
+          "import_changes": [
+            "Linked retained code contract to verified original Git commit",
+            "Linked retained code contract to verified original Git commit",
+            "Linked retained code contract to verified original Git commit",
+            "Linked retained code contract to verified original Git commit",
+            "Linked retained code contract to verified original Git commit"
+          ]
+        },
+        {
+          "path": "docs/exdigm-marketing-story-copy.md",
+          "bytes": 28456,
+          "sha256": "a01890eb303de6c151e9dec890485333d95bb805a2c37ca836317c0337a0b5b7",
+          "stored_sha256": "a01890eb303de6c151e9dec890485333d95bb805a2c37ca836317c0337a0b5b7"
+        },
+        {
+          "path": "docs/mail_classifier_gemini_fallback_plan_20260729.md",
+          "bytes": 8886,
+          "sha256": "27496bc1d4ab349c0ecb8df8b1a5d6b564777b96e8dad710a6a43221f9457603",
+          "stored_sha256": "27496bc1d4ab349c0ecb8df8b1a5d6b564777b96e8dad710a6a43221f9457603"
+        },
+        {
+          "path": "docs/reputation_review_llm_plan_20260723.md",
+          "bytes": 7531,
+          "sha256": "5bb76e0875e6056aa2e9837091fdae2eb51cfc52e861b031b6efd95e085fd6c0",
+          "stored_sha256": "5bb76e0875e6056aa2e9837091fdae2eb51cfc52e861b031b6efd95e085fd6c0"
+        }
+      ],
+      "project": "exdigm",
+      "host": "chaconne@49.247.202.197"
+    },
+    {
+      "root": "/home/chaconne/rndlog",
+      "head": "6395b07857e325cdd769d40806e15988924ee4f7",
+      "status": "",
+      "files": [
+        {
+          "path": "docs/plans/company-lookup-quota-execution-plan.md",
+          "bytes": 7104,
+          "sha256": "37161ff9304abf842c6d763323da6e3e1123d5fd05296e9633fc8d7c1eb09d04",
+          "stored_sha256": "37161ff9304abf842c6d763323da6e3e1123d5fd05296e9633fc8d7c1eb09d04"
+        },
+        {
+          "path": "docs/plans/corporate-funding-tm-plan.md",
+          "bytes": 8418,
+          "sha256": "1f9b729c1ac0ba53c0e73bccdc28c943dbc0a8ef1257894a4b0bb2737216639f",
+          "stored_sha256": "e37256104ff8ea64c4cab6792568558b2a249c7b064aa890a2495df822c5ec4d",
+          "import_changes": [
+            "Linked retained code contract to verified original Git commit",
+            "Linked retained code contract to verified original Git commit",
+            "Linked retained code contract to verified original Git commit",
+            "Linked retained code contract to verified original Git commit"
+          ]
+        },
+        {
+          "path": "docs/plans/design-rd-compliance-os.md",
+          "bytes": 35395,
+          "sha256": "ab377ae9119ec1578c52fe919a3adfc0d1e50e4b58fa2e2287cfe70926140592",
+          "stored_sha256": "922a1040a7e20a6fa28cdf729713824838a26307f121c7d94082bffc9450e3b6",
+          "import_changes": [
+            "Retained missing legacy reference as plain text instead of a broken link"
+          ]
+        },
+        {
+          "path": "docs/plans/implementation-plan.md",
+          "bytes": 21485,
+          "sha256": "12667c843d8691edead69b8a2de2fa497036e9fb12787dd2e2185b8f1586e35b",
+          "stored_sha256": "12667c843d8691edead69b8a2de2fa497036e9fb12787dd2e2185b8f1586e35b"
+        },
+        {
+          "path": "docs/plans/landing-page-plan.md",
+          "bytes": 8895,
+          "sha256": "beb0e25b4691d6476abb9828f61ef9a2e5cf14873eec2dac1387975ea69ef28c",
+          "stored_sha256": "beb0e25b4691d6476abb9828f61ef9a2e5cf14873eec2dac1387975ea69ef28c"
+        },
+        {
+          "path": "docs/superpowers/plans/2026-04-21-research-app-phase1.md",
+          "bytes": 54076,
+          "sha256": "3f3be9041ec49b90f71b57c8800935043abe165e9ded8e689ebaf9d26a8c1074",
+          "stored_sha256": "3f3be9041ec49b90f71b57c8800935043abe165e9ded8e689ebaf9d26a8c1074"
+        },
+        {
+          "path": "docs/superpowers/plans/2026-06-09-marketing-pipeline.md",
+          "bytes": 137840,
+          "sha256": "abdd661fa3124e644b9bfa41cd8062299f52a07fd064165af48e0e31cfa55664",
+          "stored_sha256": "abdd661fa3124e644b9bfa41cd8062299f52a07fd064165af48e0e31cfa55664"
+        },
+        {
+          "path": "docs/superpowers/plans/2026-07-14-cretop-8004-recovery.md",
+          "bytes": 2474,
+          "sha256": "8c4fcafc9cc16bd5ca610c755e65a567db1a747db53ee22c59d7f3d8bff0b4bc",
+          "stored_sha256": "8c4fcafc9cc16bd5ca610c755e65a567db1a747db53ee22c59d7f3d8bff0b4bc"
+        },
+        {
+          "path": "docs/superpowers/plans/2026-07-14-cretop-click-marker-retry.md",
+          "bytes": 14157,
+          "sha256": "2c637a889d55da6d789490dd014460545255e29c9b9c70b7327ad55475929b59",
+          "stored_sha256": "2c637a889d55da6d789490dd014460545255e29c9b9c70b7327ad55475929b59"
+        },
+        {
+          "path": "docs/superpowers/plans/2026-07-15-agents-skill-trigger-deduplication.md",
+          "bytes": 2424,
+          "sha256": "ca2a3d89744d8d40b3859b607fdeba8c8166ae7308fc99ee896865af3dc2a389",
+          "stored_sha256": "ca2a3d89744d8d40b3859b607fdeba8c8166ae7308fc99ee896865af3dc2a389"
+        },
+        {
+          "path": "docs/superpowers/plans/2026-07-15-cretop-company-failure-continue.md",
+          "bytes": 2596,
+          "sha256": "19115fc819255476e843451bf6915a14cc51d8ce09debb7317b43b56f31551c1",
+          "stored_sha256": "19115fc819255476e843451bf6915a14cc51d8ce09debb7317b43b56f31551c1"
+        },
+        {
+          "path": "docs/superpowers/plans/2026-07-15-cretop-error-retry-exclusion.md",
+          "bytes": 8041,
+          "sha256": "443970a657a18d0a1381472badb195ef5d571c4481b4773f347b280121e8d678",
+          "stored_sha256": "443970a657a18d0a1381472badb195ef5d571c4481b4773f347b280121e8d678"
+        },
+        {
+          "path": "docs/superpowers/plans/2026-07-15-cretop-expired-page-recovery-routing.md",
+          "bytes": 16264,
+          "sha256": "b5db9f5f7e56554ae842dd2347ab681c0cc871586a111aa20010d32adeed5780",
+          "stored_sha256": "b5db9f5f7e56554ae842dd2347ab681c0cc871586a111aa20010d32adeed5780"
+        },
+        {
+          "path": "docs/superpowers/plans/2026-07-15-cretop-funding-reference-summary.md",
+          "bytes": 9244,
+          "sha256": "162f3308799f13fb7ddd24ccdb4923c35b93a849a08b852ed8b388179655105c",
+          "stored_sha256": "162f3308799f13fb7ddd24ccdb4923c35b93a849a08b852ed8b388179655105c"
+        },
+        {
+          "path": "docs/superpowers/plans/2026-07-15-cretop-smart-search-briefing-path.md",
+          "bytes": 5227,
+          "sha256": "0cd3589c0ee932ef6d494a0f9b92a0582cfb6235ac8c92f3e4073e60a1a67d05",
+          "stored_sha256": "0cd3589c0ee932ef6d494a0f9b92a0582cfb6235ac8c92f3e4073e60a1a67d05"
+        },
+        {
+          "path": "docs/superpowers/plans/2026-07-15-cretop-telegram-completion-notification.md",
+          "bytes": 5197,
+          "sha256": "b436a5d0276106d93fa75d70c61a9ed0f970843076f576e5a8b5fe573b92e8c1",
+          "stored_sha256": "b436a5d0276106d93fa75d70c61a9ed0f970843076f576e5a8b5fe573b92e8c1"
+        },
+        {
+          "path": "docs/superpowers/plans/2026-07-15-cretop-telegram-stop-notification.md",
+          "bytes": 7423,
+          "sha256": "bf1d305ab1ecf85bb27ec805d400101bb551c5040359a387e02fe9db3a383884",
+          "stored_sha256": "bf1d305ab1ecf85bb27ec805d400101bb551c5040359a387e02fe9db3a383884"
+        },
+        {
+          "path": "docs/superpowers/plans/2026-07-16-cretop-body-marker-tab-selection.md",
+          "bytes": 3351,
+          "sha256": "54fe0294a16184fca965975dfb6722ffbec8b2eacb17bb1055cc3930ea43d9e6",
+          "stored_sha256": "54fe0294a16184fca965975dfb6722ffbec8b2eacb17bb1055cc3930ea43d9e6"
+        },
+        {
+          "path": "docs/superpowers/plans/2026-07-16-cretop-concurrent-session-direct-ready-recovery.md",
+          "bytes": 11317,
+          "sha256": "f814e634ef7758e10b9269dd39e7dbee1d8e2b53534d02077e9eff783db7b5a4",
+          "stored_sha256": "f814e634ef7758e10b9269dd39e7dbee1d8e2b53534d02077e9eff783db7b5a4"
+        },
+        {
+          "path": "docs/superpowers/plans/2026-07-16-cretop-exception-router.md",
+          "bytes": 4344,
+          "sha256": "54fcf418b6127e0017815228c6427fd93716a3967e66986ad30ba3992feb1649",
+          "stored_sha256": "54fcf418b6127e0017815228c6427fd93716a3967e66986ad30ba3992feb1649"
+        },
+        {
+          "path": "docs/superpowers/plans/2026-07-16-cretop-info-stop-confirm-recovery.md",
+          "bytes": 3610,
+          "sha256": "06379e4cbd2694021fbcc18928ace68e316ac57f87b3f1a69094e39668a17e80",
+          "stored_sha256": "06379e4cbd2694021fbcc18928ace68e316ac57f87b3f1a69094e39668a17e80"
+        },
+        {
+          "path": "docs/superpowers/plans/2026-07-16-cretop-operator-stop-message.md",
+          "bytes": 3686,
+          "sha256": "3f57d9ec92a720ea7fbb265670714993fae17535ed1d5f723f76b50fda3cdca3",
+          "stored_sha256": "3f57d9ec92a720ea7fbb265670714993fae17535ed1d5f723f76b50fda3cdca3"
+        },
+        {
+          "path": "docs/superpowers/plans/2026-07-17-cretop-generic-popup-fallback.md",
+          "bytes": 11199,
+          "sha256": "67b594ce66b529913eaa19797365b5f4b629909f93ede26b150e8df73cd8a910",
+          "stored_sha256": "67b594ce66b529913eaa19797365b5f4b629909f93ede26b150e8df73cd8a910"
+        },
+        {
+          "path": "docs/superpowers/plans/2026-07-17-cretop-oom-exception-recovery.md",
+          "bytes": 3528,
+          "sha256": "a1d076d8ee0a9ea9ab98022626a31255796fda91985e054243aa707e8202e151",
+          "stored_sha256": "a1d076d8ee0a9ea9ab98022626a31255796fda91985e054243aa707e8202e151"
+        },
+        {
+          "path": "docs/superpowers/plans/2026-07-24-cretop-generic-close-popup.md",
+          "bytes": 7386,
+          "sha256": "153911e8aa2fb403e4e2fcd3eaaad90ceb7e276cdd1710e3c44d8a226fb1f30d",
+          "stored_sha256": "153911e8aa2fb403e4e2fcd3eaaad90ceb7e276cdd1710e3c44d8a226fb1f30d"
+        },
+        {
+          "path": "docs/superpowers/plans/2026-07-26-ceoloan-migration-phase1.md",
+          "bytes": 48831,
+          "sha256": "667cea596282d1a58132d89926097d6eb30c2037f6f8aff88396e2b14c136b90",
+          "stored_sha256": "04f3959f99982450705698586a2198e9a333d950e825a58e85657384dd35de4f",
+          "import_changes": [
+            "Removed unverified DEV_SECRET_KEY literal before first commit"
+          ]
+        },
+        {
+          "path": "docs/superpowers/plans/2026-07-26-funding-admin-handoff.md",
+          "bytes": 88714,
+          "sha256": "7e4df1f5f7bd7cb2629f1c2ca5290c285733b6bf331174d581cbf3fcb7aeca4a",
+          "stored_sha256": "7e4df1f5f7bd7cb2629f1c2ca5290c285733b6bf331174d581cbf3fcb7aeca4a"
+        },
+        {
+          "path": "docs/superpowers/plans/2026-07-27-cretop-deferred-quality-retry.md",
+          "bytes": 4478,
+          "sha256": "4fe16ff4d767d05868025b1730af932d2ed08b405653c3378d45560aa089ea68",
+          "stored_sha256": "4fe16ff4d767d05868025b1730af932d2ed08b405653c3378d45560aa089ea68"
+        },
+        {
+          "path": "docs/superpowers/plans/2026-07-30-cretop-local-primary-replication.md",
+          "bytes": 12288,
+          "sha256": "41d26f146d95c7110b2d1cb4a8b7019124edfe68282dfd7adee21a14fdcc1cc8",
+          "stored_sha256": "41d26f146d95c7110b2d1cb4a8b7019124edfe68282dfd7adee21a14fdcc1cc8"
+        },
+        {
+          "path": "docs/superpowers/plans/2026-08-05-rndlog-ceoloan-clone.md",
+          "bytes": 41892,
+          "sha256": "de2d838a5228e6c2f7f22609200778e287e8ad0623916fcab6294d964febabb6",
+          "stored_sha256": "de2d838a5228e6c2f7f22609200778e287e8ad0623916fcab6294d964febabb6"
+        },
+        {
+          "path": "docs/superpowers/plans/2026-08-08-funding-outbox-controls.md",
+          "bytes": 5598,
+          "sha256": "6b5df646dbb0cc1a860461666a97c53e84b2f160c3fbf7d8393717f1a2800d45",
+          "stored_sha256": "6b5df646dbb0cc1a860461666a97c53e84b2f160c3fbf7d8393717f1a2800d45"
+        },
+        {
+          "path": "docs/superpowers/specs/2026-04-20-sample-documents-design.md",
+          "bytes": 5887,
+          "sha256": "a366542ed318e1622e3e8c0f264c59d83f51fcff8e26faaa3b5fa46df6a52f92",
+          "stored_sha256": "a366542ed318e1622e3e8c0f264c59d83f51fcff8e26faaa3b5fa46df6a52f92"
+        },
+        {
+          "path": "docs/superpowers/specs/2026-06-09-marketing-pipeline-design.md",
+          "bytes": 18224,
+          "sha256": "0c5c6da73a671fb9ca3b8ccb45e7f04a5c5eda18fed1f8d12e0158aa9bca3767",
+          "stored_sha256": "0c5c6da73a671fb9ca3b8ccb45e7f04a5c5eda18fed1f8d12e0158aa9bca3767"
+        },
+        {
+          "path": "docs/superpowers/specs/2026-07-14-cretop-click-marker-retry-design.md",
+          "bytes": 6466,
+          "sha256": "9014556f8c8aa08791b57c1ec5e144b1bd9da7ae49ee60af95065c2f98abe4e0",
+          "stored_sha256": "9014556f8c8aa08791b57c1ec5e144b1bd9da7ae49ee60af95065c2f98abe4e0"
+        },
+        {
+          "path": "docs/superpowers/specs/2026-07-15-cretop-expired-page-recovery-routing-design.md",
+          "bytes": 4576,
+          "sha256": "bafe768cdf30f85e150edf0395ed0f7ca7d355c31e7ba10a92cafa9cd7934f7c",
+          "stored_sha256": "bafe768cdf30f85e150edf0395ed0f7ca7d355c31e7ba10a92cafa9cd7934f7c"
+        },
+        {
+          "path": "docs/superpowers/specs/2026-07-15-cretop-funding-reference-summary-design.md",
+          "bytes": 6469,
+          "sha256": "3d1dc32d762549540064723b25ee9cc54f64efeec95689b556b353d6f18056a6",
+          "stored_sha256": "3d1dc32d762549540064723b25ee9cc54f64efeec95689b556b353d6f18056a6"
+        },
+        {
+          "path": "docs/superpowers/specs/2026-07-16-cretop-info-stop-confirm-recovery-design.md",
+          "bytes": 1679,
+          "sha256": "975941fcdb9bb9aed81ce287a94ecad2e1be7e94e98068440286fb8899236f40",
+          "stored_sha256": "975941fcdb9bb9aed81ce287a94ecad2e1be7e94e98068440286fb8899236f40"
+        },
+        {
+          "path": "docs/superpowers/specs/2026-07-17-cretop-generic-popup-fallback-design.md",
+          "bytes": 8796,
+          "sha256": "c6bfb340b388b935741b26763766cbe1a28c078fd543a5c5f787c121c02a1197",
+          "stored_sha256": "c6bfb340b388b935741b26763766cbe1a28c078fd543a5c5f787c121c02a1197"
+        },
+        {
+          "path": "docs/superpowers/specs/2026-07-24-cretop-generic-close-popup-design.md",
+          "bytes": 8321,
+          "sha256": "f7962f580dcb8fde25dfa46db71fce4df5045eb647a4dddb6fece69df15cec00",
+          "stored_sha256": "f7962f580dcb8fde25dfa46db71fce4df5045eb647a4dddb6fece69df15cec00"
+        },
+        {
+          "path": "docs/superpowers/specs/2026-07-26-ceoloan-server-split-design.md",
+          "bytes": 11021,
+          "sha256": "7883d73f3bd9fffbe82de9e63398d7299e96bffa58d699010606d72b856ec92f",
+          "stored_sha256": "7883d73f3bd9fffbe82de9e63398d7299e96bffa58d699010606d72b856ec92f"
+        },
+        {
+          "path": "docs/superpowers/specs/2026-07-26-funding-admin-handoff-design.md",
+          "bytes": 17107,
+          "sha256": "8a1245048d624f7c4c7a5e79262bc8f817210da807416952560b6070ac7f3353",
+          "stored_sha256": "8a1245048d624f7c4c7a5e79262bc8f817210da807416952560b6070ac7f3353"
+        },
+        {
+          "path": "docs/superpowers/specs/2026-07-27-cretop-deferred-quality-retry-design.md",
+          "bytes": 2196,
+          "sha256": "7a68a0b92de23753f3f4b012dbd0b9c6003b8371bc865992717748ce3d11b34e",
+          "stored_sha256": "7a68a0b92de23753f3f4b012dbd0b9c6003b8371bc865992717748ce3d11b34e"
+        },
+        {
+          "path": "docs/superpowers/specs/2026-07-30-cretop-local-primary-replication-design.md",
+          "bytes": 5471,
+          "sha256": "4349ed0bf8760b2d072aa4138c822a539357bf01eb38e7efac3d1cdd1f85fd78",
+          "stored_sha256": "4349ed0bf8760b2d072aa4138c822a539357bf01eb38e7efac3d1cdd1f85fd78"
+        },
+        {
+          "path": "docs/superpowers/specs/2026-08-04-rndlog-ceoloan-clone-design.md",
+          "bytes": 11571,
+          "sha256": "1adf579d7709e3a972f3fd1184e600aff9eb1db446d604f8d2b318eeee264e22",
+          "stored_sha256": "1adf579d7709e3a972f3fd1184e600aff9eb1db446d604f8d2b318eeee264e22"
+        },
+        {
+          "path": "docs/superpowers/specs/2026-08-08-funding-outbox-controls-design.md",
+          "bytes": 3646,
+          "sha256": "a9a1df15a408b7635fc2fc028f82f7571fc88c3307f209eb42682e70aba46205",
+          "stored_sha256": "a9a1df15a408b7635fc2fc028f82f7571fc88c3307f209eb42682e70aba46205"
+        }
+      ],
+      "project": "rndlog",
+      "host": "chaconne@49.247.207.147"
+    },
+    {
+      "root": "/home/chaconne/fundkeeper",
+      "head": "9ba35b8505576651d3e21bb131691eb135ee0e9d",
+      "status": "",
+      "files": [
+        {
+          "path": "docs/plans/2026-03-10-chatbot-enhancement-design.md",
+          "bytes": 5408,
+          "sha256": "1bc462beaed70c130ecbc699c70ae7eb7bcc95139322a9e851058b8c4e76c1e1",
+          "stored_sha256": "1bc462beaed70c130ecbc699c70ae7eb7bcc95139322a9e851058b8c4e76c1e1"
+        },
+        {
+          "path": "docs/plans/2026-03-10-chatbot-implementation-plan.md",
+          "bytes": 19186,
+          "sha256": "760030c5c74bd84bcb85a32d9ca3c320e64d90b9ba84c02fac024366d8f68c65",
+          "stored_sha256": "760030c5c74bd84bcb85a32d9ca3c320e64d90b9ba84c02fac024366d8f68c65"
+        },
+        {
+          "path": "docs/plans/2026-07-29-mix-losscut-next-day-execution-plan.md",
+          "bytes": 4391,
+          "sha256": "1bda495c1ea5786e1e57bc74a8595da5a2996e982a844edb49aa6a60bbc5e7f9",
+          "stored_sha256": "1bda495c1ea5786e1e57bc74a8595da5a2996e982a844edb49aa6a60bbc5e7f9"
+        },
+        {
+          "path": "docs/plans/2026-07-31-split-order-execution-plan.md",
+          "bytes": 7966,
+          "sha256": "9045f41d0dc2fdaa5e13b78a916eefd70a982d6fbb034b1bb52f9ca1e9c3ea1b",
+          "stored_sha256": "9045f41d0dc2fdaa5e13b78a916eefd70a982d6fbb034b1bb52f9ca1e9c3ea1b"
+        },
+        {
+          "path": "docs/plans/2026-08-01-certbot-domain-and-stack-recovery-plan.md",
+          "bytes": 2197,
+          "sha256": "abcc9a8b82dd123055545a17e2dbf022383da79fd86769f8767f1958571d8def",
+          "stored_sha256": "abcc9a8b82dd123055545a17e2dbf022383da79fd86769f8767f1958571d8def"
+        },
+        {
+          "path": "docs/plans/2026-08-09-fundkeeper-design-system-skill-plan.md",
+          "bytes": 9177,
+          "sha256": "229fa9fa5c2a3089a50bc0bfdcd2e56e9a303d0e8f8b545fe7bd2d617812f33a",
+          "stored_sha256": "229fa9fa5c2a3089a50bc0bfdcd2e56e9a303d0e8f8b545fe7bd2d617812f33a"
+        },
+        {
+          "path": "portfolio_baa/files/BAA_UPGRADE_PLAN.md",
+          "bytes": 6175,
+          "sha256": "42ebd27bbe2cdc53313b71dcc7ff62a7f2ba6e4e5e739833b1256c616f35d5bd",
+          "stored_sha256": "42ebd27bbe2cdc53313b71dcc7ff62a7f2ba6e4e5e739833b1256c616f35d5bd"
+        },
+        {
+          "path": "portfolio_baa/files/BAA_UPGRADE_TODO.md",
+          "bytes": 4541,
+          "sha256": "e50fef6c6fd53ce096e8022aec68c08d98326751f15e90a5de515d97f709a23f",
+          "stored_sha256": "e50fef6c6fd53ce096e8022aec68c08d98326751f15e90a5de515d97f709a23f"
+        },
+        {
+          "path": "xmodules/research/plan/KRX_plan.md",
+          "bytes": 14368,
+          "sha256": "0beb7a95bc542ec64d636e5d9346833f8f111a9e38d4048cd52d15b3561c9662",
+          "stored_sha256": "0beb7a95bc542ec64d636e5d9346833f8f111a9e38d4048cd52d15b3561c9662"
+        },
+        {
+          "path": "xmodules/test_bed/fundkeeper_testbed_improvements.md",
+          "bytes": 5668,
+          "sha256": "329a8f8800141e89d4b5245ea9068b812a65ae0aa79ae230ba930a591c0c4be0",
+          "stored_sha256": "329a8f8800141e89d4b5245ea9068b812a65ae0aa79ae230ba930a591c0c4be0"
+        }
+      ],
+      "project": "fundkeeper",
+      "host": "chaconne@49.247.38.186"
+    },
+    {
+      "root": "/home/chaconne/projects/ziin",
+      "head": "9179f77a6eaed12c418de9be84e81f1c91d6dbf5",
+      "status": "",
+      "files": [
+        {
+          "path": "docs/implementation/아티팩트-방법론.md",
+          "bytes": 8645,
+          "sha256": "3e9f022ac56f357ecdf822eb98fb863cf1459fe457c1d159049e59cf6f2c798d",
+          "stored_sha256": "3e9f022ac56f357ecdf822eb98fb863cf1459fe457c1d159049e59cf6f2c798d"
+        },
+        {
+          "path": "docs/implementation/지니-챗봇-작업지시.md",
+          "bytes": 27996,
+          "sha256": "f28d4b6488abfeb21c566d94341a0d7c538b30f6f04674490c0bf68b4cc4522a",
+          "stored_sha256": "f28d4b6488abfeb21c566d94341a0d7c538b30f6f04674490c0bf68b4cc4522a"
+        },
+        {
+          "path": "docs/product/랜딩-문구.md",
+          "bytes": 11843,
+          "sha256": "8fc60643e8136e205db9f376d80d6aa37950c514617af414ad3ee6d8d3f5ae46",
+          "stored_sha256": "8fc60643e8136e205db9f376d80d6aa37950c514617af414ad3ee6d8d3f5ae46"
+        },
+        {
+          "path": "docs/product/지인-시스템-소개.md",
+          "bytes": 12875,
+          "sha256": "797f5f2d7254d06b93fb97f19b1c57ff20b7f30b2b2d4257c68b83221213f2c2",
+          "stored_sha256": "797f5f2d7254d06b93fb97f19b1c57ff20b7f30b2b2d4257c68b83221213f2c2"
+        },
+        {
+          "path": "docs/product/카피액기스.md",
+          "bytes": 4380,
+          "sha256": "fe4d208ede04bd52dd7d65c9bd3549b6b7d491f06b2eccbfcf33d2aad70dc795",
+          "stored_sha256": "fe4d208ede04bd52dd7d65c9bd3549b6b7d491f06b2eccbfcf33d2aad70dc795"
+        },
+        {
+          "path": "docs/product/how-it-works.md",
+          "bytes": 26111,
+          "sha256": "c1bc73805443d45be943efe6184f865e57bd7632b5db64c4492803adc0555b90",
+          "stored_sha256": "c1bc73805443d45be943efe6184f865e57bd7632b5db64c4492803adc0555b90"
+        }
+      ],
+      "project": "ziin",
+      "host": "chaconne@49.247.45.243"
+    }
+  ],
+  "local": [
+    {
+      "source": "C:\\Users\\chaconne\\projects\\exdigm\\DEVELOPMENT-ACCESS.md",
+      "target": "exdigm/docs/local/DEVELOPMENT-ACCESS.md",
+      "bytes": 4272,
+      "sha256": "a656fe7ab2084a63d68d54508c3ec64513bcb6fb4bf2d464305cd06594d9d2cc",
+      "stored_sha256": "8c2c23fb879026073e5032d1cf7983f7c9c0005be8b5dce1f175ee99d025c163",
+      "import_changes": [
+        "Aligned credential location rule with approved control-room policy"
+      ]
+    },
+    {
+      "source": "C:\\Users\\chaconne\\projects\\exdigm\\RESUME-INTAKE-20260911.md",
+      "target": "exdigm/docs/local/RESUME-INTAKE-20260911.md",
+      "bytes": 26836,
+      "sha256": "85e3a3653ee763c08280829c2c181defac69718d2df005948a9e931f9ec754b9",
+      "stored_sha256": "85e3a3653ee763c08280829c2c181defac69718d2df005948a9e931f9ec754b9"
+    },
+    {
+      "source": "C:\\Users\\chaconne\\projects\\exdigm\\artifacts\\posting-spacing-review.md",
+      "target": "exdigm/docs/local/artifacts/posting-spacing-review.md",
+      "bytes": 6712,
+      "sha256": "d540603e4580ed94b3ca2efcc3f0e91379a5d6839615a22ab91c4f103e58692a",
+      "stored_sha256": "d540603e4580ed94b3ca2efcc3f0e91379a5d6839615a22ab91c4f103e58692a"
+    },
+    {
+      "source": "C:\\Users\\chaconne\\projects\\exdigm\\results\\candidate-search-ux-proposal-2026-09-08.md",
+      "target": "exdigm/docs/local/results/candidate-search-ux-proposal-2026-09-08.md",
+      "bytes": 20049,
+      "sha256": "f2493ffaf54696965b3ee20cac7115653a6706f9e2e63138db7c29ee2245de18",
+      "stored_sha256": "f2493ffaf54696965b3ee20cac7115653a6706f9e2e63138db7c29ee2245de18"
+    },
+    {
+      "source": "C:\\Users\\chaconne\\projects\\rndlog\\docs\\plans\\2026-09-05-rndlog-admin-management-plan.md",
+      "target": "rndlog/docs/plans/2026-09-05-rndlog-admin-management-plan.md",
+      "bytes": 21134,
+      "sha256": "2725ac2891ea8aca15b225f99fb9e5fea962929c7eec09c36458f69dfd84adaa",
+      "stored_sha256": "2725ac2891ea8aca15b225f99fb9e5fea962929c7eec09c36458f69dfd84adaa"
+    },
+    {
+      "source": "C:\\Users\\chaconne\\projects\\rndlog\\docs\\plans\\2026-09-05-rndlog-admin-quality-bar.md",
+      "target": "rndlog/docs/plans/2026-09-05-rndlog-admin-quality-bar.md",
+      "bytes": 2165,
+      "sha256": "e70fdcb582343b36a45c97bbc9d587de38a5e61b9f1cea863bd39caa1584087c",
+      "stored_sha256": "e70fdcb582343b36a45c97bbc9d587de38a5e61b9f1cea863bd39caa1584087c"
+    },
+    {
+      "source": "C:\\Users\\chaconne\\projects\\rndlog\\docs\\plans\\2026-09-06-rndlog-file-upload-tree-plan.md",
+      "target": "rndlog/docs/plans/2026-09-06-rndlog-file-upload-tree-plan.md",
+      "bytes": 9994,
+      "sha256": "453426cb3cd81b5bf0dd7ea6e3d79622370b9aa6d912bed6d550aa8a22e3ac33",
+      "stored_sha256": "453426cb3cd81b5bf0dd7ea6e3d79622370b9aa6d912bed6d550aa8a22e3ac33"
+    },
+    {
+      "source": "C:\\Users\\chaconne\\projects\\rndlog\\docs\\plans\\2026-09-06-rndlog-upload-material-type-plan.md",
+      "target": "rndlog/docs/plans/2026-09-06-rndlog-upload-material-type-plan.md",
+      "bytes": 8714,
+      "sha256": "9231fca49cf2669dc9a4d48539f6202d88f199c2bd05cb0d9f3d532cea8c771d",
+      "stored_sha256": "9231fca49cf2669dc9a4d48539f6202d88f199c2bd05cb0d9f3d532cea8c771d"
+    },
+    {
+      "source": "C:\\Users\\chaconne\\projects\\rndlog\\docs\\plans\\2026-09-08-management-tab-improvement.md",
+      "target": "rndlog/docs/plans/2026-09-08-management-tab-improvement.md",
+      "bytes": 9957,
+      "sha256": "edb2e37f9dc5ca34fc2a55099f8046accb6d63eb0bd6277cabd2393101bd3126",
+      "stored_sha256": "edb2e37f9dc5ca34fc2a55099f8046accb6d63eb0bd6277cabd2393101bd3126"
+    }
+  ]
+}
