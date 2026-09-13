@@ -3,7 +3,7 @@
 # requires-python = ">=3.11"
 # dependencies = [
 #   "pillow==12.3.0",
-#   "playwright==1.58.0",
+#   "playwright==1.62.0",
 #   "pywin32==312",
 #   "pywinauto==0.6.9",
 # ]
