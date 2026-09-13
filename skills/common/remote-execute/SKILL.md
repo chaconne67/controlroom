@@ -1,31 +1,36 @@
 ---
 name: remote-execute
-description: Run heavy repository jobs on the remote worker chaconne@49.247.45.243 and bring back Git commits or selected large artifacts. Use when Codex needs to execute data extraction, microplan-batch, Playwright/screenshot checks, long tests, expensive batch jobs, or other memory/CPU-heavy repo tasks away from the local/production server.
+description: Run reproducible heavy repository commands on a remote server for data extraction, microplan-batch verification, Playwright/screenshot checks, long tests, or expensive batch jobs.
 ---
 
 # Remote Execute
 
-Use this skill to move heavy repo work to `chaconne@49.247.45.243`. The remote worker is expected to have a GitHub SSH key registered. Transfer source state through Git commits and branches; transfer large generated artifacts with `rsync`/`scp`, not Git.
+Use this skill to run heavy repository commands over SSH. Follow the project's official source host and checkout; use `chaconne@49.247.45.243` when the project authorizes a separate heavy-job worker. Transfer source state through Git commits and branches; transfer large generated artifacts with `rsync`/`scp`, not Git.
 
 ## Core Rule
 
-Never execute remote work from uncommitted local state. First make the intended local state reproducible:
+Development agents, planning, code-change decisions, and LLM development sessions run in the control room. The agent reads its plans and skills there, edits the official code checkout over SSH when it is remote, and sends reproducible commands to the server. Do not launch a development-agent session on the server. Established LLM API calls inside product features or batch pipelines remain part of those programs and follow their existing authorization.
+
+Choose the path from the project's existing source location:
+
+- **Remote source, control-room folder without code:** use SSH in the project's official remote checkout or authorized worktree for edits, tests, Git operations, and result inspection. Do not clone code into the control room to satisfy the helper's local-checkout requirement. Prepare and verify command changes in that official source checkout before dispatching a heavy job; preserve existing user changes and record the tested commit and diff.
+- **Existing local code checkout:** use the bundled helper below. First make the intended local state reproducible:
 
 1. Inspect `git status --short`.
 2. Commit or explicitly exclude local changes.
 3. Push a dedicated branch.
 4. Run the task on the remote worker from that branch.
-5. Have the remote worker commit and push results.
+5. Inspect results from the control room, then issue any required remote commit and push commands.
 6. Fetch and inspect Git results locally before merge/cherry-pick.
 7. Download large artifacts separately only when they are needed locally.
 
-If local changes are unrelated or unsafe to commit, stop and ask what should be included.
+In either path, preserve unrelated changes. If the required changes cannot be isolated safely within the approved scope, stop and ask what should be included.
 
-If the task requires a new command, option, helper script, schema, prompt, or test fixture before remote execution, implement and verify that change locally first, then commit and push it before running anything on the remote worker. Remote execution must run code that can be reproduced from Git, not code that only exists in the local working tree.
+If a heavy job requires a new command, option, helper script, schema, prompt, or test fixture, the control-room agent implements and verifies it in the project's official source checkout first. Commit and, when transferring to a separate worker, push that code before dispatching the heavy job. Use the project's existing development and validation path to prepare the change; the dispatched job must run code reproducible from Git.
 
 ## Standard Flow
 
-Use the bundled helper for ordinary repo tasks:
+Use the bundled helper only for the existing-local-checkout path. For the remote-source path, issue commands over SSH in the approved checkout/worktree instead; the helper's CLI and clean-local-worktree requirement remain unchanged.
 
 `<SKILL_DIR>` means the absolute directory containing this `SKILL.md`. Resolve it from the active
 skill path before running the command.
@@ -44,25 +49,27 @@ The helper:
 - pushes remote commits back to the same branch
 - prints local fetch/merge guidance
 
-Use Git only for source code, plans, schemas, scripts, tests, and small reports. Do not commit extracted text corpora, batch JSONL outputs, PDFs, screenshots/videos, model outputs, DB dumps, or other large artifacts unless the user explicitly asks and the repo is designed for that storage.
+Use Git for source code, code-coupled documents, schemas, scripts, tests, and small reports. Planning documents and development instructions stay in their control-room source. Do not commit extracted text corpora, batch JSONL outputs, PDFs, screenshots/videos, model outputs, DB dumps, or other large artifacts unless the user explicitly asks and the repo is designed for that storage.
 
-For long-running agent jobs, pass the exact command that should run on the remote worker. Prefer foreground remote execution when the current session can wait. Use background remote execution only when the job has its own progress files/logs and a clear resume path.
+For long-running jobs, the control-room agent sends the exact program or test command to run on the server. Prefer foreground remote execution when the current session can wait. Use background remote execution only when the job has its own progress files/logs and a clear resume path.
 
 ## Microplan Batch
 
 For `microplan-batch` or large verification batches:
 
-1. Commit the plan/progress setup locally if it should travel to the remote worker.
-2. Push a dedicated branch such as `remote-exec/microplan-YYYYMMDD-HHMM`.
-3. Run the batch on the remote worker.
-4. Require each completed task to commit on the remote branch.
-5. Fetch the branch locally and review `git log HEAD..origin/<branch>` and `git diff HEAD..origin/<branch>`.
+1. Keep the plan, progress tracking, and task decisions in the control room.
+2. The control-room agent implements each task in the project's official source checkout and prepares the reproducible code state required by the selected execution path.
+3. Execute the task's build, test, or batch program commands over SSH; the microplan agent loop remains in the control room.
+4. The control-room agent reviews each task's results and issues the required Git commands in the code checkout.
+5. Inspect commits and diffs in the official source checkout, using local fetch only for the existing-local-checkout path.
 
 Do not let remote work touch production credentials, production DBs, paid external APIs, Drive/Gemini jobs, or Telegram notifications unless the user explicitly approves that external action for the remote server.
 
 ## Data Extraction
 
 For exdigm data extraction jobs, this skill is the authoritative source for remote execution policy. Domain skills such as `data-extraction` may point here, but this section owns the rule.
+
+In this section, `local/operational server` is the project's existing source and DB execution environment; it need not be the control-room PC. The control-room agent invokes that environment over SSH when the code is remote. Preserve the existing artifact-only worker and external-action boundaries below.
 
 Before any data extraction remote run:
 
@@ -205,7 +212,9 @@ If the output is large, prefer this result split:
 
 ## Result Intake
 
-After remote execution:
+For a remote-source project, inspect results, run focused verification, and perform any approved Git integration over SSH in the official source checkout. Return the result report to the control room without creating a local code clone.
+
+For the existing-local-checkout path:
 
 1. `git fetch origin <remote-branch>`
 2. Inspect commits and diff.

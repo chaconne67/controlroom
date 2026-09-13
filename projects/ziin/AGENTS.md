@@ -2,18 +2,19 @@
 
 ## Windows 조정실
 
-- 작업 위치: `C:\Users\chaconne\projects\ziin`. 코드·Git·검증·배포는 아래 원격 서버의 기존 경로를 사용합니다.
+- 작업 위치: `C:\Users\chaconne\projects\ziin`. 애플리케이션 코드·Git·검증·배포는 아래 원격 서버의 기존 경로를 사용합니다.
 - 새 세션은 대화 이식 없이 `~/.gbrain-agent.md`의 현재 래퍼로 공용 `project/ziin-operating-context`를 먼저 읽습니다.
 - GBrain은 전역 컨트롤타워 카드의 공용 조회 경로로 `project/ziin-operating-context`를 읽습니다. GBrain 본체는 DB 서버에 유지합니다.
 - 아래 Linux 경로와 명령은 명시된 원격 호스트의 셸에서 실행합니다. Windows에 운영 코드를 복제하지 않습니다.
+- 기획·리서치·작업 계획은 조정실의 `docs/README.md`에서 찾습니다. 이 폴더는 `../_control-docs/ziin/docs`의 같은 원본으로 연결되며, 문서 Git 이력은 `_control-docs`에서 관리합니다.
 
 
 ## 역할
 
-- 이 폴더는 ZiiN의 Windows 조정실입니다. 실제 코드·제품 문서·Git·배포는 DB 서버 `chaconne@49.247.45.243:/home/chaconne/projects/ziin`에 유지합니다.
+- 이 폴더는 ZiiN의 Windows 조정실입니다. 실제 코드·실행 및 검증 자료·코드 Git·배포는 DB 서버 `chaconne@49.247.45.243:/home/chaconne/projects/ziin`에 유지합니다.
 - ZiiN은 Exdigm에서 운영 중인 헤드헌팅 업무 시스템을 다른 헤드헌팅 회사에도 제공할 수 있도록 범용화한 제품입니다.
 - 제품 사실의 최종 기준은 검증된 Exdigm 운영 코드입니다. ZiiN 문서와 코드가 다르면 실제 코드를 확인한 뒤 문서와 GBrain을 갱신합니다.
-- Windows 조정 에이전트가 SSH로 DB의 `/home/chaconne/projects/ziin`에서 개발·검증합니다. 아래 상대경로 문서는 모두 그 원격 저장소 기준입니다. 배포는 별도 명시적 요청이 있을 때 기존 `scripts/deploy.sh`로 실행합니다.
+- Windows 조정 에이전트가 SSH로 DB의 `/home/chaconne/projects/ziin`에서 개발·검증합니다. `docs/implementation/`과 `docs/product/`의 기획 원본은 조정실 문서 경로이며, 나머지 코드·디자인·운영 문서 경로는 원격 저장소 기준입니다. 배포는 별도 명시적 요청이 있을 때 기존 `scripts/deploy.sh`로 실행합니다.
 
 ## 정본
 
