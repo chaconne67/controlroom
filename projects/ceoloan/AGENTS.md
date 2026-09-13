@@ -1,13 +1,13 @@
 # CEO Loan 중앙 조정실
 
-## Windows 조정실
+## 조정실
 
-- 작업 위치: `C:\Users\chaconne\projects\ceoloan`. 애플리케이션 코드·Git·검증·배포는 아래 원격 서버의 기존 경로를 사용합니다.
-- 새 세션은 대화 이식 없이 `~/.gbrain-agent.md`의 현재 래퍼로 공용 `project/ceoloan-operating-context`를 먼저 읽습니다.
-- GBrain은 전역 컨트롤타워 카드의 공용 조회 경로로 `project/ceoloan-operating-context`를 읽습니다. GBrain 본체는 DB 서버에 유지합니다.
-- 아래 Linux 경로와 명령은 명시된 원격 호스트의 셸에서 실행합니다. Windows에 운영 코드를 복제하지 않습니다.
-- 기획·리서치·작업 계획은 조정실의 `docs/README.md`에서 찾습니다. 이 폴더는 `../_control-docs/ceoloan/docs`의 같은 원본으로 연결되며, 문서 Git 이력은 `_control-docs`에서 관리합니다.
-
+- 작업 위치는 이 프로필을 연결한 현재 프로젝트 폴더이며 기본값은 `~/projects/ceoloan`입니다. `~`는 Windows의 `USERPROFILE`, macOS·Linux의 `HOME`입니다. 이미 등록된 사용자 지정 경로를 우선합니다.
+- 개발 에이전트는 선택한 조정실 장비에서만 실행합니다. 아래 서버의 코드·Git·검증·배포 경로는 SSH로 사용하며 제품 기능의 기존 AI·LLM 실행은 보존합니다.
+- 새 세션은 `~/.gbrain-agent.md`를 읽고, 공용 최신 `project/windows-control-tower-operating-context`와 `project/ceoloan-operating-context`를 확인합니다.
+- 아래 Linux 경로와 명령은 명시된 원격 호스트의 셸에서 실행합니다. 조정실 OS에 맞춰 서버 경로를 바꾸거나 운영 코드를 조정실에 복제하지 않습니다.
+- 기획·리서치·작업 계획은 `docs/README.md`에서 찾습니다. `docs`는 비공개 문서 저장소의 `ceoloan/docs`에 연결되며 기본 정본은 `~/projects/_control-docs/ceoloan/docs`입니다.
+- 작업을 이어받을 때는 `docs/README.md`의 진행 중 작업 링크와 해당 계획의 재개 정보를 읽고 실제 서버 Git 상태와 대조합니다. 작업을 마치거나 옮기기 전에 그 계획에 재개 정보를 갱신하며 병렬 작업은 각 계획에서 관리합니다.
 
 ## 역할
 

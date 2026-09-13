@@ -250,13 +250,13 @@ append_shell_line() {
     ' "$file" > "$tmp"
     if ! cmp -s "$tmp" "$file"; then
       cp "$tmp" "$file"
-      echo "$file의 $marker 갱신"
+      echo "${file}의 $marker 갱신"
     fi
     rm -f "$tmp"
     return 0
   fi
   printf '\n# %s\n%s\n' "$marker" "$line" >> "$file"
-  echo "$file에 $marker 추가"
+  echo "${file}에 $marker 추가"
 }
 
 install_shell_commands() {
@@ -327,17 +327,35 @@ install_global() {
   fi
 }
 
+control_room_docs_source() {
+  local rows checkout kind target
+  rows="$(_kit_control_repositories "$repo_dir" "$home_dir")" || return 1
+  while IFS=$'\t' read -r checkout kind target; do
+    [ "${kind:-}" = docs ] || continue
+    printf '%s/%s/docs\n' "$checkout" "$1"
+    return 0
+  done <<< "$rows"
+}
+
 install_project_profile() {
   local project_path="$1" profile_name="$2"
   local profile="$repo_dir/projects/$profile_name"
   validate_agent_name "$profile_name"
   [ -d "$profile" ] || die "프로젝트 프로필이 없습니다: $profile"
   [ -d "$project_path" ] || die "프로젝트 폴더가 없습니다: $project_path"
+  local docs_source
+  docs_source="$(control_room_docs_source "$profile_name")"
+  if [ -d "$docs_source" ] && [ -e "$project_path/docs" ] && [ ! -L "$project_path/docs" ]; then
+    die "기존 문서 경로를 보존했습니다. 원본을 확인한 뒤 연결하세요: $project_path/docs"
+  fi
   remove_kit_skill_links "$project_path/.codex/skills"
   [ -d "$profile/skills" ] && link_profile "$profile/skills" "$project_path/.claude/skills"
   [ -d "$profile/skills" ] && link_profile "$profile/skills" "$project_path/.agents/skills"
   [ -f "$profile/CLAUDE.md" ] && link_entry "$profile/CLAUDE.md" "$project_path/CLAUDE.md"
   [ -f "$profile/AGENTS.md" ] && link_entry "$profile/AGENTS.md" "$project_path/AGENTS.md"
+  if [ -d "$docs_source" ]; then
+    link_entry "$docs_source" "$project_path/docs"
+  fi
   echo "프로젝트 프로필 연결: $profile_name → $project_path"
 }
 
@@ -352,21 +370,21 @@ restore_control_room_projects() {
   local manifest="$repo_dir/manifests/windows-control-projects.tsv"
   local projects_root="$home_dir/projects"
   local directory kind target extra project_path
-  [ -f "$manifest" ] || die "Windows 조정실 프로젝트 계약이 없습니다: $manifest"
-  mkdir -p "$projects_root"
+  [ -f "$manifest" ] || die "조정실 프로젝트 계약이 없습니다: $manifest"
+  _kit_restore_control_repositories "$repo_dir" "$home_dir" || die "조정실 저장소 복원 실패"
 
   while IFS=$'\t' read -r directory kind target extra; do
     [ -n "${directory:-}" ] || continue
     case "$directory" in \#*) continue ;; esac
     [ -z "${extra:-}" ] && [ -n "${kind:-}" ] && [ -n "${target:-}" ] ||
       die "프로젝트 계약 형식 오류: $manifest"
-    validate_agent_name "$directory"
-    project_path="$projects_root/$directory"
-
+    [[ "$directory" =~ ^[A-Za-z0-9_-]+$ ]] || die "프로젝트 폴더 이름이 잘못되었습니다: $directory"
     case "$kind" in
       profile)
         validate_agent_name "$target"
         [ -d "$repo_dir/projects/$target" ] || die "프로젝트 프로필이 없습니다: $target"
+        project_path="$(git -C "$repo_dir" config --local --get "kmh-agent-kit.project.$target" || true)"
+        project_path="${project_path:-$projects_root/$directory}"
         if [ -e "$project_path" ] && [ ! -d "$project_path" ]; then
           die "프로젝트 경로가 폴더가 아닙니다: $project_path"
         fi
@@ -376,19 +394,7 @@ restore_control_room_projects() {
         fi
         register_project_profile "$project_path" "$target"
         ;;
-      git)
-        [[ "$target" =~ ^https://github\.com/[^/]+/[^/]+\.git$ ]] ||
-          die "프로젝트 Git 주소는 GitHub HTTPS 주소여야 합니다: $target"
-        if [ -e "$project_path" ]; then
-          [ -d "$project_path" ] || die "프로젝트 경로가 폴더가 아닙니다: $project_path"
-          [ -d "$project_path/.git" ] ||
-            die "기존 프로젝트 폴더를 보존했지만 Git 저장소가 아닙니다: $project_path"
-          echo "프로젝트 저장소 보존: $project_path"
-        else
-          git clone --branch main --single-branch "$target" "$project_path"
-          echo "프로젝트 저장소 clone: $project_path"
-        fi
-        ;;
+      git|docs) ;;
       *) die "알 수 없는 프로젝트 복원 방식: $kind" ;;
     esac
   done < "$manifest"
@@ -476,17 +482,18 @@ verify_agent_install() {
 
 verify_control_room_projects() {
   local manifest="$repo_dir/manifests/windows-control-projects.tsv"
-  local directory kind target extra project_path saved_path expected_path file
+  local directory kind target extra project_path saved_path expected_path docs_source file
   while IFS=$'\t' read -r directory kind target extra; do
     [ -n "${directory:-}" ] || continue
     case "$directory" in \#*) continue ;; esac
     project_path="$home_dir/projects/$directory"
-    [ -d "$project_path" ] || die "프로젝트 폴더 검증 실패: $project_path"
-    if [ "$kind" = git ]; then
+    if [ "$kind" = git ] || [ "$kind" = docs ]; then
       [ -d "$project_path/.git" ] || die "프로젝트 Git 검증 실패: $project_path"
       continue
     fi
     saved_path="$(git -C "$repo_dir" config --local --get "kmh-agent-kit.project.$target" || true)"
+    [ -n "$saved_path" ] && [ -d "$saved_path" ] || die "프로젝트 등록 경로 검증 실패: $target"
+    project_path="$saved_path"
     expected_path="$(cd "$project_path" && pwd -P)"
     [ "$saved_path" = "$expected_path" ] || die "프로젝트 등록 검증 실패: $target"
     for file in CLAUDE.md AGENTS.md; do
@@ -494,6 +501,10 @@ verify_control_room_projects() {
       [ "$(readlink "$project_path/$file" 2>/dev/null || true)" = "$repo_dir/projects/$target/$file" ] ||
         die "프로젝트 지침 링크 검증 실패: $project_path/$file"
     done
+    docs_source="$(control_room_docs_source "$target")"
+    [ -d "$docs_source" ] || die "프로젝트 문서 원본이 없습니다: $docs_source"
+    [ "$(readlink "$project_path/docs" 2>/dev/null || true)" = "$docs_source" ] ||
+      die "프로젝트 문서 링크 검증 실패: $project_path/docs"
   done < "$manifest"
 }
 
@@ -749,6 +760,7 @@ add_new_agent() {
 }
 
 run_windows_installer "$@"
+. "$repo_dir/shell/kit-aliases.sh"
 
 case "${1:-}" in
   "")

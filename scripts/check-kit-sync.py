@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+from contextlib import contextmanager
 import os
 import json
 from pathlib import Path
@@ -46,6 +47,7 @@ def run(
         env=env,
         input=input_text,
         text=True,
+        errors="backslashreplace",
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
         check=False,
@@ -56,6 +58,45 @@ def run(
             f"stdout:\n{result.stdout}\nstderr:\n{result.stderr}"
         )
     return result
+
+
+@contextmanager
+def preserve_windows_installer_path(home: Path):
+    """Remove only installer PATH entries absent before this temporary install."""
+    import winreg
+
+    def normalized(entry: str) -> str:
+        return os.path.normcase(entry.rstrip("\\/"))
+
+    with winreg.OpenKey(
+        winreg.HKEY_CURRENT_USER, "Environment", 0, winreg.KEY_READ | winreg.KEY_WRITE
+    ) as key:
+        try:
+            before, _ = winreg.QueryValueEx(key, "Path")
+            existed = True
+        except FileNotFoundError:
+            before, existed = "", False
+        git = shutil.which("git.exe") or shutil.which("git")
+        if not git:
+            raise AssertionError("Windows installer test requires Git")
+        candidates = (home / ".local" / "bin", Path(git).parent)
+        original = {normalized(entry) for entry in before.split(";")}
+        added = {normalized(str(entry)) for entry in candidates} - original
+        try:
+            yield
+        finally:
+            try:
+                current, value_type = winreg.QueryValueEx(key, "Path")
+            except FileNotFoundError:
+                current, value_type = "", winreg.REG_EXPAND_SZ
+            entries = current.split(";")
+            kept = [entry for entry in entries if normalized(entry) not in added]
+            if kept != entries:
+                restored = ";".join(kept)
+                if not existed and not restored:
+                    winreg.DeleteValue(key, "Path")
+                else:
+                    winreg.SetValueEx(key, "Path", 0, value_type, restored)
 
 
 class KitFixture:
@@ -86,6 +127,7 @@ class KitFixture:
         paths = {
             "README.md": "baseline\n",
             "common.txt": "base\n",
+            "manifests/windows-control-projects.tsv": "# directory\tkind\ttarget\n",
             "gbrain-cards/main.md": "main\n",
             "gbrain-cards/windows-control.md": "windows-control\n",
             "gbrain-cards/rndlog.md": "rndlog\n",
@@ -97,6 +139,7 @@ class KitFixture:
             path.parent.mkdir(parents=True, exist_ok=True)
             path.write_text(content, encoding="utf-8")
 
+        shutil.copy2(ROOT / ".gitattributes", self.seed / ".gitattributes")
         aliases = self.seed / "shell" / "kit-aliases.sh"
         aliases.parent.mkdir(parents=True, exist_ok=True)
         shutil.copy2(ALIASES, aliases)
@@ -468,7 +511,7 @@ class EntryPointDocumentationTests(unittest.TestCase):
         ]
         self.assertEqual(
             [row[0] for row in rows],
-            ["ceoloan", "exdigm", "fundkeeper", "rndlog", "ziin", "venture"],
+            ["_control-docs", "ceoloan", "exdigm", "fundkeeper", "rndlog", "ziin", "venture"],
         )
 
 
@@ -480,7 +523,8 @@ class WindowsInstallerTests(unittest.TestCase):
         self.assertIn("kitpush", result.stdout)
 
     def test_windows_control_restores_project_entrypoints_and_preserves_existing_work(self) -> None:
-        with tempfile.TemporaryDirectory(prefix="kmh-control-room-") as temp_dir:
+        with tempfile.TemporaryDirectory(prefix="kmh-control-room-") as temp_dir, \
+                preserve_windows_installer_path(Path(temp_dir) / "home"):
             temp = Path(temp_dir)
             home = temp / "home"
             repo = home / "kmh-agent-kit"
@@ -547,6 +591,24 @@ class WindowsInstallerTests(unittest.TestCase):
             run("git", "commit", "-m", "venture baseline", cwd=venture_seed)
             run("git", "clone", "--bare", venture_seed, venture_origin)
 
+            docs_seed = temp / "docs-seed"
+            docs_origin = temp / "docs.git"
+            run("git", "init", "--initial-branch=main", docs_seed)
+            KitFixture._configure(docs_seed)
+            profile_names = ("ceoloan", "exdigm", "fundkeeper", "rndlog", "ziin")
+            for profile in profile_names:
+                document = docs_seed / profile / "docs" / "README.md"
+                document.parent.mkdir(parents=True)
+                document.write_text(f"{profile} planning\n", encoding="utf-8")
+            run("git", "add", "-A", cwd=docs_seed)
+            run("git", "commit", "-m", "planning baseline", cwd=docs_seed)
+            run("git", "clone", "--bare", docs_seed, docs_origin)
+
+            custom_project = temp / "custom projects" / "exdigm"
+            custom_project.mkdir(parents=True)
+            run("git", "config", "--local", "kmh-agent-kit.project.exdigm",
+                custom_project, cwd=repo)
+
             fake_bin = temp / "bin"
             fake_bin.mkdir()
             (fake_bin / "ssh.cmd").write_text("@echo off\r\nexit /b 0\r\n", encoding="utf-8")
@@ -560,9 +622,11 @@ class WindowsInstallerTests(unittest.TestCase):
                     "CODEX_HOME": str(home / ".codex"),
                     "HERMES_HOME": str(home / ".hermes"),
                     "PATH": str(fake_bin) + os.pathsep + env["PATH"],
-                    "GIT_CONFIG_COUNT": "1",
+                    "GIT_CONFIG_COUNT": "2",
                     "GIT_CONFIG_KEY_0": f"url.{venture_origin.as_uri()}.insteadOf",
                     "GIT_CONFIG_VALUE_0": "https://github.com/chaconne67/venture.git",
+                    "GIT_CONFIG_KEY_1": f"url.{docs_origin.as_uri()}.insteadOf",
+                    "GIT_CONFIG_VALUE_1": "https://github.com/chaconne67/control-room-docs.git",
                     "GIT_TERMINAL_PROMPT": "0",
                 }
             )
@@ -582,13 +646,18 @@ class WindowsInstallerTests(unittest.TestCase):
             run(*command, env=env)
             self.assertEqual(
                 os.readlink(managed_skill).removeprefix("\\\\?\\"),
-                str(repo / "skills" / "common" / managed_skill.name),
+                str((repo / "skills" / "common" / managed_skill.name).resolve()),
             )
             self.assertEqual(
                 (managed_skill / "SKILL.md").read_bytes(),
                 (repo / "skills" / "common" / managed_skill.name / "SKILL.md").read_bytes(),
             )
             managed_link_mtime = managed_skill.lstat().st_mtime_ns
+            docs_link = custom_project / "docs"
+            docs_link_mtime = docs_link.lstat().st_mtime_ns
+            self.assertTrue(os.path.samefile(
+                docs_link, home / "projects" / "_control-docs" / "exdigm" / "docs"
+            ))
             backups_after_first_install = set(home.glob(".kmh-agent-kit-backup-*"))
             wrappers: dict[str, Path] = {}
             wrapper_contents: dict[str, bytes] = {}
@@ -613,6 +682,8 @@ class WindowsInstallerTests(unittest.TestCase):
             (venture / "AGENTS.md").write_text("local venture work\n", encoding="utf-8")
             run(*command, env=env)
             self.assertEqual(managed_skill.lstat().st_mtime_ns, managed_link_mtime)
+            self.assertEqual(docs_link.lstat().st_mtime_ns, docs_link_mtime)
+            self.assertFalse((home / "projects" / "exdigm").exists())
             self.assertEqual(private_skill.read_text(encoding="utf-8"), "private skill\n")
             self.assertTrue(os.path.samefile(foreign_source, foreign_link))
             self.assertEqual(
@@ -654,10 +725,13 @@ class WindowsInstallerTests(unittest.TestCase):
             self.assertEqual(legacy_backups[0].read_text(), "legacy preflight\n")
             self.assertTrue((home / ".agents" / "skills" / "preflight").is_dir())
 
-            profile_names = ("ceoloan", "exdigm", "fundkeeper", "rndlog", "ziin")
             for profile in profile_names:
                 with self.subTest(profile=profile):
-                    project = home / "projects" / profile
+                    project = custom_project if profile == "exdigm" else home / "projects" / profile
+                    canonical_docs = home / "projects" / "_control-docs" / profile / "docs"
+                    self.assertTrue(os.path.samefile(project / "docs", canonical_docs))
+                    self.assertEqual((project / "docs" / "README.md").read_bytes(),
+                                     (canonical_docs / "README.md").read_bytes())
                     self.assertTrue(project.is_dir())
                     saved = run(
                         "git",
@@ -688,6 +762,97 @@ class WindowsInstallerTests(unittest.TestCase):
                 (venture / "AGENTS.md").read_text(encoding="utf-8"),
                 "local venture work\n",
             )
+
+            # An ordinary docs directory belongs to the user, even when install fails.
+            protected_docs = home / "projects" / "rndlog" / "docs"
+            protected_docs.rmdir()  # Remove this test's junction only.
+            protected_docs.mkdir()
+            protected_file = protected_docs / "keep.txt"
+            protected_file.write_bytes(b"uncommitted planning\n")
+            blocked = run(*command, env=env, check=False)
+            self.assertNotEqual(blocked.returncode, 0)
+            self.assertEqual(protected_file.read_bytes(), b"uncommitted planning\n")
+            self.assertEqual(set(home.glob(".kmh-agent-kit-backup-*")),
+                             backups_after_first_install)
+            self.assertEqual(run("git", "status", "--porcelain=v1",
+                                 cwd=home / "projects" / "_control-docs").stdout, "")
+
+
+@unittest.skipIf(os.name == "nt", "Requires a native POSIX installer host")
+class PosixControlRoomInstallerTests(unittest.TestCase):
+    def test_control_room_reconnects_custom_project_docs_and_preserves_work(self) -> None:
+        with tempfile.TemporaryDirectory(prefix="kmh-posix-control-") as temp_dir:
+            temp = Path(temp_dir)
+            home = temp / "home"
+            repo = home / "kmh-agent-kit"
+            home.mkdir()
+            shutil.copytree(ROOT, repo, symlinks=True,
+                            ignore=shutil.ignore_patterns(".git", "__pycache__"))
+            run("git", "init", "--initial-branch=main", repo)
+            custom_project = temp / "custom projects" / "exdigm"
+            custom_project.mkdir(parents=True)
+            run("git", "config", "--local", "kmh-agent-kit.project.exdigm",
+                custom_project, cwd=repo)
+
+            docs_repo = home / "projects" / "_control-docs"
+            venture = home / "projects" / "venture"
+            for checkout, remote in (
+                (docs_repo, "control-room-docs"), (venture, "venture")
+            ):
+                run("git", "init", "--initial-branch=main", checkout)
+                run("git", "remote", "add", "origin",
+                    f"https://github.com/chaconne67/{remote}.git", cwd=checkout)
+            profiles = ("ceoloan", "exdigm", "fundkeeper", "rndlog", "ziin")
+            for profile in profiles:
+                document = docs_repo / profile / "docs" / "README.md"
+                document.parent.mkdir(parents=True)
+                document.write_text(f"{profile} planning\n", encoding="utf-8")
+            pending_code = venture / "keep.txt"
+            pending_code.write_bytes(b"uncommitted code\n")
+            statuses = {checkout: run("git", "status", "--porcelain=v1",
+                                      cwd=checkout).stdout
+                        for checkout in (docs_repo, venture)}
+
+            fake_bin = temp / "bin"
+            fake_bin.mkdir()
+            ssh = fake_bin / "ssh"
+            ssh.write_text("#!/usr/bin/env bash\nexit 0\n", encoding="utf-8")
+            ssh.chmod(0o755)
+            env = os.environ.copy()
+            env.update(HOME=str(home), CLAUDE_HOME=str(home / ".claude"),
+                       CODEX_HOME=str(home / ".codex"), HERMES_HOME=str(home / ".hermes"),
+                       PATH=str(fake_bin) + os.pathsep + env["PATH"])
+            command = (BASH, repo / "install.sh", "windows-control")
+            run(*command, env=env)
+            backups = set(home.glob(".kmh-agent-kit-backup-*"))
+            docs_link_mtime = (custom_project / "docs").lstat().st_mtime_ns
+            run(*command, env=env)
+            self.assertEqual(set(home.glob(".kmh-agent-kit-backup-*")), backups)
+            self.assertEqual((custom_project / "docs").lstat().st_mtime_ns, docs_link_mtime)
+            self.assertFalse((home / "projects" / "exdigm").exists())
+            for profile in profiles:
+                project = custom_project if profile == "exdigm" else home / "projects" / profile
+                saved = run("git", "config", "--local", "--get",
+                            f"kmh-agent-kit.project.{profile}", cwd=repo).stdout.strip()
+                self.assertEqual(Path(saved), project.resolve())
+                self.assertTrue((project / "docs").is_symlink())
+                self.assertTrue((project / "docs").samefile(docs_repo / profile / "docs"))
+                self.assertTrue((project / "AGENTS.md").samefile(
+                    repo / "projects" / profile / "AGENTS.md"))
+            self.assertEqual(pending_code.read_bytes(), b"uncommitted code\n")
+
+            protected_docs = home / "projects" / "rndlog" / "docs"
+            protected_docs.unlink()  # Remove this test's symlink only.
+            protected_docs.mkdir()
+            marker = protected_docs / "keep.txt"
+            marker.write_bytes(b"uncommitted planning\n")
+            result = run(*command, env=env, check=False)
+            self.assertNotEqual(result.returncode, 0)
+            self.assertEqual(marker.read_bytes(), b"uncommitted planning\n")
+            self.assertEqual(set(home.glob(".kmh-agent-kit-backup-*")), backups)
+            for checkout, status in statuses.items():
+                self.assertEqual(run("git", "status", "--porcelain=v1",
+                                     cwd=checkout).stdout, status)
 
 
 class GBrainAccessTests(unittest.TestCase):

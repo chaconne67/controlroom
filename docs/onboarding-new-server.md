@@ -1,4 +1,4 @@
-# New Server Onboarding
+# 조정실 장비 준비와 기존 역할 설치
 
 ## 개요
 
@@ -17,7 +17,7 @@ GBrain 등록 이름은 영문 소문자·숫자·중간 하이픈으로 된 1~3
 
 ## 한 줄 설치
 
-현재 조정실을 그대로 이어받을 때는 세 운영체제 모두 `windows-control`을 사용합니다.
+데스크톱·노트북에서 같은 조정실을 이어받을 때는 Windows·macOS·Linux 모두 호환 등록명 `windows-control`을 사용합니다. 아래 `~`는 Windows의 `USERPROFILE`, macOS·Linux의 `HOME`이며 기존에 등록한 프로젝트 경로를 우선합니다.
 
 | 운영체제 | 기본 터미널 | 최초 설치 명령 |
 |---|---|---|
@@ -25,7 +25,7 @@ GBrain 등록 이름은 영문 소문자·숫자·중간 하이픈으로 된 1~3
 | macOS | Terminal | `curl -fsSL https://raw.githubusercontent.com/chaconne67/kmh-agent-kit/main/install.sh \| bash -s -- windows-control` |
 | Linux | Bash | `curl -fsSL https://raw.githubusercontent.com/chaconne67/kmh-agent-kit/main/install.sh \| bash -s -- windows-control` |
 
-Windows는 Git for Windows에 포함된 Git Bash가 설치되어 있다는 전제로 위 한 줄을 실행합니다. 이 Windows 조정실에서는 아래 명령을 그대로 사용합니다.
+Windows는 Git for Windows에 포함된 Git Bash가 필요합니다. 위 표의 공식 설치 명령은 세 OS에서 같습니다.
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/chaconne67/kmh-agent-kit/main/install.sh | bash -s -- windows-control
@@ -33,7 +33,7 @@ curl -fsSL https://raw.githubusercontent.com/chaconne67/kmh-agent-kit/main/insta
 
 `install.sh`가 Windows를 감지해 저장소의 `install.ps1`을 내부 호출하므로 사용자가 별도 PowerShell 순서를 수행하지 않습니다. 설치 후 새 터미널을 열면 PowerShell·CMD·Git Bash·Linux·macOS 어디서든 `kitpull`, `kitpush`를 사용할 수 있습니다.
 
-이 한 줄은 `~/kmh-agent-kit`을 clone한 뒤 공용 지침·스킬·GBrain 카드를 연결합니다. 또한 `ceoloan`, `exdigm`, `fundkeeper`, `rndlog`, `ziin` 조정 폴더를 만들고 프로젝트 프로필을 연결합니다. `venture` 폴더가 없으면 별도 GitHub 저장소에서 clone하며, 기존 프로젝트 폴더와 그 안의 작업은 덮어쓰거나 자동 pull하지 않습니다.
+이 한 줄은 `~/kmh-agent-kit`의 공용 지침·스킬·카드와 다섯 프로젝트 프로필을 연결합니다. 비공개 `control-room-docs`를 `~/projects/_control-docs`에 복원하고 각 프로젝트의 `docs`를 해당 문서 원본에 연결합니다. `venture`가 없으면 별도 GitHub 저장소에서 clone합니다. 기존 프로젝트 등록 경로와 사용자 작업은 보존하고 다른 실제 docs 폴더는 자동으로 옮기지 않습니다.
 
 ### 처음 등록하는 `abc_project` 역할
 
@@ -63,8 +63,9 @@ curl -fsSL https://raw.githubusercontent.com/chaconne67/kmh-agent-kit/main/insta
 
 - 키트는 설치 명령을 실행한 사용자 계정에 전역 설치됩니다.
 - Windows에서는 Git for Windows와 Git Bash가 설치되어 있어야 합니다.
-- 위 표의 기본 명령은 첫 clone에 공개 HTTPS를 사용하며 GitHub SSH 키가 필요하지 않습니다.
-- GBrain 확인까지 완료하려면 원격 서버 `chaconne@49.247.45.243`에 새 장비의 SSH 공개키를 등록해야 합니다.
+- 키트 첫 clone은 공개 HTTPS를 사용합니다. 전체 조정실 복원에는 비공개 `chaconne67/control-room-docs`를 읽는 Git 인증이 필요하고, 변경을 올리려면 각 저장소의 쓰기 권한도 필요합니다.
+- GBrain 확인에는 `chaconne@49.247.45.243` SSH 접근이 필요합니다. 각 프로젝트 서버의 SSH 등록은 별개이며 프로젝트 프로필의 목적지로 확인합니다.
+- 에이전트 앱과 필요한 로컬 도구의 설치·로그인은 장비별로 준비합니다. 인증값·프로그램 설정·대화 세션을 키트로 복제하지 않습니다. Windows 전용 기능은 실제 사용하는 환경에서 따로 검증합니다.
 - 기존 `~/.claude`, `~/.codex`, `~/.gbrain` 일반 파일은 설치기가 백업합니다.
 
 현재 상태 확인:
@@ -113,20 +114,25 @@ kitpush
 
 최초 설치가 등록 이름을 Git 로컬 설정에 저장하므로 이름을 다시 입력하지 않습니다.
 
-- `kitpull`과 `kitpush`는 `main ↔ origin/main` 경로만 사용하며 원격 추적 설정을 자동 복구합니다.
-- `kitpull`은 로컬 변경이나 아직 push하지 않은 커밋이 있으면 중단합니다.
-- `kitpush`는 원격 변경을 먼저 받아 로컬 커밋을 그 위에 재배치합니다.
-- 재배치가 충돌하면 원상 복구하고 로컬 커밋을 보존합니다.
-- 다른 도메인의 변경이 있으면 `kitpush`가 해당 경로를 표시하고 중단합니다.
-- `main`과 `windows-control` 등록은 중앙 조정 역할이므로 모든 kit 도메인 경로를 push할 수 있습니다.
+- `kitpull`은 키트와 조정실 계약의 문서·Venture 커밋을 받은 뒤 프로필·docs 연결을 확인합니다. 변경·미전송 커밋·다른 브랜치·분기 상태는 보존하고 안전하게 받을 수 없는 저장소를 알립니다.
+- `kitpush`는 키트의 기존 허용 범위와 검토한 문서 변경을 저장·전송합니다. Venture는 이미 만든 커밋만 push하며 미커밋 코드·미추적 파일은 자동으로 stage하지 않습니다.
+- 키트는 `main ↔ origin/main`을 사용하고 조정실 Git 저장소는 manifest의 원격·브랜치를 확인합니다. 원격 제품 서버의 코드·배포는 각 프로젝트의 기존 경로를 따릅니다.
+- 충돌이나 인증 실패가 있으면 사용자 작업을 보존하며 완료한 저장소와 남은 저장소를 구분합니다.
+- 프로젝트 전용 등록은 기존 도메인 제한을 유지하고, `main`과 `windows-control` 등록은 모든 키트 도메인을 다룹니다.
 
-`./install.sh --project <경로> <프로필>`로 연결한 프로젝트는 로컬 Git 설정에 저장됩니다. 이후 두 동기화 명령이 해당 프로필을 매번 다시 연결합니다.
+`./install.sh --project <경로> <프로필>`로 연결한 프로젝트는 로컬 Git 설정에 저장됩니다. 재설치와 두 동기화 명령은 등록 경로를 우선하고 해당 프로필·docs를 다시 연결합니다.
 
-`windows-control`은 저장소의 프로젝트 계약을 매번 다시 읽습니다. 다섯 조정 폴더의 `AGENTS.md`, `CLAUDE.md`, 스킬은 kit 정본에 연결되므로 어느 컴퓨터에서든 `kitpull`로 같은 상태가 됩니다. `venture`의 지침·스킬과 소스는 venture 저장소가 정본입니다.
+`windows-control`은 프로젝트 계약을 매번 읽습니다. 다섯 프로젝트의 지침·스킬은 kit, 기획 문서는 비공개 `control-room-docs`, Venture 지침·스킬·소스는 Venture Git이 정본입니다. 설치된 파일과 새 에이전트 세션이 실제로 읽은 상태를 구분해 확인합니다.
 
 사용자가 만든 전역 스킬은 kit 정본에서 Codex와 Claude Code에 함께 연결됩니다. 같은 이름의 옛
 사용자 스킬은 백업한 뒤 교체합니다. 도구 기본 스킬과 플러그인 캐시, 키트에 없는 도구 스킬은
 각 도구가 계속 관리합니다. FundKeeper 폴더에는 Testbed 작업 스킬도 함께 연결됩니다.
+
+### 현재 작업 이어받기
+
+작업을 마치거나 장비를 옮기기 전에 기존 작업 계획에 목표·승인 범위, 실행 서버/저장소와 branch/commit, 남은 변경, 마지막 검증 결과와 다음 행동을 기록합니다. 프로젝트 `docs/README.md`에서 진행 중 계획을 연결하고 병렬 작업은 각 계획에서 관리합니다.
+
+이전 장비에서 `kitpush`의 저장 결과를 확인한 뒤 새 장비에서 `kitpull`을 실행합니다. 현재 GBrain 카드·공용 최신 운영 맥락·프로젝트 문맥과 계획의 재개 정보를 읽고, 실제 서버 Git 상태를 대조합니다. GBrain에는 장기 결정과 재사용 지식만 남기며 대화 원문이나 단순 진행 로그를 동기화하지 않습니다.
 
 ### 설치 결과 확인
 
