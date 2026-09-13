@@ -38,6 +38,16 @@ Project instructions supply the SSH target, repository, runtime and start comman
 asset build/serve commands, target routes, and design acceptance criteria. Verify those values from the
 current project before dependent actions; do not copy another project's addresses, ports, or framework settings.
 
+### Windows actual Chrome isolation
+
+When verification runs from a Windows control-room PC and Chrome parity matters, or the user must keep working on that PC, apply `$hidden-desktop-browser` together with this skill. The project design or domain skill remains responsible for the application context; `$hidden-desktop-browser` owns the hidden Windows desktop, actual Chrome profile, screenshots, and cleanup; this skill owns observation, step contracts, and final-path verification.
+
+- Use the common hidden runner for browser lifecycle instead of adding a project-specific Chrome launcher or screenshot helper. For UI verification open it with `--backend playwright`: `goto` reports console errors, failed requests, and stylesheet/document responses for the navigation, `eval` measures computed styles and document overflow, and `snapshot` captures the real Chrome rendering. Use `--backend uia` only when the site rejects CDP-controlled browsers.
+- Keep one hidden-browser name for the server, tunnel, role, route, and viewport being verified so evidence can be traced to that session; pass `--run-id` per verification round.
+- Use the in-app browser when the user asks to see or interact with the live review. Do not treat an in-app rendering as proof of actual Chrome behavior when Chrome-specific verification is required.
+- If authentication requires a visible human step, preserve the dedicated profile and request only that step. Resume the same hidden profile afterward.
+- If the common runner lacks a site-independent browser operation, extend and verify the common skill first. Keep selectors, fixtures, expected UI state, and data assertions in the project domain layer.
+
 ### 1. Identify the two machines and the current session
 
 Codex in the Windows control room operates a browser on Windows; the application and development server
@@ -54,9 +64,10 @@ Record this once and update only changed values after a restart or tab/port chan
 | Connection | Server binding/port, control-room port or approved project URL, tunnel session ID |
 | Browser | Machine, browser name, browser/tab IDs, exact URL |
 
-Follow a user-specified browser. Otherwise prefer an available in-app browser for a review the user should
-see. Inspect tool capabilities and current tabs before selecting it. An ambient URL or an old error message
-is not proof that a server, tab, or dialog is still present.
+Follow a user-specified browser. Otherwise use the hidden actual-Chrome path above when the user should not
+be interrupted, and prefer an available in-app browser for a review the user should see. Inspect tool
+capabilities and current tabs before selecting it. An ambient URL or an old error message is not proof that
+a server, tab, or dialog is still present.
 
 ### 2. Prepare the application's real test path
 

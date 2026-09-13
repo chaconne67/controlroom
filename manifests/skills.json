@@ -13,6 +13,7 @@
     "microplan-review-batch": ["microplan-review", "code-review-loop"],
     "microplan-verify": ["microplan-review"],
     "skill-review": ["skill-writing-guide"],
-    "testbed": ["testbed-base", "testbed-algo-report", "testbed-etf", "testbed-rebal-report"]
+    "testbed": ["testbed-base", "testbed-algo-report", "testbed-etf", "testbed-rebal-report"],
+    "web-automation": ["hidden-desktop-browser"]
   }
 }

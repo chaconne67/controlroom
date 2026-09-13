@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>Hidden browser fixture</title>
+<style>
+  body { font-family: sans-serif; margin: 24px; }
+  label { display: block; margin-top: 8px; }
+  #editor { border: 1px solid #888; min-height: 40px; padding: 4px; }
+  table { border-collapse: collapse; }
+  td, th { border: 1px solid #999; padding: 4px 8px; }
+</style>
+</head>
+<body>
+<h1>Hidden browser fixture</h1>
+<p id="status">Before click</p>
+
+<form onsubmit="return false">
+  <label for="plain">Plain</label><input id="plain" type="text">
+  <label for="hint">Hint</label><input id="hint" type="text" placeholder="type here">
+  <label for="email">Email</label><input id="email" type="email" placeholder="you@example.com">
+  <label for="combo">Combo</label><input id="combo" list="combo-options" role="combobox" aria-expanded="false">
+  <datalist id="combo-options"><option value="one"><option value="two"></datalist>
+  <label for="choice">Choice</label><select id="choice"><option>alpha</option><option>beta</option></select>
+  <label for="search">Search</label><input id="search" type="search" placeholder="search">
+  <label for="amount">Amount</label><input id="amount" type="number" placeholder="0">
+  <label for="secret">Password</label><input id="secret" type="password">
+  <label for="memo">Memo</label><textarea id="memo"></textarea>
+  <label for="editor">Editor</label>
+  <div id="editor" contenteditable="true" aria-label="Editor">initial editor text</div>
+</form>
+
+<p>
+  <button id="apply" type="button" onclick="document.getElementById('status').textContent='After click'">Apply</button>
+  <button id="delayed" type="button" onclick="setTimeout(function(){document.getElementById('status').textContent='Delayed done'}, 1500)">Delayed</button>
+  <a id="download" href="data:text/plain;charset=utf-8,fixture%20download%20body" download="fixture-sample.txt">Download sample</a>
+  <a id="next" href="#second">Go to second section</a>
+</p>
+
+<h2 id="second">Repeated values</h2>
+<table>
+  <thead><tr><th>Company</th><th>Amount</th></tr></thead>
+  <tbody>
+    <tr><td>Same Co</td><td>1,000</td></tr>
+    <tr><td>Same Co</td><td>1,000</td></tr>
+    <tr><td>Other Co</td><td>2,000</td></tr>
+  </tbody>
+</table>
+
+<script>
+  console.error("fixture console error");
+  fetch("/missing-resource.css").catch(function () {});
+</script>
+</body>
+</html>
