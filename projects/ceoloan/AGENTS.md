@@ -75,11 +75,14 @@ GBrain은 과거 맥락이고 현재 코드와 서버가 최종 기준입니다.
 
 - CEO Loan 제품 UI·템플릿·Tailwind·HTMX·Alpine·반응형·접근성: `ceoloan-design-system`
 - CRETOP 브라우저 상태 확인·기업 조회·배치 수집·결과 저장·오류 진단: `cretop-scraping`
+- 인터넷등기소 부동산 조회·결제 경계·등기 PDF 수령과 검증: `iros-registry`
 
 이 스킬들은 CEO Loan 조정실에서만 노출합니다. `ceoloan-design-system`은 웹 제품 화면과 MMS
 카드 이미지의 디자인 규칙을 서로 섞지 않습니다. `cretop-scraping`은 CEO Loan 저장소의 독립
-래퍼를 공식 수집 경로로 사용하며 RNDLOG 복사본과 함께 수정하지 않습니다. 일반 브라우저
-자동화나 DB 변경이라는 이유만으로 발동하지 않습니다.
+래퍼를 공식 수집 경로로 사용하며 RNDLOG 복사본과 함께 수정하지 않습니다. `cretop-scraping`과
+`iros-registry`가 조정실 Windows의 실제 Chrome을 사용할 때는 공용 `hidden-desktop-browser`를
+함께 적용하고, 사이트 절차와 결과 계약만 도메인 스킬에 둡니다. 일반 브라우저 자동화나 DB
+변경이라는 이유만으로 발동하지 않습니다.
 
 ## 검증 기준
 

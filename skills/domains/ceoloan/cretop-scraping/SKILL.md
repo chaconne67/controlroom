@@ -7,9 +7,9 @@ description: CRETOP(크레탑) 브라우저·로그인 상태 확인, 기업 상
 
 ## 역할
 
-현재 프로젝트의 공식 래퍼를 통해 CRETOP Windows 브라우저를 조사하고 수집한다. Windows는 화면 조작과 증거 생성을 맡고, 중앙 래퍼는 결과 검증과 요청된 경우의 `company` 스키마 저장을 맡는다. 프로젝트마다 래퍼 복사본을 독립적으로 유지하므로 다른 프로젝트의 스크립트를 실행하거나 함께 수정하지 않는다.
+이 스킬은 CRETOP 도메인층이다. 조정실 Windows에서 화면을 조사하거나 로컬 수집 경로를 다룰 때 공용 `$hidden-desktop-browser`를 함께 적용한다. 공용 스킬은 숨은 데스크톱·실제 Chrome·전용 프로필·캡처·종료를 맡고, 이 스킬은 CRETOP 로그인, dynaPath 제약, 기업 조회 단계, 결과 품질검사와 요청된 경우의 `company` 스키마 저장을 맡는다.
 
-별도 브라우저 runner나 임시 수집 스크립트를 만들지 않는다. 현재 래퍼와 Windows agent, 그리고 조정실 PC용 `scripts/cretop_local.py`(「조정실 PC 로컬 수집(UIA)」)가 실행 경로의 정본이므로, 다른 경로를 만들면 로그인 세션·품질검사·저장 재개 계약이 갈라진다.
+별도 브라우저 runner나 임시 수집 스크립트를 만들지 않는다. 중앙 래퍼와 Windows agent가 CRETOP 업무 계약의 정본이며, 공통 브라우저 기능은 `$hidden-desktop-browser`의 진입점을 사용한다. 조정실 PC용 `scripts/cretop_local.py`는 2026-09-13부터 공용 `hidden_browser.HiddenBrowser`로 브라우저 수명주기를 처리하는 도메인 adapter다. CRETOP UIA 조작과 결과 생성만 소유하며 데스크톱·Chrome 실행·프로필·정리 코드를 다시 넣지 않는다.
 
 검증된 CRETOP 사실을 대출 산정이나 보고서 생성에 넘길 수 있지만, 산정·보고서 생성 자체는 별도 요청과 해당 실행 경로에서 처리한다.
 
@@ -222,7 +222,11 @@ uv run python -m scripts.cretop_detail_collection \
 
 ## 조정실 PC 로컬 수집(UIA)
 
-원격 Windows PC를 쓸 수 없거나 사람이 쓰는 조정실 PC를 방해하지 않고 수집해야 하면 현재 프로젝트의 `scripts/cretop_local.py`를 사용한다. 이 실행기는 전용 프로필의 실제 Chrome을 별도의 숨은 Windows 데스크톱(`cretop-hidden`)에서 띄우고 Windows UI Automation(Invoke·SetValue·Toggle·TextPattern)으로 Windows agent와 같은 화면을 읽는다. 숨은 데스크톱 안에서는 Chrome이 활성 창이라 셀렉트 박스·포커스가 정상 동작하고, 사람 데스크톱의 창·포커스·마우스·키보드·클립보드에는 아무 영향이 없다.
+원격 Windows PC를 쓸 수 없거나 사람이 쓰는 조정실 PC를 방해하지 않고 수집해야 하면 공용 `$hidden-desktop-browser` 계약과 현재 프로젝트의 `scripts/cretop_local.py` 도메인 adapter를 함께 사용한다. adapter는 공용 실행층이 숨은 Windows 데스크톱에 띄운 전용 프로필의 실제 Chrome을 Windows UI Automation(Invoke·SetValue·Toggle·TextPattern)으로 읽는다(`--backend uia`. CRETOP은 CDP를 검사하므로 `playwright` 방식을 쓰지 않는다).
+
+- 실행 이름은 고정 `ceoloan-cretop-collect`다. 프로필·숨은 데스크톱·상태 파일이 이 이름에 묶이고, `--run-id`는 payload·outbox 구분용이라 이름에 넣지 않는다. 프로필은 `C:\Users\chaconne\.hidden-browser\profiles\ceoloan-cretop-collect`다(옛 `C:\cretop-local\chrome-profile`은 보존된 사본 원본이며 더 쓰지 않는다).
+- 세션 유지: `collect`·`company-list`가 끝나도(실패해도) 숨은 Chrome을 살려 두고 다음 실행이 재사용한다. 재로그인·동시접속 창을 줄이기 위해서다. 종료는 두 경우뿐이다 — `login` 명령이 사람 데스크톱으로 전환할 때 adapter가 공용 `stop`을 호출하고, 세션을 끝내고 싶을 때 `run-hidden-browser.ps1 --name ceoloan-cretop-collect stop`을 직접 실행한다.
+- 화면 조사와 범용 캡처는 같은 이름의 공용 CLI(`snapshot`·`text`)로 한다. adapter 실행 중에는 같은 이름으로 `open`하지 않는다(이름 잠금으로 거부된다).
 
 - CRETOP은 Playwright·CDP로 띄운 브라우저를 서버 검사(dynaPath)로 거부하고 `페이지가 만료되었습니다 [8004]`를 돌려준다. headless·DOM 방식 runner를 다시 시도하지 않는다.
 - 사람 데스크톱의 창을 화면 밖에 두거나 포커스를 줬다가 되돌리는 방식은 쓰지 않는다. 셀렉트 박스는 활성 창에서만 열리므로 그 방식은 사람의 포커스를 반복해서 뺏는다(2026-09-11 확인).
@@ -231,7 +235,7 @@ uv run python -m scripts.cretop_detail_collection \
 - 결과 JSON은 Windows agent `collect-batch` 결과와 같은 모양이라 같은 `remote-batch-fetch`가 품질검사와 중앙 저장을 맡는다. `mode`가 로컬 결과이면 원격 작업 정리를 건너뛴다.
 - 배치 도중 한 회사가 실패하면 실패 화면 본문을 남기고 멈춘다. 다음 실행은 새 `run-id`로 시작한다.
 
-조정실 PC의 실행본은 `C:\cretop-agent\cretop_local.py`(`cretop_agent.py`와 같은 폴더, 저장소 `scripts/`와 같은 파일)이고, 데이터는 `C:\cretop-local\{chrome-profile,inbox,outbox}`다. Python은 `C:\cretop-agent\.venv`를 쓴다.
+조정실 PC의 실행본은 `C:\cretop-agent\cretop_local.py`(`cretop_agent.py`와 같은 폴더, 저장소 `scripts/`와 같은 파일)이고, 데이터는 `C:\cretop-local\{inbox,outbox}`다. Python은 `C:\cretop-agent\.venv`(pywinauto·playwright 1.62.0 설치)를 쓰고, 공용 모듈은 `HIDDEN_BROWSER_SCRIPTS` 환경변수(기본값: 키트 `hidden-desktop-browser/scripts`)에서 불러온다.
 
 ```bash
 # 1. 운영 서버: payload만 만든다(원격 Windows 시작 없음)

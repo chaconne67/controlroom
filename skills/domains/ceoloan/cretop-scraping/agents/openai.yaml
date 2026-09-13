@@ -1,4 +1,4 @@
 interface:
   display_name: "CRETOP 스크래핑"
   short_description: "CRETOP 기존 로그인 Chrome 기반 조사·수집·저장 절차"
-  default_prompt: "$cretop-scraping을 사용해 현재 CRETOP 세션을 확인하고 승인된 공식 수집 경로만 실행해 주세요."
+  default_prompt: "$cretop-scraping과 $hidden-desktop-browser를 사용해 CRETOP 도메인 절차와 공용 숨은 Chrome 실행층을 분리하여 요청한 작업을 수행해 주세요."
