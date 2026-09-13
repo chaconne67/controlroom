@@ -181,7 +181,7 @@ function Remove-LinkEntry {
 function Link-Entry {
     param([string]$Target, [string]$Link)
 
-    $target = (Resolve-Path -LiteralPath $Target).Path
+    $target = (Get-Item -LiteralPath $Target -Force).FullName
     $targetIsDir = (Get-Item -LiteralPath $target -Force).PSIsContainer
     $existing = Get-Item -LiteralPath $Link -Force -ErrorAction SilentlyContinue
     if ($existing) {
@@ -693,7 +693,7 @@ function Assert-Install {
                 $docsPath = Join-Path $projectPath 'docs'
                 $docsItem = Get-Item -LiteralPath $docsPath -Force
                 $docsTarget = Get-LinkTargetPath -Item $docsItem
-                $expectedDocsTarget = (Resolve-Path -LiteralPath $docsSource).Path
+                $expectedDocsTarget = (Get-Item -LiteralPath $docsSource -Force).FullName
                 if (-not $docsTarget -or $docsTarget.TrimEnd('\') -ne $expectedDocsTarget.TrimEnd('\')) {
                     throw "[error] 프로젝트 문서 링크 검증 실패: $docsPath"
                 }

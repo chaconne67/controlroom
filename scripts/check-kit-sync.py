@@ -47,6 +47,7 @@ def run(
         env=env,
         input=input_text,
         text=True,
+        errors="backslashreplace",
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
         check=False,
