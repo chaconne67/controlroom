@@ -3,6 +3,7 @@
 !*.md
 !provenance.json
 !.gitignore
+!.gitattributes
 .env*
 *.pem
 *.key
