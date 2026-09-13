@@ -1,0 +1,11 @@
+*
+!*/
+!*.md
+!provenance.json
+!.gitignore
+.env*
+*.pem
+*.key
+*.p12
+*.pfx
+**/.git/
