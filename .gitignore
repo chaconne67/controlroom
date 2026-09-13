@@ -5,3 +5,9 @@
 __pycache__/
 .DS_Store
 *.pyc
+
+.env*
+*.pem
+*.key
+*.p12
+*.pfx

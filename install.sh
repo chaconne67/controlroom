@@ -24,7 +24,7 @@ die() {
 }
 
 bootstrap_checkout() {
-  local checkout="$home_dir/kmh-agent-kit"
+  local checkout="$home_dir/controlroom"
   command -v git >/dev/null 2>&1 || die "Git을 먼저 설치해야 합니다. kitpush에 Git이 필요합니다."
 
   if [ -e "$checkout" ] && [ ! -d "$checkout/.git" ]; then
@@ -44,7 +44,7 @@ bootstrap_checkout() {
     fi
     git -C "$checkout" merge --ff-only origin/main
   else
-    git clone --branch main --single-branch https://github.com/chaconne67/kmh-agent-kit.git "$checkout"
+    git clone --branch main --single-branch https://github.com/chaconne67/controlroom.git "$checkout"
   fi
 
   [ -x "$checkout/install.sh" ] || chmod u+x "$checkout/install.sh"
@@ -57,7 +57,7 @@ fi
 
 show_usage() {
   cat <<'EOF'
-KMH Agent Kit (Windows Git Bash·macOS·Linux·WSL)
+Controlroom (Windows Git Bash·macOS·Linux·WSL)
 
 새로운 프로젝트 역할을 처음 등록:
   ./install.sh --new abc-project
@@ -262,6 +262,13 @@ append_shell_line() {
 install_shell_commands() {
   local command_dir="$home_dir/.local/bin"
   mkdir -p "$command_dir"
+  link_entry "$repo_dir/shell/kit-aliases.sh" "$command_dir/controlroom"
+  if [ ! -e "$home_dir/kmh-agent-kit" ] && [ ! -L "$home_dir/kmh-agent-kit" ]; then
+    link_entry "$repo_dir" "$home_dir/kmh-agent-kit"
+  fi
+  if [ -d "$repo_dir/projects" ] && [ ! -e "$home_dir/projects/_control-docs" ] && [ ! -L "$home_dir/projects/_control-docs" ]; then
+    link_entry "$repo_dir/projects" "$home_dir/projects/_control-docs"
+  fi
   link_entry "$repo_dir/shell/kit-aliases.sh" "$command_dir/kitpull"
   link_entry "$repo_dir/shell/kit-aliases.sh" "$command_dir/kitpush"
 
@@ -328,13 +335,7 @@ install_global() {
 }
 
 control_room_docs_source() {
-  local rows checkout kind target
-  rows="$(_kit_control_repositories "$repo_dir" "$home_dir")" || return 1
-  while IFS=$'\t' read -r checkout kind target; do
-    [ "${kind:-}" = docs ] || continue
-    printf '%s/%s/docs\n' "$checkout" "$1"
-    return 0
-  done <<< "$rows"
+  printf '%s/projects/%s/docs\n' "$repo_dir" "$1"
 }
 
 install_project_profile() {
@@ -394,7 +395,7 @@ restore_control_room_projects() {
         fi
         register_project_profile "$project_path" "$target"
         ;;
-      git|docs) ;;
+      git) ;;
       *) die "알 수 없는 프로젝트 복원 방식: $kind" ;;
     esac
   done < "$manifest"
@@ -487,7 +488,7 @@ verify_control_room_projects() {
     [ -n "${directory:-}" ] || continue
     case "$directory" in \#*) continue ;; esac
     project_path="$home_dir/projects/$directory"
-    if [ "$kind" = git ] || [ "$kind" = docs ]; then
+    if [ "$kind" = git ]; then
       [ -d "$project_path/.git" ] || die "프로젝트 Git 검증 실패: $project_path"
       continue
     fi

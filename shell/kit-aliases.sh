@@ -4,10 +4,20 @@
 # 최초 설치가 Git 로컬 설정에 저장한 등록 이름으로 공용 자산과 해당 도메인을 자동 선택한다.
 
 unalias kitpull kitpush 2>/dev/null || true
-unset -f kitpull kitpush 2>/dev/null || true
+unset -f kitpull kitpush controlroom 2>/dev/null || true
+
+_kit_root() {
+  if [ -d "$HOME/controlroom/.git" ]; then
+    printf "%s\n" "$HOME/controlroom"
+  else
+    printf "%s\n" "$HOME/kmh-agent-kit"
+  fi
+}
+
+controlroom() { _kit_dispatch "$@"; }
 
 _kit_registered_agent() {
-  local kit="$HOME/kmh-agent-kit"
+  local kit="$(_kit_root)"
   local agent card
 
   [ -d "$kit/.git" ] || { echo "ERROR: kmh-agent-kit 저장소가 없습니다: $kit" >&2; return 1; }
@@ -147,7 +157,7 @@ _kit_control_repositories() {
     }
     case "$kind" in
       profile) continue ;;
-      git|docs)
+      git)
         [[ "$target" =~ ^https://github\.com/[^/[:space:]]+/[^/[:space:]]+\.git$ ]] || {
           echo "ERROR: 프로젝트 목록에는 GitHub HTTPS 저장소 주소를 사용합니다: $directory" >&2; return 1;
         }
@@ -230,16 +240,10 @@ _kit_pull_control_repository() {
 }
 
 _kit_push_control_repository() {
-  local repo="$1" kind="$2" message="$3" pending=no
+  local repo="$1" pending=no
   _kit_assert_main_path "$repo" || return 1
   _kit_fetch_main "$repo" || return 1
-  if [ "$kind" = docs ]; then
-    git -C "$repo" status --short
-    git -C "$repo" add -A || return 1
-    git -C "$repo" diff --cached --quiet || git -C "$repo" commit -m "$message" || return 1
-  elif _kit_worktree_dirty "$repo"; then
-    pending=yes
-  fi
+  if _kit_worktree_dirty "$repo"; then pending=yes; fi
   if ! git -C "$repo" merge-base --is-ancestor origin/main HEAD; then
     if _kit_worktree_dirty "$repo"; then
       printf 'ERROR: 원격 변경과 로컬 작업이 함께 있어 보존했습니다: %s. 프로젝트에서 변경을 검토·커밋한 뒤 다시 저장하세요.\n' "$repo" >&2
@@ -259,7 +263,7 @@ _kit_push_control_repository() {
 }
 
 _kit_sync_control_repositories() {
-  local kit="$1" agent="$2" action="$3" message="${4:-Update control-room documents}"
+  local kit="$1" agent="$2" action="$3"
   local home rows repo kind target failed=0
   [ "$agent" = windows-control ] || return 0
   home="$(_kit_native_path "$HOME")" || return 1
@@ -273,7 +277,7 @@ _kit_sync_control_repositories() {
     if (
       case "$action" in
         pull) _kit_pull_control_repository "$repo" ;;
-        push) _kit_push_control_repository "$repo" "$kind" "$message" ;;
+        push) _kit_push_control_repository "$repo" ;;
         *) return 64 ;;
       esac
     ); then
@@ -294,11 +298,12 @@ _kit_run_installer() {
 }
 
 kitpull() {
-  local kit="$HOME/kmh-agent-kit"
+  local kit="$(_kit_root)"
   local agent counts ahead behind
 
   agent="$(_kit_registered_agent)" || return 1
   _kit_assert_main_path "$kit" || return 1
+  _kit_assert_control_repository "$kit" https://github.com/chaconne67/controlroom.git || return 1
   if _kit_worktree_dirty "$kit"; then
     echo "ERROR: 로컬 변경이 있습니다. 먼저 kitpush를 실행하세요." >&2
     return 1
@@ -319,7 +324,7 @@ kitpull() {
 }
 
 kitpush() {
-  local kit="$HOME/kmh-agent-kit"
+  local kit="$(_kit_root)"
   local agent domain message
 
   agent="$(_kit_registered_agent)" || return 1
@@ -327,6 +332,7 @@ kitpush() {
   message="${1:-Update $agent agent kit}"
 
   _kit_assert_main_path "$kit" || return 1
+  _kit_assert_control_repository "$kit" https://github.com/chaconne67/controlroom.git || return 1
   _kit_fetch_main "$kit" || return 1
   _kit_assert_push_scope "$kit" "$agent" "$domain" origin/main || return 1
 
@@ -351,7 +357,7 @@ kitpush() {
     echo "ERROR: push 중 원격이 다시 변경됐을 수 있습니다. kitpush를 다시 실행하세요." >&2
     return 1
   fi
-  _kit_sync_control_repositories "$kit" "$agent" push "$message"
+  _kit_sync_control_repositories "$kit" "$agent" push
 }
 
 _kit_dispatch() {
@@ -365,7 +371,7 @@ _kit_dispatch() {
         push) shift; kitpush "$@" ;;
         restore-repositories) shift; [ "$#" -eq 2 ] || return 64; _kit_restore_control_repositories "$@" ;;
         *)
-          echo "ERROR: 사용법: kitpull | kitpush [커밋 메시지]" >&2
+          echo "ERROR: 사용법: controlroom pull | controlroom push [커밋 메시지] (kitpull/kitpush 호환)" >&2
           return 64
           ;;
       esac

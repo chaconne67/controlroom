@@ -36,7 +36,7 @@ function Invoke-BootstrapCheckout {
     param([hashtable]$ForwardedParameters)
 
     if (-not $env:USERPROFILE) { throw '[error] USERPROFILE이 없습니다.' }
-    $checkout = Join-Path $env:USERPROFILE 'kmh-agent-kit'
+    $checkout = Join-Path $env:USERPROFILE 'controlroom'
     $git = Get-KitGitExecutable
     if ((Test-Path -LiteralPath $checkout) -and
         -not (Test-Path -LiteralPath (Join-Path $checkout '.git') -PathType Container)) {
@@ -61,7 +61,7 @@ function Invoke-BootstrapCheckout {
         & $git -C $checkout merge --ff-only origin/main
         if ($LASTEXITCODE -ne 0) { throw '[error] 기존 키트 fast-forward 실패' }
     } else {
-        & $git clone --branch main --single-branch git@github.com:chaconne67/kmh-agent-kit.git $checkout
+        & $git clone --branch main --single-branch https://github.com/chaconne67/controlroom.git $checkout
         if ($LASTEXITCODE -ne 0) { throw '[error] kmh-agent-kit clone 실패' }
     }
 
@@ -91,7 +91,7 @@ $backupRoot = Join-Path $homeDir ".kmh-agent-kit-backup-$stamp"
 
 function Show-Usage {
     @'
-KMH Agent Kit (Windows PowerShell·Command Prompt·Git Bash)
+Controlroom (Windows PowerShell·Command Prompt·Git Bash)
 
 최초 설치 또는 재연결:
   .\install.ps1 -Agent <등록-이름>
@@ -352,7 +352,14 @@ function Add-ShellLine {
     $content = if (Test-Path -LiteralPath $Path) {
         Get-Content -LiteralPath $Path -Raw -Encoding UTF8
     } else { '' }
-    if ($content -match [regex]::Escape($Marker)) { return }
+    if ($content -match [regex]::Escape($Marker)) {
+        $pattern = '(?m)(^# ' + [regex]::Escape($Marker) + '\r?\n)[^\r\n]*'
+        $replacement = [regex]::Replace($content, $pattern, [System.Text.RegularExpressions.MatchEvaluator]{
+            param($match) $match.Groups[1].Value + $Line
+        })
+        Write-Utf8NoBom -Path $Path -Content $replacement
+        return
+    }
     if ($content -and -not $content.EndsWith("`n")) { $content += "`r`n" }
     $content += "`r`n# $Marker`r`n$Line`r`n"
     Write-Utf8NoBom -Path $Path -Content $content
@@ -416,10 +423,10 @@ function Install-ShellCommands {
     $bash = Get-GitBashExecutable
     $aliasScript = "$bashRepo/shell/kit-aliases.sh"
     $gitDir = Split-Path $script:gitExe -Parent
-    foreach ($command in 'kitpull', 'kitpush') {
-        $action = if ($command -eq 'kitpull') { 'pull' } else { 'push' }
+    foreach ($command in 'controlroom', 'kitpull', 'kitpush') {
+        $action = if ($command -eq 'kitpull') { 'pull ' } elseif ($command -eq 'kitpush') { 'push ' } else { '' }
         $wrapperPath = Join-Path $commandDir "$command.cmd"
-        $invocation = "`"$bash`" --noprofile --norc `"$aliasScript`" $action %*"
+        $invocation = "`"$bash`" --noprofile --norc `"$aliasScript`" ${action}%*"
         $content = "@$invocation`r`n"
         if (Test-Path -LiteralPath $wrapperPath -PathType Leaf) {
             $existing = [System.IO.File]::ReadAllText($wrapperPath).Replace("`r`n", "`n").TrimEnd("`n")
@@ -436,6 +443,10 @@ function Install-ShellCommands {
         }
         Write-Utf8NoBom -Path $wrapperPath -Content $content
     }
+    $legacyKit = Join-Path $homeDir 'kmh-agent-kit'
+    if (-not (Test-Path -LiteralPath $legacyKit)) { Link-Entry -Target $repoDir -Link $legacyKit }
+    $legacyDocs = Join-Path $homeDir 'projects\_control-docs'
+    if (-not (Test-Path -LiteralPath $legacyDocs)) { Link-Entry -Target (Join-Path $repoDir 'projects') -Link $legacyDocs }
     Add-UserPathEntry -Path $commandDir
     Add-UserPathEntry -Path $gitDir
 }
@@ -533,7 +544,7 @@ function Get-ControlRoomProjects {
         }
         if ($kind -eq 'profile') {
             Assert-Name -Name $target -Kind '프로필'
-        } elseif ($kind -in 'git', 'docs') {
+        } elseif ($kind -eq 'git') {
             if ($target -notmatch '^https://github\.com/[^/]+/[^/]+\.git$') {
                 throw "[error] 프로젝트 Git 주소는 GitHub HTTPS 주소여야 합니다: $target"
             }
@@ -560,11 +571,7 @@ function Get-ControlRoomProjectPath {
 function Get-ControlRoomDocsSource {
     param([string]$Profile)
 
-    $entries = @(Get-ControlRoomProjects | Where-Object { $_.Kind -eq 'docs' })
-    if ($entries.Count -eq 0) { return $null }
-    if ($entries.Count -ne 1) { throw '[error] 기획 문서 저장소는 하나여야 합니다.' }
-    $docsRoot = Get-ControlRoomProjectPath -Entry $entries[0]
-    return Join-Path (Join-Path $docsRoot $Profile) 'docs'
+    return Join-Path (Join-Path (Join-Path $repoDir 'projects') $Profile) 'docs'
 }
 
 function Restore-ControlRoomProjects {
@@ -673,7 +680,7 @@ function Assert-Install {
                 if (-not (Test-Path -LiteralPath $projectPath -PathType Container)) {
                     throw "[error] 프로젝트 폴더 검증 실패: $projectPath"
                 }
-                if ($entry.Kind -in 'git', 'docs') { continue }
+                if ($entry.Kind -eq 'git') { continue }
                 $savedPath = (& $script:gitExe -C $repoDir config --local --get "kmh-agent-kit.project.$($entry.Target)").Trim()
                 $resolvedPath = (Resolve-Path -LiteralPath $projectPath).Path
                 if ($LASTEXITCODE -ne 0 -or $savedPath -ne $resolvedPath) {

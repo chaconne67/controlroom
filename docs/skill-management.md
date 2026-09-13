@@ -49,13 +49,13 @@ Codex의 `~/.codex/skills/.system`과 플러그인 캐시, Claude Code의 내장
 
 ## 일상 수정
 
-한 서버에서 스킬·지침을 수정하면 심링크 덕에 레포 작업트리가 이미 바뀌어 있다:
+조정실에서 스킬·지침을 수정하면 심링크 덕에 레포 작업트리가 이미 바뀌어 있다:
 
 ```bash
 kitpush "변경 설명"
 ```
 
-다른 서버:
+다른 조정실 장비:
 
 ```bash
 kitpull
@@ -109,10 +109,11 @@ kitpull
 
 ## Windows 기기
 
-PowerShell·CMD·Git Bash 중 편한 터미널에서 README 최상단의 한 줄 설치 명령을 실행한다. 개발자 모드나 관리자 권한은 필요 없다.
+PowerShell·CMD·Git Bash 중 편한 터미널에서 README의 최초 설치 명령을 실행한다. 개발자 모드나 관리자 권한은 필요 없다.
 
 ```powershell
-& ([scriptblock]::Create((irm 'https://raw.githubusercontent.com/chaconne67/kmh-agent-kit/main/install.ps1'))) -Agent '<등록-이름>'
+git clone https://github.com/chaconne67/controlroom.git "$env:USERPROFILE\controlroom"
+& "$env:USERPROFILE\controlroom\install.ps1" -Agent '<등록-이름>'
 ```
 
 동작이 Linux와 다른 지점은 세 곳뿐이다:
@@ -123,7 +124,7 @@ PowerShell·CMD·Git Bash 중 편한 터미널에서 README 최상단의 한 줄
 
 **주의**: 이 기기에서 프로필 링크를 손으로 만들면(탐색기 복사, `New-Item -ItemType File` 등) git에 일반 파일로 커밋되어 **Linux 서버의 설치가 조용히 깨진다**. 반드시 `scripts/link-skill.py`를 써서 인덱스에 심링크로 등록한다.
 
-하드링크는 파일 교체 방식의 저장이나 Git checkout으로 연결이 끊길 수 있다. `kitpull`과 `kitpush`는 설치기를 다시 실행해 현재 저장소 원본에 하드링크를 재연결한다. 전역 지침을 직접 고칠 때는 `~/kmh-agent-kit` 안의 원본을 편집하는 것이 정본 경로다.
+하드링크는 파일 교체 방식의 저장이나 Git checkout으로 연결이 끊길 수 있다. `kitpull`과 `kitpush`는 설치기를 다시 실행해 현재 저장소 원본에 하드링크를 재연결한다. 전역 지침을 직접 고칠 때는 `~/controlroom` 안의 원본을 편집하는 것이 정본 경로다.
 
 ## GBrain 에이전트 카드
 
@@ -159,7 +160,7 @@ dry-run은 생성할 소스·프리픽스·카드와 카드 본문을 출력하�
 ## 검증
 
 ```bash
-python3 ~/kmh-agent-kit/scripts/check-skill-deps.py
+python3 ~/controlroom/scripts/check-skill-deps.py
 ```
 
 프로필 링크 해상, 고아 스킬, 의존성 누락, Codex system skill 부재를 검사한다.

@@ -164,6 +164,8 @@ class KitFixture:
         home.mkdir()
         run("git", "clone", self.remote, repo)
         self._configure(repo)
+        run("git", "remote", "set-url", "origin", "https://github.com/chaconne67/controlroom.git", cwd=repo)
+        run("git", "config", f"url.{self.remote.as_uri()}.insteadOf", "https://github.com/chaconne67/controlroom.git", cwd=repo)
         run("git", "config", "--local", "kmh-agent-kit.agent", agent, cwd=repo)
         return home, repo
 
@@ -241,7 +243,7 @@ class KitSyncTests(unittest.TestCase):
                 "HOME": str(home),
                 "GIT_CONFIG_COUNT": "1",
                 "GIT_CONFIG_KEY_0": f"url.file://{self.fixture.remote}.insteadOf",
-                "GIT_CONFIG_VALUE_0": "https://github.com/chaconne67/kmh-agent-kit.git",
+                "GIT_CONFIG_VALUE_0": "https://github.com/chaconne67/controlroom.git",
                 "GIT_TERMINAL_PROMPT": "0",
             }
         )
@@ -256,7 +258,7 @@ class KitSyncTests(unittest.TestCase):
             input_text=(ROOT / "install.sh").read_text(encoding="utf-8"),
         )
 
-        checkout = home / "kmh-agent-kit"
+        checkout = home / "controlroom"
         self.assertTrue((checkout / ".git").is_dir())
         self.assertEqual((home / "install.log").read_text(encoding="utf-8"), "sam\n")
 
@@ -490,18 +492,11 @@ class EntryPointDocumentationTests(unittest.TestCase):
         onboarding = (ROOT / "docs" / "onboarding-new-server.md").read_text(
             encoding="utf-8"
         )
-        windows_command = (
-            "curl -fsSL https://raw.githubusercontent.com/chaconne67/"
-            "kmh-agent-kit/main/install.sh | bash -s -- windows-control"
-        )
-
-        self.assertIn("### Windows — Git Bash", readme)
-        self.assertIn("### macOS — Terminal", readme)
-        self.assertIn("### Linux — Bash", readme)
-        self.assertIn(windows_command, readme)
-        self.assertIn(windows_command, onboarding)
-        escaped_command = windows_command.replace(" | ", r" \| ")
-        self.assertEqual(onboarding.count(escaped_command), 3)
+        command = 'git clone https://github.com/chaconne67/controlroom.git ~/controlroom'
+        self.assertIn(command, readme)
+        self.assertIn(command, onboarding)
+        self.assertIn('controlroom pull', readme)
+        self.assertIn('controlroom push', readme)
 
         manifest = ROOT / "manifests" / "windows-control-projects.tsv"
         rows = [
@@ -511,7 +506,7 @@ class EntryPointDocumentationTests(unittest.TestCase):
         ]
         self.assertEqual(
             [row[0] for row in rows],
-            ["_control-docs", "ceoloan", "exdigm", "fundkeeper", "rndlog", "ziin", "venture"],
+            ["ceoloan", "exdigm", "fundkeeper", "rndlog", "ziin", "venture"],
         )
 
 
@@ -591,19 +586,7 @@ class WindowsInstallerTests(unittest.TestCase):
             run("git", "commit", "-m", "venture baseline", cwd=venture_seed)
             run("git", "clone", "--bare", venture_seed, venture_origin)
 
-            docs_seed = temp / "docs-seed"
-            docs_origin = temp / "docs.git"
-            run("git", "init", "--initial-branch=main", docs_seed)
-            KitFixture._configure(docs_seed)
             profile_names = ("ceoloan", "exdigm", "fundkeeper", "rndlog", "ziin")
-            for profile in profile_names:
-                document = docs_seed / profile / "docs" / "README.md"
-                document.parent.mkdir(parents=True)
-                document.write_text(f"{profile} planning\n", encoding="utf-8")
-            run("git", "add", "-A", cwd=docs_seed)
-            run("git", "commit", "-m", "planning baseline", cwd=docs_seed)
-            run("git", "clone", "--bare", docs_seed, docs_origin)
-
             custom_project = temp / "custom projects" / "exdigm"
             custom_project.mkdir(parents=True)
             run("git", "config", "--local", "kmh-agent-kit.project.exdigm",
@@ -622,11 +605,9 @@ class WindowsInstallerTests(unittest.TestCase):
                     "CODEX_HOME": str(home / ".codex"),
                     "HERMES_HOME": str(home / ".hermes"),
                     "PATH": str(fake_bin) + os.pathsep + env["PATH"],
-                    "GIT_CONFIG_COUNT": "2",
+                    "GIT_CONFIG_COUNT": "1",
                     "GIT_CONFIG_KEY_0": f"url.{venture_origin.as_uri()}.insteadOf",
                     "GIT_CONFIG_VALUE_0": "https://github.com/chaconne67/venture.git",
-                    "GIT_CONFIG_KEY_1": f"url.{docs_origin.as_uri()}.insteadOf",
-                    "GIT_CONFIG_VALUE_1": "https://github.com/chaconne67/control-room-docs.git",
                     "GIT_TERMINAL_PROMPT": "0",
                 }
             )
@@ -656,12 +637,13 @@ class WindowsInstallerTests(unittest.TestCase):
             docs_link = custom_project / "docs"
             docs_link_mtime = docs_link.lstat().st_mtime_ns
             self.assertTrue(os.path.samefile(
-                docs_link, home / "projects" / "_control-docs" / "exdigm" / "docs"
+                docs_link, repo / "projects" / "exdigm" / "docs"
             ))
             backups_after_first_install = set(home.glob(".kmh-agent-kit-backup-*"))
             wrappers: dict[str, Path] = {}
             wrapper_contents: dict[str, bytes] = {}
             wrapper_mtimes: dict[str, int] = {}
+            self.assertTrue((home / ".local/bin/controlroom.cmd").is_file())
             for name in ("kitpull", "kitpush"):
                 wrapper = home / ".local" / "bin" / f"{name}.cmd"
                 lines = wrapper.read_text(encoding="utf-8").splitlines()
@@ -728,7 +710,7 @@ class WindowsInstallerTests(unittest.TestCase):
             for profile in profile_names:
                 with self.subTest(profile=profile):
                     project = custom_project if profile == "exdigm" else home / "projects" / profile
-                    canonical_docs = home / "projects" / "_control-docs" / profile / "docs"
+                    canonical_docs = repo / "projects" / profile / "docs"
                     self.assertTrue(os.path.samefile(project / "docs", canonical_docs))
                     self.assertEqual((project / "docs" / "README.md").read_bytes(),
                                      (canonical_docs / "README.md").read_bytes())
@@ -774,8 +756,8 @@ class WindowsInstallerTests(unittest.TestCase):
             self.assertEqual(protected_file.read_bytes(), b"uncommitted planning\n")
             self.assertEqual(set(home.glob(".kmh-agent-kit-backup-*")),
                              backups_after_first_install)
-            self.assertEqual(run("git", "status", "--porcelain=v1",
-                                 cwd=home / "projects" / "_control-docs").stdout, "")
+            self.assertTrue((home / "projects/_control-docs").samefile(repo / "projects"))
+            self.assertFalse((home / "projects/_control-docs/.git").exists())
 
 
 @unittest.skipIf(os.name == "nt", "Requires a native POSIX installer host")
@@ -794,24 +776,22 @@ class PosixControlRoomInstallerTests(unittest.TestCase):
             run("git", "config", "--local", "kmh-agent-kit.project.exdigm",
                 custom_project, cwd=repo)
 
-            docs_repo = home / "projects" / "_control-docs"
+            docs_repo = repo / "projects"
             venture = home / "projects" / "venture"
-            for checkout, remote in (
-                (docs_repo, "control-room-docs"), (venture, "venture")
-            ):
+            for checkout, remote in ((venture, "venture"),):
                 run("git", "init", "--initial-branch=main", checkout)
                 run("git", "remote", "add", "origin",
                     f"https://github.com/chaconne67/{remote}.git", cwd=checkout)
             profiles = ("ceoloan", "exdigm", "fundkeeper", "rndlog", "ziin")
             for profile in profiles:
                 document = docs_repo / profile / "docs" / "README.md"
-                document.parent.mkdir(parents=True)
+                document.parent.mkdir(parents=True, exist_ok=True)
                 document.write_text(f"{profile} planning\n", encoding="utf-8")
             pending_code = venture / "keep.txt"
             pending_code.write_bytes(b"uncommitted code\n")
             statuses = {checkout: run("git", "status", "--porcelain=v1",
                                       cwd=checkout).stdout
-                        for checkout in (docs_repo, venture)}
+                        for checkout in (venture,)}
 
             fake_bin = temp / "bin"
             fake_bin.mkdir()

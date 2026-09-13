@@ -13,14 +13,14 @@ ERROR: 현재 브랜치의 원격 추적 브랜치가 없습니다.
 먼저 현재 브랜치와 작업 파일을 확인합니다.
 
 ```bash
-git -C ~/kmh-agent-kit status --short --branch
+git -C ~/controlroom status --short --branch
 ```
 
 `main`이 아니거나 `HEAD detached`라면 로컬 변경을 보존한 상태에서 `main`으로 돌아간 뒤 설치기를 한 번 실행합니다.
 
 ```bash
-git -C ~/kmh-agent-kit switch main
-~/kmh-agent-kit/install.sh <등록 이름>
+git -C ~/controlroom switch main
+~/controlroom/install.sh <등록 이름>
 source ~/.bashrc
 kitpush
 ```
@@ -30,7 +30,7 @@ kitpush
 `kitpull`은 로컬 변경이나 아직 push하지 않은 커밋을 덮지 않습니다. 현재 변경을 공유하려면 `kitpush`를 먼저 실행합니다.
 
 ```bash
-git -C ~/kmh-agent-kit status --short --branch
+git -C ~/controlroom status --short --branch
 kitpush "변경 설명"
 ```
 
@@ -41,8 +41,8 @@ kitpush "변경 설명"
 원격과 로컬에서 같은 부분을 바꾸면 `kitpush`가 재배치를 취소하고 로컬 커밋을 보존합니다. 원격 상태를 확인해 충돌을 수동으로 정리한 뒤 `kitpush`를 다시 실행합니다.
 
 ```bash
-git -C ~/kmh-agent-kit fetch origin
-git -C ~/kmh-agent-kit diff origin/main...main
+git -C ~/controlroom fetch origin
+git -C ~/controlroom diff origin/main...main
 ```
 
 ## Windows Commands Are Missing
@@ -50,7 +50,8 @@ git -C ~/kmh-agent-kit diff origin/main...main
 PowerShell에서 등록 이름으로 설치기를 다시 실행한 뒤 터미널을 새로 엽니다.
 
 ```powershell
-& ([scriptblock]::Create((irm 'https://raw.githubusercontent.com/chaconne67/kmh-agent-kit/main/install.ps1'))) -Agent '<등록-이름>'
+git clone https://github.com/chaconne67/controlroom.git "$env:USERPROFILE\controlroom"
+& "$env:USERPROFILE\controlroom\install.ps1" -Agent '<등록-이름>'
 Get-Command kitpull, kitpush
 ```
 
