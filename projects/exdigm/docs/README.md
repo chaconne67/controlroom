@@ -8,9 +8,11 @@
 
 ## 진행 중 작업
 
-- [운영 오류·작업 실패 DB 기록 — 구현·검증·커밋·GBrain 기록 완료, 운영 배포 대기](operational-error-alerts-20260914.md)
+현재 등록된 진행 중 작업은 없습니다.
 
 ## 최근 완료 작업
+
+- [운영 오류·작업 실패 DB 기록 — 운영 배포·실제 DB 기록·메시지 없음 확인 완료](operational-error-alerts-20260914.md)
 
 - [Hermes 기본 모델 3.8 Flash 갱신 — 직원 6개 운영 반영·도구 호출·보존 검증 완료](hermes-model-update-20260915.md)
 

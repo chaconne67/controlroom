@@ -4,8 +4,8 @@
 
 - 주인님의 최신 지시가 아래 Telegram 전송 계획을 대체한다. 오류가 발생해도 메시지를 보내지 않고 DB에 기록한다.
 - 크레탑 봇 연결, Hermes 호출, cron 설정, 새 감시 서비스는 만들지 않는다. 주인님이 별도로 Hermes 정기 점검을 설정한다.
-- 주인님이 2026-09-15에 DB 전용 기록의 구현·검증·리뷰·문서화·커밋과 GBrain 기록을 승인했다. 운영 배포는 별도다. 변경 전 코드·운영 DB는 아래 기준선 그대로다.
-- 현재 실제 코드: debug clean detached HEAD와 운영 clean main 모두 `fc739a914ef61c79fb9d1c2d964cb001c559b35a`다. 아래 미배포 기록은 이전 시점의 이력이다.
+- 주인님이 2026-09-15에 DB 전용 기록의 구현·검증·리뷰·문서화·커밋과 GBrain 기록을 승인했고, 이후 운영 배포도 명시적으로 승인했다. 공식 배포와 실제 DB 기록 확인까지 완료했다.
+- 현재 운영 판본: debug clean detached HEAD, GitHub main, 운영 clean main, 실제 app/SSE/수집 컨테이너 모두 `8c2ea773723757da4422e698ac8b34c86a0fd2f8`이다. `fc739a91`은 변경 전 기준선이며 아래 Telegram·미배포 내용은 이전 시점의 이력이다.
 - 이전 정상 경로 테스트 1건은 배포 후 Hermes 인증 HTTP 401로 실패했다. 재발송은 없었다. 최신 요청은 이 전송 경로를 제거한다.
 
 ### 변경안과 기준선 잠금
@@ -32,11 +32,11 @@
 - 쉬운 설명은 작업명·실패 단계·실제 오류·관련 기록·조사 시작점을 구분한다. 미확인 근본 원인을 자동으로 만들어 쓰지 않는다. 추가 언어모델 호출 없이 확인된 업무명과 오류 정보를 전달한다.
 - 다음 행동: 승인된 범위에서 새 오류 모델의 상세 DB 기록·배달 요청 0건·Hermes 비활성 수집·공용 조회를 구현한다.
 
-### DB 전용 구현·검증·재개 정보 — 2026-09-15
+### DB 전용 구현·검증 — 운영 배포 전 기록, 2026-09-15
 
-- 상태: 승인된 DB 전용 구현·검증·직접 코드 리뷰·개발 커밋 완료. 운영 배포·운영 DB 변경은 하지 않았다.
+- 당시 상태: 승인된 DB 전용 구현·검증·직접 코드 리뷰·개발 커밋 완료. 이 검증 시점에는 운영 배포 전이었으며, 이후 적용 결과는 다음 절에 기록한다.
 - 개발 커밋: `8c2ea773723757da4422e698ac8b34c86a0fd2f8`, debug detached clean. 작업 중 다른 작업의 `9d046ead`(Hermes 기본 모델 변경 4파일)이 추가됐으며 이번 수정에서는 건드리지 않았다.
-- 현재 운영 checkout은 다른 작업의 `9d046ead` main clean이다. 공식 조회 전용 DB 확인은 `exdigm_debug_ro`, read_only `on`, `projects_operationalerror` 부재, `0068_operationalerror` 미적용이다. 새 DB 기록이 운영에서 이미 작동한다고 보고하지 않는다.
+- 배포 전 운영 checkout은 다른 작업의 `9d046ead` main clean이었다. 공식 조회 전용 DB의 계정 `exdigm_debug_ro`, read_only `on`, `projects_operationalerror` 부재, `0068_operationalerror` 미적용을 확인했다. 이 기준선과 아래 배포 후 실제 적용 결과를 구분한다.
 - 최종 경로: `common/operational_errors.py` → 기존 수집 작업자 → `projects/services/operational_errors.py` → `projects.OperationalError`. Hermes의 오류 전송 모듈을 삭제하고 기존 수집기를 core로 이동했다.
 - 새 테이블: 기존 Exdigm DB의 `projects_operationalerror`. 발생 시각, 기록 시각, 한 줄 제목, 쉬운 설명, 발생 위치, 실제 오류 종류·문구, 변수 값 없는 호출 경로, 관련 작업 번호와 실패 단계 등을 남긴다.
 - 정기 점검의 새 기록 기준은 `created_at`이다. `occurred_at`은 실제 발생 시각이라 늦게 저장된 실패의 새 기록 기준으로만 쓰면 놓칠 수 있다. 제목·id 목록부터 읽고 한 기록의 상세를 읽는다.
@@ -46,8 +46,22 @@
 - 오류 기록으로 Notification·NotificationDispatch를 만들지 않는다. 기존 일반 알림·lifecycle은 그대로다. 운영의 이전 실패 Telegram 테스트 이력은 옮기거나 지우거나 재발송하지 않았다.
 - 최종 공식 검사: 직접 관련 112 passed, 공용 ORM 10 passed(기존 fixture 준비 오류 1건 제외를 명시), 고정 보호 18파일 보존 및 194 passed. 전체 ORM 실행에서도 기존 `submit_to_client` fixture 오류 1건만 동일했다. 신규 모델 실제 공용 조회 2건은 통과했다.
 - check·Ruff·migration drift·diff check·catalog_update 통과. 직접 리뷰에서 오류 문구의 JSON/접두사 키/Bearer 비밀값 처리 누락을 확인하고 수정했다. 변경 전체를 다시 검토한 최종 승인 finding·열린 질문은 없다.
-- GBrain 공용 `default:project/exdigm-operational-error-alerts`에 DB 전용 계약, 필드 설명, SQL/기존 ORM 조회 예, 검증·미배포 상태를 기록하고 다시 읽어 확인했다. 과거 Telegram 이력은 보존했다.
-- 다음 행동: 정확한 개발 커밋을 확인한 뒤 별도 운영 배포 승인으로 공식 `scripts/deploy/deploy.sh prod`를 실행한다. `db-prod`·Hermes fleet·새 cron은 제외한다. 운영 적용 후 새 테이블·수집·배달 요청 0건을 실제 운영 경로에서 확인한다.
+- 배포 전 GBrain 공용 `default:project/exdigm-operational-error-alerts`에 DB 전용 계약, 필드 설명, SQL/기존 ORM 조회 예와 검증 상태를 기록하고 다시 읽어 확인했다. 과거 Telegram 이력은 보존했다.
+- 배포 전 다음 행동은 주인님의 운영 배포 승인 후 아래 공식 prod와 실제 운영 경로 확인으로 완료했다. `db-prod`·Hermes fleet·새 cron은 제외했다.
+
+### 운영 배포·최종 확인 — 2026-09-15 01:48 KST
+
+- 결과: 주인님의 명시적 운영 배포 승인 후 공식 `scripts/deploy/deploy.sh prod`가 01:48:34 KST에 `prod ok 8c2ea773`으로 정상 종료했다. 새 오류 기록 기능이 운영에서 활성화됐다.
+- 판본: debug detached HEAD, GitHub main, 운영 main, 실제 app/SSE/notification dispatcher의 source commit이 모두 `8c2ea773723757da4422e698ac8b34c86a0fd2f8`으로 일치한다. 두 worktree는 clean이며 다른 작업의 `9d046ead`도 보존했다.
+- 이미지: `exdigm_app:20260915014713`, 실제 image ID `sha256:824459abbd9ca30ab9e2782fcec220f4ffeff894018e9ef587c0568190bf046b`. 공식 빌드의 문서 업로드 계약과 고정 보호 18파일 보존 검사를 통과했다.
+- DB 적용: 공식 `shell-readonly`의 실제 계정 `exdigm_debug_ro`, transaction_read_only `on`으로 `projects_operationalerror` 존재와 `projects.0068_operationalerror` 적용을 확인했다. 앱의 `OPERATIONAL_ERRORS_ENABLED`는 true다.
+- 실제 경로: 배포된 웹 앱의 기존 logging에 표시된 테스트 예외 한 건을 남겼다. 직접 DB 삽입이나 수집기 수동 실행 없이 기존 수집 작업자가 약 2초 뒤 DB에 저장했다.
+- 검증 기록: `dccc7e63-db92-9e4f-0fbe-0285fe884309`. 발생 시각 01:49:33.985 KST, DB 기록 시각 01:49:36.073 KST. 제목·설명은 “테스트 오류 기록입니다. 실제 운영 장애가 아닙니다.”다. 실제 오류 문구, 함수 위치·줄 번호·호출 경로, logger/process 문맥도 확인했다.
+- 메시지 없음: 같은 번호의 Notification 0건, NotificationDispatch 0건을 실제 SELECT로 확인했다. 메시지를 보내지 않았고 테스트 기록은 실제 장애와 구분되는 검증 증거로 남겼다.
+- 운영 상태: Swarm 서비스 5개 모두 1/1, worker/support 11개 active·read-write·drain off, HTTPS 200. 공식 배포에서 중단 작업 복구 0건, drain 해제를 확인했다.
+- 보존 범위: 일반 업무 알림·기존 직원 봇·업무 데이터는 유지했다. 오류 검증으로 고객 업무를 실패시키지 않았으며 DB 인프라·Hermes fleet·새 cron·새 감시 서비스는 변경하거나 만들지 않았다.
+- GBrain: 공용 오류 기록 정본 `project/exdigm-operational-error-alerts`와 운영 맥락·배포 경로에 활성 판본, 실제 DB 적용·기록 확인, 읽기 계약을 갱신했다. 과거 이력은 보존했다.
+- 남은 작업: 이 구현·운영 배포에는 없다. 주인님이 외부 Hermes의 정기 점검을 별도로 설정할 때 아래 테이블과 `created_at`을 사용한다. Python 오류·기존 업무 장부의 확정 실패를 기록하는 범위이며 서버 전원 장애까지 별도 감시하는 기능은 아니다.
 
 #### DB 조회 예
 
