@@ -12,6 +12,8 @@
 
 ## 최근 완료 작업
 
+- [자동 게시의 조기 실패 구조 개선 — 운영 반영·5개 사이트 입력 검증 완료](auto-posting-recovery-design-20260914.md)
+
 - [잡코리아 게시 실패 해결 — 운영 배포·실게시 완료](jobkorea-industry-failure-20260914.md)
 
 ## 문서
