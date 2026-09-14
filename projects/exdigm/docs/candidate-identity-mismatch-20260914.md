@@ -283,3 +283,17 @@ AX 상태와 실제 스크린샷으로 확인했다. 기존 사용자 탭은 열
 
 - 요청한 후보자 복구·운영 배포·근본 해결 검증·기록 완료. 추가 사용자 조작이 필요하지 않다.
 - 이후 같은 증상이 생기면 이름 직접 저장 로그, 현재 Resume, 연락처 매칭 근거와 identity_conflict 큐 상태를 나눠 확인한다. 원문·JSON·공유 파일·백업을 먼저 보존한다.
+## 주인님 요청에 따른 재발 방지 재확인
+
+확인 시각: 2026-09-14 14:21:15 +09:00
+
+- 요청: `재발 방지 확인`. 기준은 기존 승인 범위의 자동 이름 보호, 연락처 충돌 보류, 큐 재분류 후 보류 유지, 원본·다른 후보자·정상 저장 보존이다.
+- 운영 main과 debug detached HEAD가 clean이며, 앱·SSE·notification 실제 실행 소스가 모두 `777959cac2a9ee2b76ed8b8004ac26f250a3a1dd`로 일치했다. 프로그램 코드는 수정하지 않았다.
+- 공식 `scripts/debug_workspace.sh test`에서 identity/provenance/Resume/repair/실제 사건 재생/worker 결과/실시간 파일 상태 7개 검사 파일을 재실행했다. **151 passed, 5 existing deprecation warnings, 4.48초, exit 0**.
+- 검사는 신원 충돌 반복 입력에서 Candidate·경력·학력 무변경, 완성 JSON·원문 보존, Candidate/정상 Resume 미생성, `apply_next_action`으로 큐를 재분류해도 처리 False 유지, 복수 문서의 정상 사람 유지, 명시적 수동 선택·정상 김두영·실제 홍길동 저장, 복구 원본 hash·transaction·재실행 보존을 포함한다.
+- 운영은 `shell-readonly`의 `exdigm_debug_ro`, transaction_read_only on으로 확인했다. 두 혼입 JSON × 전화번호 4표기 × 이메일 원래/대문자와공백 × 반복2회의 **32회 모두 phone_email_mismatch**, 기본 매칭 None이었다.
+- 같은 운영 조회에서 김두영·KIM, Dooyoung·1987년생, 올바른 현재 Resume/FileData, 원본 이메일 근거와 name/name_en/email/phone 수동 보호, 최신 학력 주의 없음, 혼입 Resume2건의 분리·거절을 확인했다. 검증 전후 후보자 내용 확인값은 같았다.
+- 문제 단일 FileData는 candidate=None/is_current=False/needs_resume_processing=False/retryable=False, 공식 큐 분류 `(False, identity_conflict)`로 유지됐다.
+- 개인정보 값을 출력하지 않는 비공개 근거: `.debug/candidate-identity-20260914/recurrence-followup-b568e3e0426d45008fbcd660d2082d2a.json`, mode0600.
+- 판정: **같은 자동 연락처 혼입 원인의 검증 범위에서 닫힘**. 실제 저장의 검증은 격리 공식 테스트 DB이며, 운영 상태·매칭·큐는 조회 전용 확인이다. 운영에 검증용 후보자·이력서를 저장하거나 외부 LLM·Drive·알림을 실행하지 않았다.
+- 직접 이름 변경의 기존 수동 계약과 7월 두 번째 직접 저장의 미확인 조작자·의도는 기존 기록을 유지한다. 추가 수정·운영 데이터 복구·배포는 필요하지 않다.
