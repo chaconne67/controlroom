@@ -6,6 +6,10 @@
 
 2026-09-13에 보관 위치를 정리했습니다. 문서의 작성일·승인 상태·폐기 여부는 바꾸지 않았습니다. 원문 속 코드·명령 경로는 원래 서버 저장소 기준이며, 이전 위치와 SHA-256은 루트 provenance.json에 있습니다.
 
+## 최근 완료 작업
+
+- [잡코리아 게시 실패 해결 — 운영 배포·실게시 완료](jobkorea-industry-failure-20260914.md)
+
 ## 문서
 
 - [auto_posting_consultant_profile_plan.md](<auto_posting_consultant_profile_plan.md>)
