@@ -41,7 +41,7 @@ uv run --locked python -m tools.code_knowledge code_query --query "Telegram 온�
 ## Hermes Defaults
 
 - Nous Research 공식 Hermes image를 digest로 고정한다.
-- 기본 추론 공급자는 `gemini`, 기본 모델은 `gemini-3.7-flash`다.
+- 기본 추론 공급자는 `gemini`, 기본 모델은 `gemini-3.8-flash`다.
 - 직원 profile에는 최소 `GEMINI_API_KEY`가 있어야 하며 모델 선택 화면에
   Gemini 공급자가 나타나야 한다.
 - Hermes의 기본 추론, 메모리, 도구, 개인화, 스킬 학습 기능을 유지한다.
@@ -93,10 +93,11 @@ uv run --locked python -m tools.code_knowledge code_query --query "Telegram 온�
 ## Verification
 
 ```bash
-scripts/debug_workspace.sh test \
+HERMES_INTEGRATION_ENABLED=true scripts/debug_workspace.sh test \
   tests/test_new_hermes_runtime.py \
   tests/test_hermes_deploy.py \
   tests/test_provisioning_service.py \
+  tests/test_gemini_gateway.py \
   tests/accounts/test_provisioning_bootstrap.py \
   tests/accounts/test_agent_lifecycle.py \
   tests/accounts/test_telegram_connection_boundary.py \
@@ -104,7 +105,7 @@ scripts/debug_workspace.sh test \
   tests/test_notification_dispatch_worker.py
 
 uv run --locked python -m tools.code_knowledge catalog_update
-scripts/debug_workspace.sh check
+HERMES_INTEGRATION_ENABLED=true scripts/debug_workspace.sh check
 ```
 
 운영 container·Telegram 검증은 사용자가 운영 작업을 요청한 경우에만 수행한다.

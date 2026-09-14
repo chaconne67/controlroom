@@ -12,6 +12,8 @@
 
 ## 최근 완료 작업
 
+- [Hermes 기본 모델 3.8 Flash 갱신 — 직원 6개 운영 반영·도구 호출·보존 검증 완료](hermes-model-update-20260915.md)
+
 - [김두영 후보자 이름·이력서 혼입 해결 — 운영 복구·재발 검증 완료](candidate-identity-mismatch-20260914.md)
 
 - [자동 게시의 조기 실패 구조 개선 — 운영 반영·5개 사이트 입력 검증 완료](auto-posting-recovery-design-20260914.md)

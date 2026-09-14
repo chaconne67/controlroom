@@ -1,7 +1,7 @@
 interface:
   display_name: "Exdigm Hermes Agent"
   short_description: "Hermes Telegram assistant operations"
-  default_prompt: "Use $exdigm-hermes-agent to inspect or change Exdigm Hermes Telegram onboarding, provisioning, operations, or employee-browser access behavior."
+  default_prompt: "Use $exdigm-hermes-agent to inspect or change Exdigm Hermes Telegram onboarding, provisioning, operations, or employee data and API access."
 
 policy:
   allow_implicit_invocation: true

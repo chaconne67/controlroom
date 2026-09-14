@@ -47,9 +47,10 @@
 ## Focused Verification
 
 ```bash
-flock -E 75 -w 55 /tmp/exdigm-pytest.lock uv run --locked pytest -q \
+HERMES_INTEGRATION_ENABLED=true scripts/debug_workspace.sh test \
   tests/test_provisioning_service.py \
   tests/test_new_hermes_runtime.py \
+  tests/test_gemini_gateway.py \
   tests/test_hermes_orm_read.py \
   tests/accounts/test_agent_lifecycle.py \
   tests/accounts/test_telegram_connection_boundary.py \
@@ -58,7 +59,7 @@ flock -E 75 -w 55 /tmp/exdigm-pytest.lock uv run --locked pytest -q \
   tests/test_notification_dispatch_worker.py
 
 uv run --locked python -m tools.code_knowledge catalog_update
-uv run --locked python manage.py check
+HERMES_INTEGRATION_ENABLED=true scripts/debug_workspace.sh check
 ```
 
 ## Live Checks
