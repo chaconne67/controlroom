@@ -132,3 +132,35 @@ GBrain `project/exdigm-auto-posting-process-policy`의 ‘회사 사실과 사�
 ### 최종 상태 재확인
 
 다른 작업의 후속 운영 배포로 main/origin/main은 `777959ca`까지 전진했다. 이는 f28bf4df의 직계 후속 커밋이다. auto_posting 전체, posting workflow, common/llm.py는 f28bf4df와 차이가 없음을 `git diff --exit-code`로 확인했다. 최신 이미지 `exdigm_app:20260914140208`에서도 서비스 1/1, 11개 작업자/지원 프로세스 active, jobs 0, drain off, HTTPS 200을 확인했다. 이 문서의 다섯 dry 실행은 f28bf4df 배포 직후의 실제 검증 증거이며 이후 자동 게시 코드 변경은 없다.
+## 전체 변경 검토·운영 판본 정리 — 2026-09-14
+
+### 결과와 검토 범위
+
+주인님의 `전체 변경사항 검토, 필요하면 커밋, 푸시, 운영배포` 요청에 따라 서버의 d7a6f905부터 777959ca까지 29개 파일의 최종 차이, 공통 Codex 지침 추가분과 관련 검증 기록을 검토했다. 마지막 검토는 문서 수정까지 포함한 d7a6f905..16a6c115 범위다. 변경 코드와 직접 호출자·소비자를 확인했으며, 남은 프로그램 코드 결함이나 열린 계약 질문이 없다.
+
+### 확인한 문제와 최소 수정
+
+- 서버 안내 문서 9개가 통합 전 control-room-docs의 exdigm/docs 경로를 가리켰다. 현재 정본인 controlroom/projects/exdigm/docs와 일치하도록 GitHub 주소와 조정실 정본 경로 두 줄씩 수정했다.
+- 아홉 원본은 공통 저장소에 추적·저장되어 있음을 확인했다. 원본 내용을 다시 서버에 복제하지 않았다.
+- 추가 커밋은 9개 안내 문서만 포함하며, 부모 777959ca의 자동 게시·후보자 신원 보호 코드와 그 밖의 파일 내용은 보존됐다.
+- Exdigm 커밋: 16a6c115b8ff6b9abde36127ddb0b4e12c968a8f. 공통 지침 추가 커밋 0a39c1e는 이미 공통 저장소에 push·설치본 반영된 상태를 다시 확인했다.
+
+### 검증과 공식 운영배포
+
+- 공식 debug_workspace.sh test: 게시 입력·JobKorea 참조·공고 관리·후보자 identity/provenance/Resume/repair/application lifecycle/detail UI 아홉 검사 파일, 334 passed, 37 existing warnings, 196.26초, exit 0.
+- 공식 contracts: 고정 보호 기준 6ac315e930880406f6f7f9d489322b07b85e380f의 18개 파일 보존, 194 passed, exit 0. Django check, 변경 Python의 Ruff, git diff --check 통과.
+- code_knowledge catalog_update: state=current, local.valid=true, broken_references=[], catalog_changed=false.
+- 문서 수정이 남은 상태의 첫 이미지 검사는 clean committed candidate를 요구해 중단됐으며 통과로 보고하지 않았다. 먼저 보호 계약을 통과시킨 뒤 커밋하고, 공식 배포에서 해당 새 커밋의 이미지를 검증했다.
+- scripts/deploy/deploy.sh prod가 origin/main push와 운영 main fast-forward를 수행했다. 2026-09-14 14:47:49 KST prod ok 16a6c115, exit 0.
+- 새 이미지 exdigm_app:20260914144625의 실제 DOC/DOCX/PDF 업로드 텍스트 전달 검사가 통과했다. ContractBoundaryReached 로그는 외부 AI 호출을 의도적으로 제외한 검증 경계다.
+- debug detached HEAD, GitHub main, 운영 clean main, app/SSE/notification의 /app/.source-commit이 모두 위 커밋과 일치했다. 세 실행 앱 이미지 ID는 sha256:7abf58fcf9647ac79a32bc7a1ce5359cc757fdd1f1aeabfd0034c8c34adf44c3로 같았다.
+- 서비스 5개 1/1, app/SSE/notification update completed, 작업자·지원 프로세스 11개 active/jobs0/drain off, 공식 read-write, HTTPS200 확인.
+
+### 데이터 보존과 남은 경계
+
+- 공식 shell-readonly의 exdigm_debug_ro/read_only on에서 원래 프로젝트 전체 값, PostingSite 전체 값, 지정 후보자 전체 값의 확인값이 배포 전후 일치했다.
+- 다섯 사이트 모두 succeeded, 기존 공고번호·담당자·지원자수·last_run이 같고 AutoPostingRun3개가 유지됐다. JobKorea 49984616도 보존됐다.
+- 첫 부가 비교는 UUID 객체와 저장된 문자열을 직접 비교해 차이로 표시했다. 전후 동일 JSON 저장 형식으로 다시 대조한 결과 모든 값이 일치했다. 원래 필드·기대값·내용 확인값은 완화하지 않았다.
+- 비공개 비교 근거: debug .debug/review-release-20260914-before.json, after.json(첫 형식 비교 결과), after-normalized.json(최종 동일 형식 비교), mode0600.
+- 이번 검토·배포에서 추가 외부 게시·수정·마감·삭제, 후보자 운영 데이터 복구, DB 인프라·Hermes 배포는 실행하지 않았다. 기존 다섯 사이트 실제 dry 검증과 후보자 복구·재발 검증의 경계는 앞선 기록을 유지한다.
+- 완료. 추가 수정이나 사용자 조작은 필요하지 않다. 이후 변경 시 현재 clean 16a6c115를 기준으로 원래 보호 조건과 공식 검증 경로를 재사용한다.
