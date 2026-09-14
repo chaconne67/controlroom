@@ -129,3 +129,6 @@ JobKorea는 공개 검색에서 같은 이름과 당진시 주소의 회사를 �
 ## 재사용 결정 기록
 
 GBrain `project/exdigm-auto-posting-process-policy`의 ‘회사 사실과 사이트 선택의 경계 (2026-09-14 주인님 확정)’에 사용자 설계 결정을 기록하고 재조회했다. 현재 적용/검증 상태의 정본은 이 문서다.
+### 최종 상태 재확인
+
+다른 작업의 후속 운영 배포로 main/origin/main은 `777959ca`까지 전진했다. 이는 f28bf4df의 직계 후속 커밋이다. auto_posting 전체, posting workflow, common/llm.py는 f28bf4df와 차이가 없음을 `git diff --exit-code`로 확인했다. 최신 이미지 `exdigm_app:20260914140208`에서도 서비스 1/1, 11개 작업자/지원 프로세스 active, jobs 0, drain off, HTTPS 200을 확인했다. 이 문서의 다섯 dry 실행은 f28bf4df 배포 직후의 실제 검증 증거이며 이후 자동 게시 코드 변경은 없다.
