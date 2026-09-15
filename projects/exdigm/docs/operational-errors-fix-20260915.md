@@ -13,8 +13,9 @@
 - 9건 모두 실제 Drive GET으로 크기·MD5·MIME·휴지통 아님·정확한 대상 폴더·원래 장부 appProperty를 확인했다. FileData/Drive/result 연결, 장부 error 공백/no claim, 메일 처리완료와 실패0도 확인했다. 원본 URL/metadata·생성자·메일 연결·후보자 힌트·알림 발송시각/시도/실패시각은 백업과 동일하다.
 - 기존5건은 attempt4와 원래 FileData를 유지했다. 인크루트4건의 메일 uploaded_count는 각각1, 잡코리아는 기존 다른 첨부를 포함해2다. 사람인4건은 각각1이며 알림 영수증을 초기화하지 않았다.
 - 현재 판본에서 browser/uploader85개와 고정 보호194개(보호18파일 원본 유지)를 다시 통과했다. 서비스5개1/1, worker/support11개active, HTTPS200을 재확인했다. 새 제품 수정이 없으므로 같은 판본을 불필요하게 다시 배포하지 않았다.
-- **수집 done은 후보자 저장 완료와 다르다.** 기존5건은 structured/후보자 연결/db_saved까지 확인했다. 새 사람인4건 중3건은 후속 knowledge_validation 오류가 기록됐고, 추가1건은21:15 조회에서 collector_intake 대기였다. 아래 실패 원인을 수집 수정의 실패나 전체 완료로 혼동하지 않는다.
+- **수집 done은 후보자 저장 완료와 다르다.** 기존5건에 추가 사람인1건이21:20:26 KST structured/후보자 연결/db_saved를 마쳐 총6건 저장 완료다. 나머지 사람인3건은21:20:48 조회에서 knowledge_validation 실패/no claim/대기열false다. 아래 실패 원인을 수집 수정의 실패나 전체 완료로 혼동하지 않는다.
 - GBrain 운영 맥락·배포 절차·수집 incident3페이지에 현재 판본과 수집/내용 추출 경계를 갱신했다.21:19 KST에 재조회하여 새 절의 존재와 기존 본문 전체 보존을 확인했다.
+- 문서 정리 fabb1a2는 기존85abf8e·3962773을 포함해 공식 controlroom push로 원격 main에 전송됐다. 마지막 Venture 동기화의 미커밋 경고는 Exdigm 문서 push 실패가 아니다. Venture의 HEAD/원격은 같으며 미커밋 파일을 자동 stage하지 않고 보존했다.
 - 다음: 별도 비동기 질문으로 새 내용 추출 범위(원문/AI 결과 대조, 필요한 추출 코드 수정·검증, 대상 파일의 후보자 저장)를 이번 작업에 포함할지 확인했다. 답 전에는 모델/프롬프트/검증 계약 변경이나 새 운영 재처리를 하지 않는다. CEO 메일 진단·직원 개인 연결도 남아 있다.
 
 ### 다른 작업·보관 변경 감사
@@ -34,7 +35,7 @@
 | a2f861d4-49b8-420f-80da-d89ed791a904 |21:02:37 done, attempt5 |PDF74370바이트, FileData42165720-8855-4458-96b9-ecd6ad8e8274 | `invalid inclusive source_id range: S0027..S0004` |
 |1adfd5d2-d618-48e4-b008-151b740f8202 |21:04:36 done, attempt4 |PDF55347바이트, FileDataaf4904e7-ade5-40c3-80f0-3fc5242ef543 | `extracted_content 필수 항목 누락: 경력` |
 |328b654b-7009-45ee-89a0-61cbf138b08a |21:05:03 done, attempt4 |PDF79737바이트, FileData69826458-4349-478b-a3ef-5e6e88dfdc7b | `invalid inclusive source_id range: S0024..S0004` |
-|492ac3cf-df57-4a7f-95d3-f525ee669918 |21:05:29 done, attempt4 |PDF115136바이트, FileData0978d1d7-64d0-473a-8b9f-6d58e91f9269 |21:15 조회 시 수집 후 추출 대기 |
+|492ac3cf-df57-4a7f-95d3-f525ee669918 |21:05:29 done, attempt4 |PDF115136바이트, FileData0978d1d7-64d0-473a-8b9f-6d58e91f9269 |21:20:26 후보자 정보 저장 완료 |
 
 - 연속 질문: 왜 내용 추출이 멈췄나 → 역순 원문 범위2건/필수 경력 누락1건이 검증에서 거절됨(운영 FileData 확인). 왜 검증에서 거절됐나 → 기존 recommendation_resume_ssp의 범위·필수 항목 계약이 이를 금지함(코드 확인). 왜 그러한 결과가 생산됐나 → 원문 구성과 AI 응답의 단계별 대조 전이라 미검증.
 - 버드뷰: 공식 수집 → 원문 읽기 → extract_resume_knowledge_from_text → validate → 후보자 저장. 수집과 텍스트 추출은 통과했으며 새 관측은 그 뒤 knowledge_validation이다. runners.text_to_pipeline_result가 해당 ValueError를 구체적 실패 사유로 기록한다.
@@ -317,7 +318,7 @@
 | 잡코리아 준비 대기 | 수집 경로 검증 범위 닫힘 / 과거 단일 원인 미검증 | 원래 운영1건의 실제 파일 전달과 후보자 저장 완료, 지연 변형 회귀 통과. 당시 화면 상태의 유일 원인은 단정하지 않음 |
 | 인크루트 근무지역 | 검증 범위 닫힘 | df7d5c8a 운영 배포와 동일 payload dry 통과. 원래 프로젝트에서20:48 실제 submitted/published true 및 현재 PostingSite 연결 확인. 공고2609150004510 |
 | Drive Office 임시 파일 | 신규 유입 경로 개발 범위 닫힘 | 공식 sync 단계에서 임시 파일 제외와 정상 문서 DB/manifest 전달 검증. 기존 실패 기록은 보존 |
-| 새 사람인 내용 추출 | 열림 / 근본 원인 미검증 | 실제 파일 수집 후3건의 knowledge_validation 실패를 확인. 원문·AI 결과 대조와 별도 추출 수정 범위 확인 필요. 추가1건은 마지막 조회 시 기존 대기열 |
+| 새 사람인 내용 추출 | 열림 / 근본 원인 미검증 | 실제 파일 수집 후3건의 knowledge_validation 실패를 확인. 원문·AI 결과 대조와 별도 추출 수정 범위 확인 필요. 추가1건은21:20:26 후보자 저장 완료 |
 | 외부 검색 | 열림 | 해당 직원의 네 사이트 계정 등록 필요. 다른 직원 인증을 대체 사용하지 않음 |
 | CEO 메일 502 | 열림 | 인증 이후 개별 메일 fetch의 None 분기 확인. IMAP 거절과 UID 소실은 기록만으로 구분 불가 |
 
