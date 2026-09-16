@@ -8,13 +8,9 @@
 
 ## 진행 중 작업
 
-- [다른 자동게시 사이트 — 3개 사이트 비게시 검증·519개 검사 2회 통과, 개발 커밋 완료·미배포](auto-posting-other-sites-20260916.md)
-
-- [Drive 추천인재 목록 추출 오류 — 비이력서 제외 수정·검증 완료, 운영 반영 대기](resume-roster-error-20260916.md)
-
 - [이력서 BOM 처리 수정 — 운영 배포 완료, 중단 파일 재처리 대기](resume-bom-fix-20260916.md)
 
-- [Hermes MCP 조회 개선 — 개발·실제 모델 24회 검증 완료, 운영 반영 대기](hermes-mcp-read-improvement-20260916.md)
+- [Hermes MCP 조회 개선 — 직원 6명 운영 반영·기록 보존 완료, 시간대·인증값 후속은 별도](hermes-mcp-read-improvement-20260916.md)
 
 - [LinkedIn 문자·이메일 인증 — LinkedIn만 운영 배포 완료, 실제 받은 코드 확인 대기](linkedin-verification-20260916.md)
 
@@ -23,6 +19,12 @@
 - [운영 오류 문제해결 — 배포 정리·파일 수집9건 복구, 후속 내용 추출·메일·개인 연결 잔여](operational-errors-fix-20260915.md)
 
 ## 최근 완료 작업
+
+- [자동게시·오류 기록·명단 판정·Hermes 합동 배포 — de20cf82 운영 반영·733개 검사·6명 실제 조회 확인](auto-posting-other-sites-20260916.md)
+
+- [오류 기록 한국 시간·처리 결과 — 운영 반영·과거 오류 보존 완료](operational-error-time-results-20260916.md)
+
+- [Drive 추천인재 목록 제외 — 운영 반영 완료, 과거 실패 행은 보존](resume-roster-error-20260916.md)
 
 - [운영 오류·작업 실패 DB 기록 — 운영 배포·실제 DB 기록·메시지 없음 확인 완료](operational-error-alerts-20260914.md)
 

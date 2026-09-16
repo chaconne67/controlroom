@@ -1,6 +1,17 @@
 # Hermes MCP 조회 개선안
 
-작성일: 2026-09-16 · 상태: 재검토·개발 구현·리뷰·실제 모델 24회 검증 완료, 운영 미반영
+작성일: 2026-09-16 · 상태: 재검토·개발·실제 모델 검증 및 직원 6명 운영 반영 완료
+
+## 운영 반영과 현재 경계 — 2026-09-16 23:53 KST
+
+- 주인님이 전체 Exdigm 변경 배포와 “Hermes 개선도 함께 적용”을 명시 승인했다. 원본 `836eb5a6`를 보존하고 최종 통합 커밋 `de20cf82c962a3acc140e669a67cd350886e9eb2`에 연결했다.
+- 공식 app prod를 23:52:04 KST에 완료한 뒤 공식 Hermes prod로 직원 6명을 재생성했다. 23:53:33 KST 배포 기록, active 6/healthy 6, manager/gateway 정상, 같은 커밋의 공통 MCP·관리 서비스·앱 API를 확인했다.
+- 통합 중 오류 처리 기록의 목차도 보존했다. 10개 hint 상한을 유지하면서 별칭/검사 연결을 함께 정리했고 새로운 오류 처리 조회 회귀를 추가했다. 제품 runtime/ORM/MCP는 원본 검증 커밋과 같다.
+- 공식 SDK stdio를 통해 직원 6명의 실제 운영 키/HTTPS API 경로에서 각 6개 읽기 검사를 통과했다. 세 도구의 등록, 업무 목차 found, ORM schema/기간·상태 집계 200, 없는 기록 text_range의 빈 결과 200, 비밀 필드 403, OpenAPI 200을 확인했다. 모든 결과가 중복 structuredContent 없이 단일 compact text였다.
+- 과거 메시지 2,976개와 세션 기본 정보 26개, 기억·workspace·개인 skill·home 등 cron 가변 파일을 제외한 11,408개 파일 내용 및 인증값 해시를 보존했다. bundled manifest 1개의 소유권만 root→10000으로 바뀌었고 내용은 같다. cron heartbeat/SQLite 임시 파일은 실행 중 변하는 관리 상태로 구분한다.
+- 관리형 config/SOUL/exdigm-work는 공식 재생성 대상이다. 현재 6개 모두 Gemini 3.8 Flash·압축 100,000토큰·daily 4시 설정을 유지하고 새 SOUL/업무 스킬이 생성기와 일치한다. config의 byte 동일성은 4개만 유지됐으며 Hermes가 시작 시 추가하는 agent/display/plugins/config-version 값은 제품 기본값과 구분한다. 모든 개인 설정 파일이 byte 단위로 같다는 주장은 하지 않는다.
+- 승인된 활성 Telegram 세션 1개는 닫혔고 다음 사용자 메시지부터 새 세션이다. 과거 메시지를 삭제하지 않았다. 시험 Telegram 발송·업무 데이터 쓰기·운영 모델 답변 전체 재현은 하지 않았다.
+- 개발 모델 24회 평가와 운영 SDK/API 검증은 별도 증거다. 질문 도중 자동 압축, 일일 리셋 실제 시간대, 기존 개인 메일 인증값 교체는 아래 잔여 범위로 남는다. 최종 합동 배포 정본은 [통합 기록](auto-posting-other-sites-20260916.md)이다.
 
 ## 1. 원하는 결과
 
