@@ -395,7 +395,13 @@ restore_control_room_projects() {
         fi
         register_project_profile "$project_path" "$target"
         ;;
-      git) ;;
+      git)
+        project_path="$projects_root/$directory"
+        if [ -d "$project_path/skills" ]; then
+          link_profile "$project_path/skills" "$project_path/.claude/skills"
+          link_profile "$project_path/skills" "$project_path/.agents/skills"
+        fi
+        ;;
       *) die "알 수 없는 프로젝트 복원 방식: $kind" ;;
     esac
   done < "$manifest"
@@ -483,13 +489,20 @@ verify_agent_install() {
 
 verify_control_room_projects() {
   local manifest="$repo_dir/manifests/windows-control-projects.tsv"
-  local directory kind target extra project_path saved_path expected_path docs_source file
+  local directory kind target extra project_path saved_path expected_path docs_source file tool_home
   while IFS=$'\t' read -r directory kind target extra; do
     [ -n "${directory:-}" ] || continue
     case "$directory" in \#*) continue ;; esac
     project_path="$home_dir/projects/$directory"
     if [ "$kind" = git ]; then
       [ -d "$project_path/.git" ] || die "프로젝트 Git 검증 실패: $project_path"
+      for file in "$project_path"/skills/*; do
+        [ -f "$file/SKILL.md" ] || continue
+        for tool_home in .claude .agents; do
+          [ "$(readlink "$project_path/$tool_home/skills/$(basename "$file")" 2>/dev/null || true)" = "$file" ] ||
+            die "프로젝트 스킬 링크 검증 실패: $project_path/$tool_home/skills/$(basename "$file")"
+        done
+      done
       continue
     fi
     saved_path="$(git -C "$repo_dir" config --local --get "kmh-agent-kit.project.$target" || true)"

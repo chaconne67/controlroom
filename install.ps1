@@ -583,8 +583,15 @@ function Restore-ControlRoomProjects {
     if ($LASTEXITCODE -ne 0) { throw '[error] 조정실 저장소 복원 실패' }
 
     foreach ($entry in Get-ControlRoomProjects) {
-        if ($entry.Kind -ne 'profile') { continue }
         $projectPath = Get-ControlRoomProjectPath -Entry $entry
+        if ($entry.Kind -eq 'git') {
+            $skillsPath = Join-Path $projectPath 'skills'
+            if (Test-Path -LiteralPath $skillsPath -PathType Container) {
+                Link-Profile -Profile $skillsPath -Live "$projectPath\.claude\skills"
+                Link-Profile -Profile $skillsPath -Live "$projectPath\.agents\skills"
+            }
+            continue
+        }
         if (-not (Test-Path -LiteralPath $projectPath)) {
             New-Item -ItemType Directory -Path $projectPath -Force | Out-Null
             Write-Host "project folder created: $projectPath"
@@ -680,7 +687,22 @@ function Assert-Install {
                 if (-not (Test-Path -LiteralPath $projectPath -PathType Container)) {
                     throw "[error] 프로젝트 폴더 검증 실패: $projectPath"
                 }
-                if ($entry.Kind -eq 'git') { continue }
+                if ($entry.Kind -eq 'git') {
+                    $skillsPath = Join-Path $projectPath 'skills'
+                    if (Test-Path -LiteralPath $skillsPath -PathType Container) {
+                        foreach ($source in Get-ChildItem -LiteralPath $skillsPath -Directory) {
+                            if (-not (Test-Path -LiteralPath (Join-Path $source.FullName 'SKILL.md'))) { continue }
+                            foreach ($toolHome in '.claude', '.agents') {
+                                $link = Get-Item -LiteralPath "$projectPath\$toolHome\skills\$($source.Name)" -Force
+                                $target = Get-LinkTargetPath -Item $link
+                                if (-not $target -or $target.TrimEnd('\') -ne $source.FullName.TrimEnd('\')) {
+                                    throw "[error] 프로젝트 스킬 링크 검증 실패: $($link.FullName)"
+                                }
+                            }
+                        }
+                    }
+                    continue
+                }
                 $savedPath = (& $script:gitExe -C $repoDir config --local --get "kmh-agent-kit.project.$($entry.Target)").Trim()
                 $resolvedPath = (Resolve-Path -LiteralPath $projectPath).Path
                 if ($LASTEXITCODE -ne 0 -or $savedPath -ne $resolvedPath) {

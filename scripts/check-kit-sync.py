@@ -579,9 +579,13 @@ class WindowsInstallerTests(unittest.TestCase):
             run("git", "config", "user.email", "kit-test@example.invalid", cwd=venture_seed)
             (venture_seed / "AGENTS.md").write_text("venture agent\n", encoding="utf-8")
             (venture_seed / "CLAUDE.md").write_text("venture claude\n", encoding="utf-8")
+            (venture_seed / ".gitignore").write_text(".agents/\n.claude/\n", encoding="utf-8")
             skill = venture_seed / "skills" / "venture"
             skill.mkdir(parents=True)
             (skill / "SKILL.md").write_text("venture skill\n", encoding="utf-8")
+            retired_skill = skill.with_name("retired")
+            retired_skill.mkdir()
+            (retired_skill / "SKILL.md").write_text("retired skill\n", encoding="utf-8")
             run("git", "add", "-A", cwd=venture_seed)
             run("git", "commit", "-m", "venture baseline", cwd=venture_seed)
             run("git", "clone", "--bare", venture_seed, venture_origin)
@@ -595,6 +599,11 @@ class WindowsInstallerTests(unittest.TestCase):
             fake_bin = temp / "bin"
             fake_bin.mkdir()
             (fake_bin / "ssh.cmd").write_text("@echo off\r\nexit /b 0\r\n", encoding="utf-8")
+            bash_environment = temp / "bash-environment"
+            bash_environment.write_text(
+                'export PATH="$(cygpath -u "$TEST_FIXTURE_BIN"):$PATH"\n', encoding="utf-8"
+            )
+            git_usr_bin = run(BASH, "-c", "cygpath -w /usr/bin").stdout.strip()
             env = os.environ.copy()
             env.update(
                 {
@@ -604,7 +613,9 @@ class WindowsInstallerTests(unittest.TestCase):
                     "CLAUDE_HOME": str(home / ".claude"),
                     "CODEX_HOME": str(home / ".codex"),
                     "HERMES_HOME": str(home / ".hermes"),
-                    "PATH": str(fake_bin) + os.pathsep + env["PATH"],
+                    "PATH": str(fake_bin) + os.pathsep + git_usr_bin + os.pathsep + env["PATH"],
+                    "BASH_ENV": str(bash_environment),
+                    "TEST_FIXTURE_BIN": str(fake_bin),
                     "GIT_CONFIG_COUNT": "1",
                     "GIT_CONFIG_KEY_0": f"url.{venture_origin.as_uri()}.insteadOf",
                     "GIT_CONFIG_VALUE_0": "https://github.com/chaconne67/venture.git",
@@ -625,6 +636,11 @@ class WindowsInstallerTests(unittest.TestCase):
             )
 
             run(*command, env=env)
+            for tool_home in (".agents", ".claude"):
+                self.assertTrue(os.path.samefile(
+                    home / "projects" / "venture" / tool_home / "skills" / "venture",
+                    home / "projects" / "venture" / "skills" / "venture",
+                ))
             self.assertEqual(
                 os.readlink(managed_skill).removeprefix("\\\\?\\"),
                 str((repo / "skills" / "common" / managed_skill.name).resolve()),
@@ -662,7 +678,29 @@ class WindowsInstallerTests(unittest.TestCase):
                 wrapper_mtimes[name] = wrapper.stat().st_mtime_ns
             venture = home / "projects" / "venture"
             (venture / "AGENTS.md").write_text("local venture work\n", encoding="utf-8")
+            skill_mtimes = {
+                tool_home: (venture / tool_home / "skills" / "venture").lstat().st_mtime_ns
+                for tool_home in (".agents", ".claude")
+            }
+            (venture / "skills" / "retired" / "SKILL.md").unlink()
+            (venture / "skills" / "retired").rmdir()
+            added_skill = venture / "skills" / "added"
+            added_skill.mkdir()
+            (added_skill / "SKILL.md").write_text("added skill\n", encoding="utf-8")
+            private_project_skill = venture / ".agents" / "skills" / "private" / "SKILL.md"
+            private_project_skill.parent.mkdir()
+            private_project_skill.write_text("private project skill\n", encoding="utf-8")
+            venture_status = run("git", "status", "--porcelain=v1", cwd=venture).stdout
             run(*command, env=env)
+            self.assertEqual(run("git", "status", "--porcelain=v1", cwd=venture).stdout,
+                             venture_status)
+            self.assertEqual(private_project_skill.read_text(), "private project skill\n")
+            for tool_home in (".agents", ".claude"):
+                live_skills = venture / tool_home / "skills"
+                self.assertEqual((live_skills / "venture").lstat().st_mtime_ns,
+                                 skill_mtimes[tool_home])
+                self.assertFalse((live_skills / "retired").exists())
+                self.assertTrue(os.path.samefile(live_skills / "added", added_skill))
             self.assertEqual(managed_skill.lstat().st_mtime_ns, managed_link_mtime)
             self.assertEqual(docs_link.lstat().st_mtime_ns, docs_link_mtime)
             self.assertFalse((home / "projects" / "exdigm").exists())
@@ -744,6 +782,42 @@ class WindowsInstallerTests(unittest.TestCase):
                 (venture / "AGENTS.md").read_text(encoding="utf-8"),
                 "local venture work\n",
             )
+
+            # Installed CMD -> real installer -> commit/push -> independent writer -> pull.
+            for checkout in (repo, venture):
+                KitFixture._configure(checkout)
+                run("git", "add", "-A", cwd=checkout)
+                run("git", "commit", "-m", "Windows checkpoint baseline", cwd=checkout)
+            control_origin = temp / "controlroom.git"
+            run("git", "clone", "--bare", repo, control_origin)
+            run("git", "remote", "add", "origin",
+                "https://github.com/chaconne67/controlroom.git", cwd=repo)
+            run("git", "config", f"url.{control_origin.as_uri()}.insteadOf",
+                "https://github.com/chaconne67/controlroom.git", cwd=repo)
+            checkpoint = repo / "checkpoint.txt"
+            checkpoint.write_text("CMD push checkpoint\n", encoding="utf-8")
+            cmd_exe = shutil.which("cmd.exe") or "cmd.exe"
+            run(cmd_exe, "/d", "/c", wrappers["kitpush"], "Windows CMD checkpoint",
+                env=env)
+            self.assertEqual(run("git", "--git-dir", control_origin,
+                                 "show", "main:checkpoint.txt").stdout,
+                             "CMD push checkpoint\n")
+            self.assertEqual(run("git", "rev-parse", "HEAD", cwd=venture).stdout,
+                             run("git", "--git-dir", venture_origin, "rev-parse", "main").stdout)
+            receiver = temp / "receiver"
+            run("git", "clone", control_origin, receiver)
+            self.assertEqual((receiver / "checkpoint.txt").read_text(),
+                             "CMD push checkpoint\n")
+            KitFixture._configure(receiver)
+            (receiver / "checkpoint.txt").write_text("independent pull checkpoint\n",
+                                                     encoding="utf-8")
+            run("git", "add", "checkpoint.txt", cwd=receiver)
+            run("git", "commit", "-m", "independent update", cwd=receiver)
+            run("git", "push", cwd=receiver)
+            run(cmd_exe, "/d", "/c", wrappers["kitpull"], env=env)
+            self.assertEqual(checkpoint.read_text(), "independent pull checkpoint\n")
+            for checkout in (repo, venture):
+                self.assertEqual(run("git", "status", "--porcelain", cwd=checkout).stdout, "")
 
             # An ordinary docs directory belongs to the user, even when install fails.
             protected_docs = home / "projects" / "rndlog" / "docs"
