@@ -7,6 +7,9 @@
 대상: 기존 DB, Coconut/FundKeeper, RNDLOG, ZiiN, CEO Loan, GBrain 런타임·자료 게이트웨이·필요한 제품 런타임
 제외: Exdigm 앱·운영서버·도메인 이전. 공용 DB를 쓰는 Exdigm 소비자의 기존 접속·업무 계약도 보호한다.
 
+
+> 최신 상태: 2026-09-17 01:36 KST 사용자 요청으로 작업 중지. 아래 12절의 다음 세션 인계를 먼저 읽는다. 운영 정본·DNS 미인계이며 격리 MySQL 복원은 중지된 부분 상태다.
+
 ## 1. 사용자 결정과 완료 의미
 
 - 기존 DB 호스트는 증설할 수 없으므로 새 호스트 49.247.192.127로 통합한다.
@@ -218,3 +221,195 @@ Coconut 원본 deploy.sh는 전체 stack 목록을 제거하므로 새 공유 �
 3. 최종 복제/파일 대조에 실패하거나 남은 시간으로 복귀가 불가능해지기 전에 승격을 취소하고 옛 단일 정본을 재개한다. 오래 걸리는 전체 복원·대량 복사는 이 시간 안에 넣지 않는다.
 4. 승격 후에는 새 쓰기가 있으므로 옛 snapshot을 다시 열지 않는다. 검증한 새 정본 유지 복구를 사용한다. 이 경로까지 준비되지 않았으면 승격하지 않는다.
 5. 실제 중단 시작/종료 시각·최종 WAL/binlog·파일 검증·writer 소유권·업무 재개 결과를 이 문서에 남긴다. 공개 DNS는 마지막에 별도 전환한다.
+
+## 12. 사용자 중지와 다음 세션 인계 — 2026-09-17
+
+# 운영서버 통합 — 중지 및 다음 세션 인계
+
+기록 시점: 2026-09-17 01:36 KST
+상태: **사용자 요청으로 작업 중지. 준비 중이며 DNS만 남은 상태가 아니다.**
+
+## 1. 요청과 승인
+
+- 새 서버: `chaconne@49.247.192.127` (hostname `main`). SSH 별칭 `main`은 없다.
+- Exdigm을 제외한 DB·Coconut/FundKeeper·RNDLOG·CEO Loan·ZiiN 및 필요한 GBrain/자료 저장 경로를 통합한다.
+- 준비 중 기존 서비스를 유지하고, 실제 데이터·파일·예약 작업 책임을 안전하게 인계한 뒤 마지막에 도메인 연결만 바꾸는 것이 목표다.
+- 준비·설치·복사·격리 시험·조정실 정보 갱신은 이미 승인됐다. 같은 준비 승인을 다시 묻지 않는다.
+- 최종 인계 시 **야간 전체 접속 중단 최대 5분(300초)**을 허용했다. 전체 전환·승격 전 취소·복귀를 리허설하기 전에는 중단을 시작하지 않는다.
+- Coconut 02:10 작업은 **정상 캐시 생성만 유지**한다. 없는 `update_gdrive.py`는 별도 과제로 남긴다. 인증정보가 든 .env까지 복사하는 `upload_to_gdrive.py`로 대체하거나 실행하지 않는다.
+- 공개 DNS 변경·옛 서버 삭제·실제 고객 문자/메일·금융 주문은 수행하지 않았다.
+- 사용자가 01:34 KST경 작업 중지를 명시했다. 다음 세션이 재개하기 전에는 추가 이전을 실행하지 않는다.
+
+## 2. 다음 세션이 먼저 읽을 정본
+
+- 조정실: `C:\Users\chaconne\controlroom\docs\production-server-consolidation-20260916.md`
+- 해당 프로젝트 docs/README와 조정실 카드에 통합 준비 상태와 원본/대상 주소가 반영돼 있다.
+- 새 서버 설정: `/srv/consolidation/infra`
+- 새 서버 중지 시점 증거: `/srv/consolidation/infra/validation-pause-state.json`
+- 복원 시험 중지 기록(옛 DB): `/mnt/consolidation-20260916/offsite/restore-paused.json`
+- Windows 작업 폴더: `C:\Users\chaconne\Documents\Codex\2026-09-16\new-chat-3\work`
+- 이 폴더의 `stream_transfer.py`는 비밀값/덤프를 Windows 파일로 저장하지 않고 SSH 바이너리 스트림으로 전송한다.
+- 개발 에이전트는 조정실에서만 실행한다. 서버에는 SSH로 명령·코드·빌드·시험을 실행한다.
+
+## 3. 중지 후 실제 상태
+
+| 대상 | 마지막 직접 확인 |
+|---|---|
+| 기존 공개 14개 도메인 | 원래 HTTPS 상태/주소 이동과 CA 검증 유지. HTTP-01 내용도 14개 모두 일치. DNS는 기존 4개 IP 유지 |
+| 운영 DB | 옛 DB 서버가 정본. 원본 PG·MySQL·ZiiN·phpMyAdmin·Portainer 계속 실행 |
+| PG 새 대기본 | recovery=true. 원본에서 streaming/async, replay lag 0 bytes |
+| MySQL 새 대기본 | IO/SQL 모두 Yes, 지연 0초, IO/SQL error 0 |
+| 파일 증분 | 5개 범위 5분 timer 활성. 마지막 제한 시간 45초 실행은 2.2초, 전 범위 exit 0 |
+| 새 업무 예약 작업 | 11개 timer 모두 disabled |
+| 새 인증서 timer | disabled. 수동 service 실행·검사·재읽기는 성공 |
+| 새 정본 표식 | `/srv/consolidation/data/production-authority.json` 없음 |
+| 실제 야간 중단/승격 | 실행하지 않음 |
+| 격리 복원 시험 | 사용자 중지에 따라 시험 PG/MySQL 컨테이너 모두 stopped. MySQL 복원은 부분 상태 |
+| 미완료 코드 리뷰 | 새 인프라 전체 code-review-loop와 커밋이 남음. 단위 검증을 전체 리뷰 완료로 간주하지 않음 |
+
+DB/파일 복제를 유지한 것은 대기본 최신성을 보존하기 위한 현재 준비 상태다. 새 업무 worker·cron은 켜지 않았다.
+
+## 4. 실제 경로와 준비물
+
+### 호스트
+
+| 이름 | SSH/IP |
+|---|---|
+| 기존 DB·ZiiN·GBrain | `DB` / 49.247.45.243 |
+| Coconut | `coconut` / 49.247.38.186 |
+| RNDLOG | `rndlog` / 49.247.207.147 |
+| CEO Loan | `ceoloan` / 49.247.205.170 |
+| 신규 | `chaconne@49.247.192.127` |
+| 구 rndnote | 49.247.46.171, SSH timeout. 잔여 역할 확인 안 됨 |
+| 제외된 Exdigm | 49.247.202.197. 주 앱은 자체 exdigm_db를 사용함을 읽기 전용 확인 |
+
+SSH는 `BatchMode=yes`, `StrictHostKeyChecking=yes`를 사용한다. 새 서버 Docker는 `sudo -n docker`가 필요하다.
+
+### 신규 런타임
+
+- Ubuntu 26.04, 16 CPU, RAM 약 31.3 GiB. Docker/Compose 설치 완료.
+- `migration-data`: 쓰기 가능한 격리 시험 DB. 운영 정본이 아니다.
+- `migration-replicas`: 지속 복제되는 PG/MySQL. 실제 인계 대상이며 현재 읽기 전용이다.
+- `migration-*`: 격리 앱·입구·GBrain 시험.
+- `production-*`: 실제 복제 DB를 읽는 전환 대기 앱 4개·입구·GBrain. 파일은 읽기 전용, 앱 외부 통신 차단.
+- 공개 80은 ACME/HTTPS 주소 이동용. 시험 입구는 loopback 18080/18443, 전환 대기 입구는 loopback 28080/28443.
+- 공개 443·공개 DB 포트는 운영용으로 열지 않았다.
+- `compose.activate.*.json`은 준비된 인계용 덮어쓰기 설정이다. **아직 적용하지 않았다.**
+- `compose.activate.replicas.json`은 MySQL 승격 후 재시작에서도 읽기 전용/복제 자동 재개로 돌아가지 않도록 만든 설정이다. 승격 절차와 함께 추가 검증해야 한다.
+- `networks.json`에 실제 20개 네트워크를 기록했다. `ensure-networks.py`는 없는 망만 만들고 기존 망의 subnet/gateway/internal/주소 범위를 검증한다. 현 상태에서 20개 모두 일치.
+- 예전 `production-networks.json`은 `networks.json`으로 통합했다.
+- 추가 디스크 /dev/vdb 200GB는 미포맷이며 건드리지 않았다.
+
+### DB 복제
+
+- PG16+pgvector, 물리 복제 slot `consolidation_main_20260916`, 전용 replication role.
+- PG 대기본 `data/postgres-standby`, 새 복제망 IP 172.30.22.10, 제품망 172.30.40.10.
+- MySQL 8.4.8, GTID OFF를 유지하고 binlog 좌표로 복제. 새 server_id 20260916.
+- MySQL 대기본 `data/mysql-standby`, 복제망 172.30.22.11, 제품망 172.30.41.10.
+- 새 `consolidation-db-transport.service`가 SSH로 옛 DB localhost 포트를 전달한다.
+- 비밀번호·원본 환경·키는 `/srv/consolidation/secrets`에만 있다. 출력/문서/Git에 값을 넣지 않는다.
+- 옛 DB의 3분 간격 장기 거래 정리 스크립트가 정합 백업을 죽이던 기존 동작을 확인했다. 이번 전용 읽기 전용 백업 계정만 제외하도록 좁게 수정했고 전체 MySQL dump 성공을 확인했다. 이 원본 스크립트 전체에는 비밀번호가 있으므로 cat/전체 diff 출력 금지.
+- 원본 스크립트 백업: `/mnt/consolidation-20260916/kill_stuck_trx.sh.before-backup-exclusion`. 이 패치의 최종 범위 리뷰·기록도 남아 있다.
+
+### 파일
+
+- `sync-files.py`가 workspace(companies/resources), GBrain 상태, Coconut data, RNDLOG media, CEO media를 각각 제한된 rsync 키로 복제한다.
+- 목적지: `/srv/consolidation/data/files-standby`.
+- 각 소스의 forced command는 범위별 rrsync 읽기 전용이다.
+- 이번 검토에서 정본 인계 뒤 옛 파일로 덮는 경로를 막았다. service ConditionPathExists와 스크립트 모두 정본 표식이 있으면 동기화를 거절한다.
+- `--deadline-seconds 45` 지원. GNU timeout이 rsync/SSH 프로세스 그룹의 시간을 제한한다. 실제 정상 실행 2.2초.
+- 정본 표식 직전에는 timer와 진행 중 sync를 명시적으로 멈추고 마지막 파일 장벽을 확인해야 한다. 표식만으로 이미 시작된 작업의 종료를 대신하지 않는다.
+
+### 인증서와 웹
+
+- 7개 독립 인증서, 총 14개 이름: coconut.ai.kr / rndlog.kr / rndnote.co.kr / aishift.kr / rogeon.kr / synco.kr / ziin.site 각각 www 포함.
+- 7개 모두 실제 발급 성공, 2026-12-15 UTC 만료. 키 대응·SAN·14개 CA/SNI/route 검증 통과.
+- 4개 Certbot 계보 묶음 모두 renew dry-run 성공. 원본의 Docker 중지/시작 hook은 새 Certbot에서 실행되지 않도록 제외.
+- `renew-certificates.sh`는 실행 중인 시험/전환 대기 Nginx를 모두 검사하고 재읽는다. 원래 시험 입구만 재읽던 문제를 수정했고 실제 service exit 0.
+- 원본의 ACME 경로는 local webroot 우선, 없을 때 고정 새 IP로 전달한다. 업무 HTTPS는 그대로다.
+- 기존 인증서 갱신 책임·옛 HTTPS 입구의 새 서버 전달·최종 공개 80/443 인계는 아직 남아 있다.
+- Coconut health 검증 경로는 **/health/**다. /health는 정상 301이므로 경로를 혼동하지 않는다.
+
+### 자료 게이트웨이
+
+- 새 `/home/chaconne/projects/rndlog`은 아직 **격리 검증용** `/srv/consolidation/data/rndlog-workspace`를 가리키는 symlink다.
+- 인계 시에만 `files-standby/workspace` 정본으로 바꾼다.
+- 직접 새 게이트웨이: 실제 공식 클라이언트 upload/download/hash/rollback 및 임의 명령 거절 통과.
+- 옛 DB에 `/home/chaconne/consolidation-20260916/workspace-storage-forward` 준비.
+- 전용 키: 같은 디렉터리의 `workspace-forward-ssh`, 새 호스트에 from=49.247.45.243 + restrict + 실제 gateway forced command로 제한.
+- 이 두 번째 SSH 전달 경로도 health/upload/download/rollback/임의 명령 거절 통과. 시험 파일 SHA-256: a7471820f6c267d3467ef9ca5fad1cba9d7bb877fb3558db31bc11bc6798640c.
+- 실제 원본 authorized_keys의 운영 gateway command는 아직 바꾸지 않았다. 합성 시험 폴더는 정리 완료.
+
+### 기존 DB 주소 호환
+
+- 옛 DB `consolidation-main-compatibility.service` 활성. 원래 운영 5432/3306을 건드리지 않고 private 35432/33306을 새 읽기 전용 대기본으로 전달.
+- 기존 PG 서비스는 host publish, MySQL은 Swarm ingress publish다. 단순 서비스 scale 0 + 포트 바인딩으로 바꾸면 계약을 깨뜨릴 수 있다.
+- 기존 Swarm 서비스 이름/망/publish를 보존한 Nginx TCP proxy 교체 방식을 준비 중.
+- 원본 service inspect는 옛 DB `/home/chaconne/consolidation-20260916/{CentralDB_postgres,db_mysqldb}-before-cutover.json`에 비공개 보관.
+- `{postgres,mysql}-compatibility-nginx.conf`와 결과 `compatibility-rehearsal-results.json`이 같은 디렉터리에 있다.
+- 격리 Swarm 서비스에서 원본 DB → 새 읽기 전용 DB → 원본 DB의 실제 질의 확인:
+  - PG 전환 14.4초 / 복귀 10.1초.
+  - MySQL 전환 15.1초 / 복귀 6.8초.
+- 시험 서비스/망 제거 완료. 실제 운영 Swarm 서비스는 교체하지 않았다.
+- Docker service update에서 같은 target을 --mount-rm과 --mount-add로 동시에 주면 새 mount도 빠졌다. **같은 target 교체는 --mount-add만 사용**하는 경로로 수정·재시험했다.
+- 이 부분 시험은 전체 300초 인계나 승격 후 복구의 검증을 대신하지 않는다.
+
+### GBrain
+
+- 새 validation과 production prewarm 모두 기존 Bun/CLI/Google 환경 wrapper를 재사용한다.
+- `compose.production.gbrain.json`은 실제 PG 대기본과 files-standby/gbrain-state를 읽기 전용으로 사용한다.
+- 공식 CLI 공용 프로토콜 조회 성공, SHA-256 13e52b1fe824c71c2cfc1ed1dd9325ce0561b0668dbe0ce164b336adc3a71a7e.
+- HTTP health·관리자 login·인증 후 sources 조회 200, 원본/검증본과 동일 해시.
+- bootstrap token은 관리자용이다. MCP bearer token으로 사용하거나 새 고객/클라이언트 토큰을 재발급하지 않는다.
+- `compose.activate.gbrain.json`과 전용 outbound 망은 준비만 했다.
+- 현재 조정실 GBrain CLI의 권위는 여전히 옛 DB다. 카드의 CLI 주소를 미리 바꾸지 않는다.
+- 원본 GBrain 일일 03:30 memory-distill은 옛 .codex 개발 대화 이력을 읽는다. 그 이력은 새 서버로 복사하지 않았다. 개발 기록 작업과 제품 GBrain 런타임을 혼동해서 빈 새 이력으로 작업을 켜지 않는다.
+- GBrain HTTP 기존 localhost3131 소비자/CLI·상태·갱신 책임 인계와 안전한 외부 연동 검증이 남아 있다.
+
+## 5. 다른 서버에서 진행한 복구 시험 — 부분 완료
+
+- 새 읽기 전용 대기본에서 PostgreSQL company_main/gbrain/ziin + globals, MySQL 전체 논리 백업 생성 성공.
+- 백업 시각: 2026-09-16T16:00:58Z. 준비 복구 시험용이며 **최종 인계 시점 DB/파일 일관 snapshot이 아니다.**
+- DB/파일/설정/비밀값/인증서/코드 복구 묶음을 GPG 공개키로 암호화하여 옛 DB에 보관했다.
+- 암호문: `/mnt/consolidation-20260916/offsite/recovery-20260916T160058Z.tar.gpg`
+- 크기 3,940,779,037 bytes; SHA-256 aef41e68ad9fad5e59dfbfc1c824073b4b4c77c4ab5412b360435fba7bf796d3.
+- 복구 키는 옛 DB `/mnt/consolidation-20260916/recovery-keyring` (root 전용)에 있다. 값은 출력하지 않는다.
+- 지문: 0F3D06E1AE97A45C967D09FBAF971ADE37BC528D.
+- 암호문 checksum·GPG 무결성/복호화·추출 성공.
+- 추출 경로: `/mnt/consolidation-20260916/offsite/restore-20260916T160058Z`.
+- 시험 컨테이너: `consolidation-recovery-postgres`, `consolidation-recovery-mysql`. 각각 network=none, CPU 1, RAM 2GB, 전용 /mnt 데이터 폴더. **현재 둘 다 중지됨.**
+- PG company_main: 전체 restore 성공 367.3초, 사용자 테이블 103개.
+- PG globals: 원본 최초 관리자 이름 **exdigm**으로 initdb해야 GRANTED BY 권한 관계가 보존됐다. initdb가 이미 만든 정확한 `CREATE ROLE exdigm;` 한 줄만 제외하고 나머지를 ON_ERROR_STOP으로 복원했다.
+- GBrain: 원본 event trigger `auto_rls_on_create_table` 소유자는 gbrain인데 현재 gbrain은 NOSUPERUSER다. 복구 시험 DB에서만 잠깐 SUPERUSER를 부여해 전체 restore 후 **finally에서 NOSUPERUSER로 되돌렸다**. 원본과 같은 owner/rolsuper=false 확인. 복원 17.7초.
+- ZiiN: restore 성공 0.8초.
+- MySQL: import 도중 사용자의 중지 요청으로 시험 DB를 정지했다. import exit 1/gzip -13은 이 정지에 따른 결과다. 부분 데이터이며 mysqlcheck는 실행하지 않았다.
+- 성공한 PG 복원을 다시 할 필요는 없다. 다음 세션은 중지 기록을 읽고 **시험 MySQL만** 새 전용 데이터 디렉터리에서 전체 import 후 mysqlcheck/앱 권한 검증을 재개한다.
+- `work/restore-offsite-backup.py`에는 최초 관리자 보정까지 반영돼 있지만, GBrain event trigger 소유자 복구 순서와 재개 경로는 아직 합쳐지지 않았다. 그대로 재실행하면 안 된다.
+- 원본 DB·실제 새 대기본에 권한을 올리거나 dump를 복원한 적은 없다.
+
+## 6. 저장소 상태와 보존해야 할 기존 작업
+
+- 신규 infra Git base: `1021c78f67c3c266c7aa654a50fbc6aa8299e5b7`.
+- 이후의 설정/스크립트/증거 파일은 **미커밋**이다. 다음 세션에서 git status/diff와 pause-state를 대조하고 보존한다.
+- `README.md`는 초기 검증 전용 상태 설명으로 낡아 있다. 실제 production prewarm/replication/ports/activation/복구 경로를 반영해야 한다.
+- 일부 발견 수정·단위 검증은 끝났지만 인프라 전체 code-review-loop는 완료하지 않았다.
+- 원본 ACME 설정 3개는 범위 리뷰·nginx -t·공개 기준선 확인 후 커밋/게시 완료:
+  - RNDLOG: 67d07991e755ab146e73fbbf35395d2f65699ec9
+  - CEO Loan: e9c013929378815c7294f52c9e76c330ef285ce9 (remote 이름 ceoloan; origin은 로컬 bundle)
+  - ZiiN 게시: 3f1d029ba75a5f96a62bbc714bc0099722bcfbe5
+- ZiiN 기존 HEAD 427729d에는 미게시 사용자 기능 변경이 있었다. 이번 7줄 ACME 변경만 원격 9179f77 위에 게시하고, 현지 작업에는 그 게시 커밋을 merge했다. 현재 현지 HEAD 43e79e3705f6763fa1fd5a61f774d0649f1c06b3, clean. 기존 기능은 추가 배포/게시하지 않았다.
+- 새 호스트에 복사한 제품 소스는 초기 commit을 유지한다. 현재 운영 이미지도 바꾸지 않았다. 배포 전 원본/새 복사본/실제 이미지의 차이를 다시 확인한다.
+- 조정실의 다른 미게시 사용자 커밋은 유지하며 이번 문서만 별도 게시한다. `work/controlroom-publish`는 게시용 분리 worktree다. 전체 로컬 main을 무심코 push하지 않는다.
+
+## 7. 다음 세션의 순서
+
+1. 이 기록과 정본 계획, 실제 Git/컨테이너/복제/예약 작업 상태를 대조한다. 중지된 시험과 운영 서비스를 혼동하지 않는다.
+2. 중지된 **격리 MySQL 복구 시험**만 재개한다. PostgreSQL 권한/이벤트 트리거 복구 순서를 공식 복구 절차에 통합한다. 백업 전체 검증 전에는 복구 완료라 하지 않는다.
+3. 새 infra의 리뷰를 base 1021c78부터 다시 마무리하고 필요한 수정·실제 검증·설명서·커밋을 완료한다. 원본 장기 거래 정리 패치도 좁게 검토한다.
+4. 옛 HTTPS → 새 고정 IP 전달, 실제 client IP, TLS/SNI, streaming/websocket, 기존 인증서 갱신 책임을 준비·검증한다.
+5. GBrain HTTP/CLI·자료 symlink/forced command·원본/새 예약 작업·백업·관리 서비스의 실제 소유권 인계와 필요한 안전한 외부 기능 검증을 완료한다.
+6. 모든 writer의 잠금/진행 작업 배수, 최종 WAL/binlog/파일 장벽, 옛 primary fencing, 새 승격·재시작 계약을 준비한다. 새 쓰기 후 옛 snapshot을 다시 열지 않는다.
+7. 전체 서비스의 300초 전환·승격 전 취소·새 정본 유지 복구를 격리 리허설하고 시간을 측정한다. 이 근거가 없으면 실제 중단을 시작하지 않는다.
+8. 준비가 모두 검증된 뒤 승인된 야간 인계에 들어간다. **공개 DNS는 그 뒤 마지막 단계로 남긴다.**
+
+이 기록은 작업 중지 인계다. 통합 완료·전체 복구 통과·DNS만 남음으로 해석하지 않는다.
