@@ -4,6 +4,16 @@
 
 사용자는 지역 코드표에 없는 사례마다 패치하는 대신, 알려진 동작은 스크립트로 실행하고 낯선 화면은 원문과 현재 선택지를 보고 LLM이 판단하는 구성을 승인했다(“진행해”). 첫 적용 범위는 잡코리아 지역·주소 입력이다. 구현·격리 검증·리뷰·문서화는 포함하며 운영 배포, 실제 사이트 로그인·게시·수정·마감은 포함하지 않는다.
 
+### 실제 비게시 검증 승인 — 2026-09-16 후속
+
+- 사용자가 실제 잡코리아 비게시 입력 검증 제안에 “진행해”로 승인했다. 실제 로그인·입력 검증만 추가하며 저장·게시·마감·배포는 승인 범위 밖이다.
+- GBrain `analysis/exdigm-existing-posting-update-20260911`에서 기존 dry-only 인증 예외의 사용자 승인·구현·검증을 확인했다. 현재 `main.settings.local`의 `EXDIGM_DEBUG_POSTING_WORKER` 분기도 그대로 존재한다. 이 예외는 인증 파일 복사 없이 프로세스에서 참조하고 읽기 전용 DB 및 운영 브라우저 공통 잠금을 사용하는 범위다.
+- 공식 실행: `scripts/debug_workspace.sh shell-readonly` → Django `call_command('autoposting', --site jobkorea --action run --mode dry --payload <기존 워커 출력>)`. 임시 브라우저 러너·동작 대체·운영 checkout 수정은 하지 않는다.
+- 시작 확인: main/debug HEAD `20355d8a`, 운영 clean, 기존 공유 브라우저 running, dry_only=true/publish=false. default와 posting_credentials DB 역할은 둘 다 exdigm_debug_ro다.
+- 원래 실패 run은 `493833c8-4ab1-4f86-8fd3-5f9de721b6fb`, site run은 `52779b2d-da6b-4b38-b2a1-059c6fe3aa44`. 원래 입력 파일의 근무지는 대전·세종이며 파일을 수정하지 않는다.
+- 대상 run/site run/PostingSite의 실행 전 해시는 `412ee8059dbe960a661b0d499c7c662a9faf8b1d20251ab6657b13b4779763f7`이다. 실행 후 같은 조회와 비교한다.
+- 디버깅의 별도 이력서 작업 3파일과 조정실의 별도 설치기 작업 4파일을 보존한다. 전체 staging·배포를 하지 않는다.
+
 ## 기준선과 보호 조건
 
 - 원격 debug: chaconne@49.247.202.197:/home/chaconne/exdigm-debug, detached 2620b6fcb1e0075220353e9965147c4198f889cd.
