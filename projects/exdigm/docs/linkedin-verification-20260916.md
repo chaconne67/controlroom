@@ -100,3 +100,24 @@
 - 제가 시작한 개발 runserver 프로세스 그룹은 cwd·명령·PID/PGID를 대조한 뒤 SIGINT로 종료했다. wrapper가 자기 게시 dry-run 작업자만 함께 정리했고 공식 status는 inactive다. 기존 운영 작업자2개와 원래 보관 LinkedIn 브라우저는 유지한다. 임시 adapter·patch는 제거하고 화면 증거는 남긴다.
 - 운영은 clean main fb177d6a이며 이번 수정은 미배포다. push·운영 배포·실제 코드 발송/제출은 하지 않는다.
 - 재개: 주인님이 운영 배포를 별도로 승인하면 exdigm-deploy를 사용한다. 다른 작업자의 dirty 변경과 일괄 배포 범위를 다시 대조하고 공식 deploy.sh prod만 사용한다. 주인님은 같은 진행 화면에서 실제 수신 코드만 직접 입력하며, 실제 feed/연결 상태·코드 삭제를 검증한다.
+
+## LinkedIn만 운영 배포 — 2026-09-16
+
+- 별도 승인: 주인님의 “링크드인 수정된거만 운영 배포”. 앞의 운영 미배포/승인 대기는 이 승인으로 갱신한다. 실제 인증 발송·재발송·제출은 승인 범위가 아니다.
+- 후보는 검증·리뷰한 5c8a295f0678cd079946c8875c4149fc544d97fb 그대로다. 운영/GitHub 기준 fb177d6a와 차이는 위 LinkedIn4파일뿐이며 새 제품 변경을 추가하지 않는다.
+- 운영은 clean main fb177d6a, debug detached HEAD5c8a295f, index 공백을 재확인했다. 다른 사용자의 게시5파일 및 추천 이력서2파일은 편집 중단 확인 후 정확한7경로의 Git stash에 복구 가능하게 보관한다. ignored .debug 진단 자료와 인증 프로필은 건드리지 않는다.
+- 보호 기준선은7파일 SHA256·6tracked 파일 binary diff SHA256·status 목록과 동일한 HEAD다. 복원 시 모두 대조하며 충돌을 임의 해결하지 않는다. 기존 이메일·암호화/삭제·만료·같은 큐/탭 계약과 운영 DB 인프라/Hermes는 유지한다.
+- 공식 검증은 깨끗한 후보에서 인증 테스트, contracts, Django/Ruff/diff 및 카탈로그를 다시 확인한다. 공식 scripts/deploy/deploy.sh prod만 실행하고, GitHub/운영/실행 코드 일치·서비스·작업자·HTTPS·운영 화면을 확인한다.
+- 배포 후7파일은 정확한 stash 객체에서 복원하고 보관본은 삭제하지 않는다. 다른 작업자에게 HEAD 및 해시·diff 동일성을 알린 뒤 편집을 재개하도록 한다.
+
+### 운영 반영 및 검증 결과
+
+- 공식 prod는2026-09-16 17:23:22 KST에 prod ok5c8a295f 및 exit0으로 끝났다. 실제 GitHub refs/heads/main, 운영 clean main, debug detached HEAD, 실행 app/SSE/notification .source-commit이5c8a295f0678cd079946c8875c4149fc544d97fb로 일치했다. fb177d6a 대비 LinkedIn4파일만 추가됐다.
+- 이미지 exdigm_app:20260916172201, 세 실행 컨테이너 모두 sha256:54057a17fb794417eff3329b524a114362f2d6889c31054c7db7b6776fcfedef다. 서비스5개1/1 및 세 앱 서비스 update completed, 작업자·지원11개 active/jobs0/drain off, 공식 운영 read-write 실행 경로, HTTPS200을 확인했다. DB 인프라와 Hermes는 배포하지 않았다.
+- 깨끗한 후보에서 인증48개와 보호216개가 재통과했다. 고정 보호18파일 보존, 새 이미지 DOC/DOCX/PDF 실제 업로드 텍스트 전달 계약, Django/Nginx/Ruff/diff 및 카탈로그 current/valid/참조 검사가 통과했다. 카탈로그의 존재하지 않는 status 명령 조회1회는 오류로 끝났으며 실제 catalog_update 출력과 공식 map_validate로 확인했다. 제품 코드 변경이나 검사 완화는 없다.
+- 보관 stash 객체는 b339c331b0fc1493842555db9623dff5ac462645다. 정확한 객체를 apply해7파일을 복원했다.7파일 SHA256,6tracked binary diff SHA256 1aa0a6e5c8247c9d7dcb342fd75c020aba47628b68842f44ae1cf65a1677491f 및 status 목록이 보관 전과 완전히 동일하다. index는 공백이며 stash는 복구용으로 남긴다.
+- 운영 화면 확인은 공용 숨은 Chrome의 읽기 전용 조회만 사용했다. 운영 로그인 세션이 없어 정확한 settings URL에서 정상 로그인 화면으로 이동하는 것까지 직접 확인했다. 새 OTP 요청·재발송·코드 제출·운영 인증 상태 조작은 하지 않았고, 인증된 운영 코드 입력 화면 및 실제 LinkedIn 로그인 성공은 미검증이다. 개발 합성 경로의 성공과 구분한다.
+- 화면 증거: C:/Users/chaconne/.hidden-browser/evidence/exdigm-linkedin-prod/linkedin-only-20260916/20260916-082246.png. 직접 이미지 확인 후 이번 소유 Chrome만 stop했고 공용 open/capture/stop의 input desktop 및 foreground 유지가 확인됐다. 영속 프로필은 보존했다.
+- 재개 조치: 주인님이 운영 설정을 새로고침하고 본인 LinkedIn 행에서 다시 연결하면, 코드 대기 상태에서 발송 대상 안내와 입력칸을 확인하고 받은 코드를 직접 제출한다. 외부 실제 feed 및 성공 상태·코드 삭제 확인은 그 사용자 조작 이후다. 앱/통화/CAPTCHA/신원/약관·자동 재발송을 성공으로 처리하지 않는다.
+- 공용 GBrain의 credential settings/deploy workflow/operating context에17:23 LinkedIn-only 반영과 미검증 인증 경계를 기록하고 세 페이지를 실제 재조회해 새 구역 및 커밋·역사 기록 보존을 확인했다. embedding 대기1회 뒤 capture가 정상 종료했다.
+- 이 요청의 원격 편집·Git·배포는 끝난 뒤 별도 승인된 추천 이력서 작업에 Git 단독 소유를 인계했다. 그 작업은 추천2파일만 추가한 f0154004의 독립 prod를 이후 시작했다. 위5c8a295f 일치/서비스 증거는17:23 LinkedIn 배포 검증 시점이며 이후 운영 판본의 고정 주장이나 합동 배포가 아니다. 게시5파일 작성자에게 그 작업의 보관/복원 완료 뒤 재개하도록 통보했다.

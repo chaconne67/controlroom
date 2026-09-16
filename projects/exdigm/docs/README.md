@@ -8,7 +8,7 @@
 
 ## 진행 중 작업
 
-- [LinkedIn 문자·이메일 인증 — 개발 검증·커밋 완료, 운영 배포·실제 코드 확인 대기](linkedin-verification-20260916.md)
+- [LinkedIn 문자·이메일 인증 — LinkedIn만 운영 배포 완료, 실제 받은 코드 확인 대기](linkedin-verification-20260916.md)
 
 - [잡코리아 실행 중 근무지 판단 — 실제 비게시 검증 실패, 선행 선택창 완료·관찰 보완 필요](jobkorea-adaptive-workplace-20260916.md)
 
