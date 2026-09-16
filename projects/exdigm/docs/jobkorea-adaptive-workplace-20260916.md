@@ -111,6 +111,7 @@ GBrain 공용 `project/exdigm-auto-posting-process-policy`에 「절차형 자�
 - app/SSE/notification update는 completed, DB·app·nginx·SSE·notification 5개 1/1, 작업자·지원 프로세스 11개 active/jobs 0/drain off, HTTPS 200이다. 공식 작업자 read-write 반영 후 auto-posting MainPID는 `3843473`에서 `3983620`으로 바뀌었고, 시작 시각 19:03:37 KST와 운영 경로 `/home/chaconne/exdigm`을 확인했다.
 - 대상 4행의 전체 해시는 전후 동일했다: Project `475dd190a323b22490a54d9566bedfbc07055f8d283ecdfe876af03e948cd8dd`, PostingSite `1473bc9da27e3c023084fb998cbc7b838884dbf9d5b98ccf505be7a7a44ba404`, run `14d8fb9eb23127676123d580b2b190472a17e5f5f76cb70769cbf9f919bd43b6`, site run `a7b10b98e756fc8931a7bb4817492a658d4511a08189665924c835792ffd01e7`. 프로젝트 실행 이력 2개와 failed/외부 번호·URL 공백도 동일했다. 게시 재시도·저장·마감·삭제·DB 복구는 하지 않았다.
 - 배포 완료 후 BOM 작업이 검증한 별도 3파일 커밋 `87683dae905f56676bb6f0d4b9916c2d86bcfb0d`로 개발 작업을 복원했다. debug는 이 커밋의 clean detached이고 부모 `dd65eed0`를 보존한다. 이 3파일은 이번 운영 배포에 포함되지 않았으며 운영은 `dd65eed0` 그대로다. 복구 stash·파일 사본도 보존했다. DB 인프라·Hermes 배포와 보호 기준 변경은 하지 않았다.
+- GBrain 공용 `project/exdigm-operating-context`와 `project/exdigm-deploy-workflow`의 과거 본문을 보존하며 최신 운영 판본을 갱신했다. 저장 뒤 재조회한 본문이 제출한 본문과 두 페이지 모두 일치했다.
 
 ## 승인과 목표
 
@@ -281,5 +282,5 @@ GBrain 공용 `project/exdigm-auto-posting-process-policy`에 「절차형 자�
 - 다른 작업의 이력서/LinkedIn 커밋, 복구 stash, 별도 Hermes worktree·문서 변경을 보존했다. 후속 작업은 실제 Git 상태를 다시 확인하고 미배포 커밋을 누락하거나 다른 변경을 함께 배포하지 않는다.
 - 최신 실제 증거는 `20260916175832`, `20260916180028`, `20260916180237`이다. 앞부분의 최종 검증 표를 우선하며 아래에 보존한 과거 실패/기준선 기록을 현재 상태로 사용하지 않는다.
 - 운영 배포 승인은 이행했다. 다음 외부 공고 저장/게시·수정/마감이나 실패한 실행의 재처리는 별도 승인 범위다. 현재 구현은 잡코리아의 승인된 단계이며 다른 사이트까지 전환됐다는 뜻이 아니다.
-- 조정실 문서는 이 계획과 README의 자동게시 항목만 범위 커밋했다. 별도 Hermes 작업의 미완료 문서/README 항목이 dirty여서 `git add -A`를 사용하는 공식 `controlroom push`는 실행하지 않았다. 해당 작업이 자기 문서를 커밋한 뒤 전체 dirty 상태를 재확인하고 공식 push로 저장한다. GBrain 설계 기록은 이미 반영·재조회했다.
+- 조정실 배포 기록과 README의 자동게시 항목은 `4f2d4ed`로 부분 커밋했고 다른 작업의 내용은 보존했다. 문서 전송은 동시 작업의 범위 커밋과 전체 clean 상태를 확인한 뒤 공식 `controlroom push`만 사용한다. GBrain 설계·운영 판본 기록은 저장·재조회했다.
 - 필수 정보 부족·권한 밖·현행 도구로 처리 불가·예산 소진까지 무조건 해결한다고 약속하지 않는다. 해당 상태는 증거와 함께 중단한다. 판단 자유를 넓히거나 필수 조건을 줄여 성공시키지 않는다.
