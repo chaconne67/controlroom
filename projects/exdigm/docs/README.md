@@ -8,6 +8,8 @@
 
 ## 진행 중 작업
 
+- [Drive 추천인재 목록 추출 오류 — 이메일 유입 아님, 단일 이력서 분기 오류 재현](resume-roster-error-20260916.md)
+
 - [이력서 BOM 처리 수정 — 운영 배포 완료, 중단 파일 재처리 대기](resume-bom-fix-20260916.md)
 
 - [Hermes MCP 조회 개선 — 개발·실제 모델 24회 검증 완료, 운영 반영 대기](hermes-mcp-read-improvement-20260916.md)
