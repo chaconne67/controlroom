@@ -1,5 +1,25 @@
 # 2026-09-15 운영 오류 수정
 
+## 최신 재개 기준 — 2026-09-16 17:29, PDF 박스·구성원 전달 운영 반영 완료
+
+- 주인님이 승인한 박스 경계·구성원 전달 보완은 추천 소스 1파일과 테스트 1파일만 커밋 `f01540043afe563d4f064227a4c79f3feaa206a4`로 반영했다. 변경은 50줄/164줄 추가다. 기존에 전달하던 텍스트별 위치/region 연결은 유지하고 저장된 전체 박스 경계와 구성원 출처 목록을 같은 분류 입력으로 전달한다. 기본 추출/급여 지침/항목별 번역/모델/호출 수/신원·저장 규칙은 그대로다.
+- LinkedIn 단독 배포 완료와 추천 2파일의 SHA256/binary diff 복원이 정확히 확인된 뒤, 새 운영 `5c8a295f` 기준에서 보호 216개·보호 18파일 및 관련 92개를 같은 기준으로 다시 통과했다. 기본 주요 함수 8개의 AST 동일, Django·Ruff·diff·catalog와 Direct Review를 유지했다. 보호 pin/ref `fb177d6a`는 변경하지 않았다. 새 지식의 PDF 전달 계약만 구분하며 기존 성공 행·원문을 덮어쓰지 않는다.
+- 최종 판본의 실제 문제 파일 전체 생성 3회, 교차 배치 2종 각 3회, 다른 기존 실제 PDF 1회가 모두 희망연봉을 희망조건에만 배정했다. 실제 국·영문 Word 급여 행도 같은 제목·값으로 확인했다. 첫 교차 시험의 역순 범위 실패와 Word 표 전용 assertion 오탐은 원본 기록과 근거를 보존했다. 같은 박스 구성원 목록과 출처 range의 역할을 설명한 보완이며 코드로 범위를 뒤집거나 중간의 다른 글을 포함시키지 않는다.
+- 공식 `scripts/deploy/deploy.sh prod`는 17:27:50 KST `prod ok f0154004`/exit 0으로 완료했다. GitHub/origin/main·운영 clean main·debug detached HEAD·실행 app/SSE/notification 판본이 일치한다. 이미지 `exdigm_app:20260916172633`, ID `sha256:fbdbdac509b67be6486e77cbe9c7378979f72262f3786842f04dbaab517cfac1`의 문서 DOC/DOCX/PDF 실제 전달 검사를 통과한 뒤 반영했다. 17:29 직접 검증에서 실행 3컨테이너의 추천 소스 SHA256도 검증 판본 `59aba6b7...b6fab22`와 정확히 같았다. 서비스 5개 1/1, worker/support 11개 active/jobs 0/drain off·read-write, HTTPS 200이다.
+- 다른 게시 5파일은 당시 현재 내용의 전체 SHA256/status/tracked binary diff를 0600으로 잠그고 stash `3772bb07144888b0f477990357c5b3495d1f2208`에 보관했다. 배포 후 모두 동일 복원했다. tracked diff SHA256 `014bb2da0497f88f13f0dcbea994d6b72573ae5ac3739d96c5922d18c65ff629`이며 원래 신규 테스트도 보존했다. 해당 stash와 이전 LinkedIn 복구 stash `b339c331b0fc1493842555db9623dff5ac462645`는 이미 apply된 복구 보관본이라 다시 적용하거나 삭제하지 않는다. 두 작업에 새 운영 판본·보존 결과를 알리고 게시 작업자의 기존 승인 범위 편집/검증 재개를 통보했다.
+- 비공개 근거의 정본은 `.debug/pdf-region-delivery-final-quality-review-v1.json`, `pdf-region-delivery-runtime-v1.json`, `pdf-region-delivery-before-prod-v1.json`, `pdf-region-delivery-after-prod-restore-v1.json`과 아래 원본 실패/성공 산출물이다. 실제 원문·연락처·비밀값은 문서/GBrain에 옮기지 않는다. 박스 전달 누락 및 이번 교차 변형의 역순 범위 경로는 검증 범위에서 닫힘이다. 모든 확률적 급여 의미 오판의 무발생·빈도 감소는 확정하지 않는다. 기존 학력/자격 표 배정 문제는 별도 미해결이며 이번 배포에 포함하지 않았다. 운영 DB 소급 교정·재처리·외부 게시·DB 인프라·Hermes 배포는 없다.
+
+## 최신 재개 기준 — 2026-09-16 17:16, PDF 박스·구성원 전달 검증 완료 / 배포 순서 조율
+
+- 최신 승인은 기본 추출 구조를 유지하면서 기존 PDF 박스 경계와 그 안의 글을 출처 ID로 연결해 기존 분류 호출에 전달하는 국소 보완이다. 기존에 텍스트별 좌표와 region ID는 이미 전달됐다. 연결 자체가 없었다는 이전 설명은 부정확했고, 저장된 전체 박스 경계와 박스별 구성원 목록이 전달되지 않은 것이 확인된 결함이다. 이 누락이 모든 확률적 급여 오배정의 유일한 원인이라고 확정하지 않는다.
+- 변경은 `projects/services/recommendation_resume_ssp.py` 50줄 추가와 `tests/test_recommendation_resume_local_worker.py` 164줄 추가뿐이다. 기존 L/S 원문 연결을 따라 박스 경계를 승계하고, 기존 `compact_records(include_pdf_layout=True)`가 박스 bbox와 구성원 S 목록을 앞에 붙인다. 글은 기존 S 줄에 한 번만 전달한다. 새 단계·함수·모델·의존성·AI 호출·급여 후처리·추출 재설계는 없다. 기본 추출·지도·국문 작성·항목별 번역·조립 주요 함수 8개는 시작 판본 `fb177d6a`와 AST 기준 동일하다.
+- 새 박스 목록의 최초 설명으로 교차 배치 시험에서 제목→값을 역순 출처 범위로 묶는 계약 실패가 두 배치에서 확인됐다. 이전 위치 전달 방식은 같은 고정 글/출처의 두 배치를 정상 처리했다. 같은 전달 함수에서 박스 구성원 목록과 출처 range는 다른 계약이며, 떨어진 근거는 여러 range로 적는다는 설명을 보완했다. 코드로 범위를 자동 뒤집거나 관련 없는 중간 글까지 합치지 않는다. 이후 두 배치 각 3회, 총 6회 모두 정확한 급여 그룹과 유효한 출처를 반환했다.
+- 수정 전후 같은 보호 검사 216개와 보호 18파일 보존, 관련 검사 92개, 새 전달 변형 8개, Django·Ruff·diff·catalog 및 주 에이전트 Direct Review를 통과했다. 보호 기준/pin/ref는 `fb177d6a`이며 변경하지 않는다. PDF 지식만 `regions_with_members_v1` 계약으로 구 캐시를 구분하고 비PDF 캐시 동작은 그대로다. 기존 성공 데이터의 소급 갱신은 없다.
+- 최종 판본의 원래 문제 파일 전체 실행 v4/v5/v6은 33.44/33.12/32.55초, 기존 다른 실제 PDF v2는 30.64초에 국·영문을 생성했다. 모두 희망연봉 값을 희망조건에만 담았다. 기존 Word 렌더러의 실제 국·영문 급여 행도 확인했다. Word에 표 셀만 있다고 가정한 진단 assertion은 오탐이었다. 기존 양식의 탭 문단에서 생성 결과의 제목·값 쌍을 정확히 확인했고, 실패한 최초 진단 기록은 보존한 채 별도 품질 대조 기록에 근거를 남겼다.
+- 비공개 증거는 debug `.debug/pdf-region-delivery-layout-swap-before-v1.json`, `pdf-region-delivery-layout-swap-after-v2.json`, `pdf-region-delivery-ca5-full-v4.json`/v5/v6, `pdf-region-delivery-930-full-v2.json`, 두 Word 파일과 `pdf-region-delivery-final-quality-review-v1.json`이며 모두 0600이다. 최종 소스 SHA256은 `59aba6b74ac536b6ca6b353d76b2a76c157f6aef84dceb690a3d71ab6b6fab22`, 테스트는 `04117e6c2e2885a9e9b053fe16cec24ab62a913771e5dbdf84e78252cd1cd2ef`, 두 파일 binary diff는 `a34a8b72789f028d42ec5cd692f744560c19aed362bc16bac024a32d7c80fa43`이다. 원문·연락처·비밀값은 문서/GBrain에 옮기지 않는다.
+- 다른 LinkedIn 작업이 단독 운영 배포 승인을 받아 커밋 `5c8a295f0678cd079946c8875c4149fc544d97fb`를 먼저 배포한다. 추천 2파일과 게시 5파일은 각 소유 작업이 편집·Git 이동을 중단한 상태로 해당 작업에서 현재 내용의 recoverable 백업/stash 및 정확 복원을 진행한다. 이 시점에 추천 수정의 커밋·push·배포는 아직 없으며 현재 운영은 clean main `fb177d6a`다. LinkedIn 배포·복원 통보까지 원격 편집/검증/Git 정리를 중단한다.
+- 다음은 LinkedIn 배포 종료와 추천 2파일 해시/diff 복원 확인 → 새 운영 기준 위에서 추천 2파일만 커밋 → 게시 5파일의 현재 내용 보관 → 공식 contracts/prod → Git·실행 판본/이미지·서비스/작업자/HTTPS → 게시 5파일 동일 복원 및 각 작업 재개 통보다. 충돌 시 임의 덮어쓰기하지 않는다. 기존 학력·자격 표 배정 문제와 확률적 모든 의미 오배정은 이번 범위의 완전 해결로 주장하지 않으며 운영 DB 재처리·기존 성공 데이터 수정·Hermes/DB 인프라 배포는 하지 않는다.
+
 ## 최신 재개 기준 — 2026-09-16 16:24, 항목별 영문 번역 운영 반영
 
 - 최신 사용자 승인은 기존 국문 항목별 추출을 유지하고, 완성·후처리된 각 국문 항목을 따로 영문 번역한 뒤 기존 코드로 조립하는 변경이다. 전체 영문 번역 1회 경로는 제거했다. 기본 추출 구조·항목 분류·PDF 읽기·자기소개 요약·모델·최초 국문 번역 1회의 medium은 유지한다.
