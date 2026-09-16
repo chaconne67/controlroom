@@ -8,6 +8,8 @@
 
 ## 진행 중 작업
 
+- [Hermes MCP 조회 개선 — 개발·실제 모델 24회 검증 완료, 운영 반영 대기](hermes-mcp-read-improvement-20260916.md)
+
 - [LinkedIn 문자·이메일 인증 — LinkedIn만 운영 배포 완료, 실제 받은 코드 확인 대기](linkedin-verification-20260916.md)
 
 - [자동게시 에이전트 — 잡코리아 운영 배포 완료, 실패 공고 재시도는 미실행](jobkorea-adaptive-workplace-20260916.md)
