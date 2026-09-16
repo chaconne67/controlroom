@@ -863,6 +863,10 @@ class PosixControlRoomInstallerTests(unittest.TestCase):
                 document.write_text(f"{profile} planning\n", encoding="utf-8")
             pending_code = venture / "keep.txt"
             pending_code.write_bytes(b"uncommitted code\n")
+            project_skill = venture / "skills" / "venture"
+            project_skill.mkdir(parents=True)
+            (project_skill / "SKILL.md").write_text("venture skill\n", encoding="utf-8")
+            (venture / ".gitignore").write_text(".agents/\n.claude/\n", encoding="utf-8")
             statuses = {checkout: run("git", "status", "--porcelain=v1",
                                       cwd=checkout).stdout
                         for checkout in (venture,)}
@@ -878,6 +882,10 @@ class PosixControlRoomInstallerTests(unittest.TestCase):
                        PATH=str(fake_bin) + os.pathsep + env["PATH"])
             command = (BASH, repo / "install.sh", "windows-control")
             run(*command, env=env)
+            for tool_home in (".agents", ".claude"):
+                live_skill = venture / tool_home / "skills" / "venture"
+                self.assertTrue(live_skill.is_symlink())
+                self.assertTrue(live_skill.samefile(project_skill))
             backups = set(home.glob(".kmh-agent-kit-backup-*"))
             docs_link_mtime = (custom_project / "docs").lstat().st_mtime_ns
             run(*command, env=env)
