@@ -54,6 +54,7 @@ Venture 업무용 스킬의 원본은 Venture 저장소의 `skills`입니다. �
 
 ## 추가 안내
 
+- [운영서버 통합과 현재 이전 상태](docs/production-server-consolidation-20260916.md) — 새 대상 `chaconne@49.247.192.127`; 기존 운영·DNS를 유지하며 준비 중입니다.
 - [장비 준비](docs/onboarding-new-server.md)
 - [스킬 관리](docs/skill-management.md)
 - [GBrain 운영](docs/gbrain-operating-guide.md)
