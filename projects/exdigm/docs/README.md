@@ -8,7 +8,7 @@
 
 ## 진행 중 작업
 
-- [이력서 BOM 처리 수정 — 개발 수정·검증 완료, 운영 미반영](resume-bom-fix-20260916.md)
+- [이력서 BOM 처리 수정 — 운영 배포 완료, 중단 파일 재처리 대기](resume-bom-fix-20260916.md)
 
 - [Hermes MCP 조회 개선 — 개발·실제 모델 24회 검증 완료, 운영 반영 대기](hermes-mcp-read-improvement-20260916.md)
 

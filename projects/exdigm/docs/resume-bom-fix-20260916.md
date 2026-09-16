@@ -5,6 +5,7 @@
 - 주인님이 오류 확인 뒤 “수정해”로 코드 수정·검증·리뷰·문서화·커밋을 승인했다.
 - 보이지 않는 BOM(U+FEFF)을 이력서 내용으로 세지 않아 정상 내용의 누락 검사를 통과하게 한다.
 - 운영 배포와 실패한 운영 FileData의 재처리 상태 변경은 별도 승인 단계다.
+- 코드 수정 완료 보고 후 주인님이 “운영 배포”를 명시 승인했다. 수정 커밋 `87683dae`의 일반 앱 배포를 진행하며, 실패 FileData의 수동 재처리 상태 변경은 이번 배포와 구분한다.
 
 ## 확인된 현상
 
@@ -67,6 +68,18 @@
 - 마지막 운영 조회: 원래 `updated_at`과 텍스트 SHA-256 유지, 후보자 연결 없음, Resume 0건, 저장 완료/구조화 JSON 없음, 실패 횟수 3회와 큐 종료 상태 유지.
 - 메모리에서 이 FileData의 `retryable`/`needs_resume_processing`만 true로 바꾼 공식 `classify_next_action`은 재처리 가능을 반환했다. 실패 이력을 임의 삭제하거나 운영 값을 바꾸지 않은 재개 준비 검증이다.
 
+## 운영 배포 — 2026-09-16 19:57 KST
+
+- 주인님의 “운영 배포” 승인 후 공식 `scripts/deploy/deploy.sh prod`가 19:57:24 KST `prod ok 87683dae`/exit 0으로 완료됐다.
+- GitHub main/origin main, 운영 clean main, debug clean detached HEAD, 실행 app/SSE/notification의 `/app/.source-commit`은 모두 `87683dae905f56676bb6f0d4b9916c2d86bcfb0d`로 일치했다.
+- 이전 운영 dd65eed0에서 이번 BOM 프로그램/테스트 3파일만 fast-forward 반영했다.
+- 새 이미지 `exdigm_app:20260916195601`; 실행 3종의 이미지 ID는 모두 `sha256:4a7b33bee3903f874c0343871cd60ff450b029792c5dbe4748e80f813a628386`다. 두 프로그램 파일의 실행 SHA-256도 검증 판본과 같다.
+- 새 이미지의 DOC/DOCX/PDF 실제 파일 전달 계약과 고정 보호 18파일을 통과했다. Django/Nginx 검사도 정상이다.
+- 서비스 5개 1/1, app/SSE/notification update completed, 작업자·지원 프로세스 11개 active/jobs 0/drain off, 운영 read-write 명령과 새 PID를 확인했다. HTTPS는 200이다.
+- 조회 전용 배포 전후 FileData 전체 행의 해시와 Resume 0건이 같았다. 원본의 본문·실패 3회·종료 큐·후보자 연결 없음 상태를 보존했다.
+- 이번 배포는 종료된 파일의 수동 재처리 상태를 바꾸지 않았다. 후보자·이력서 실제 등록은 이 파일 1건 재처리 후 따로 확인해야 한다.
+- 비공개 증거: `.debug/resume-bom-20260916/deploy-before-filedata.json`, `deploy-after-filedata.json`, `deploy-runtime-after.json` (0600). 실제 원문·연락처·비밀값은 Git·문서에 포함하지 않는다.
+
 ## 코드 리뷰 계약과 결과
 
 - 원천: 주인님의 “수정해”, 위 목표·보호 조건, 변경 전 공식 디코딩·원문 행 생성·strict 누락 검사.
@@ -87,8 +100,8 @@
 - 검증 때의 세 파일과 SHA-256이 같은 Git tree로 수정 커밋 `87683dae905f56676bb6f0d4b9916c2d86bcfb0d`를 만들었다. parent는 dd65eed0, 보존 ref는 `refs/heads/fix/resume-bom-20260916`다. Git의 별도 임시 index로 만들었으며 공유 HEAD·index·worktree는 dd65eed0 clean 상태를 유지했다.
 - 잡코리아 작업이 2026-09-16 19:03:41 KST `prod ok`/exit 0과 원래 데이터 보존 검증 완료를 회신했다. 이번 BOM 변경은 그 운영 배포에 포함되지 않았다.
 - 해제 회신 후 공식 debug를 `87683dae` clean detached HEAD로 복원했다. 세 파일은 검증 때 SHA-256과 같고 보호 18파일 및 catalog current/valid를 다시 확인했다. stash와 비공개 사본은 보존했다.
-- 현재 운영 checkout은 clean main `dd65eed0`, debug는 clean detached `87683dae`다. 운영 반영 후보의 차이는 이번 BOM 프로그램/테스트 3파일뿐이다.
+- 현재 운영 checkout/GitHub/실행 앱은 `87683dae`, debug도 같은 clean detached HEAD다. 19:57:24 KST 공식 배포와 실제 runtime 검증을 완료했다.
 - 잡코리아와 Hermes의 문서 부분 커밋이 끝나 index를 해제했다. 이번 계획과 README의 BOM 항목만 범위 커밋하며 다른 작업의 내용은 포함하지 않는다.
-- 다음 운영 작업: 수정 커밋 `87683dae`의 공식 운영 배포와 이 FileData 1건 재처리에 대한 주인님 승인 → 운영 원문/상태/신원 재확인 → 백업 유효성 확인 → 해당 파일만 정상 updater 큐로 복귀 → FileData/Resume/Candidate 저장과 현재 연결 확인.
-- 운영 배포와 이 FileData 1건 재처리는 아직 승인·실행하지 않았다.
+- 다음 운영 작업: 이 FileData 1건 재처리에 대한 주인님 승인 → 운영 원문/상태/신원 재확인 → 백업 유효성 확인 → 해당 파일만 정상 updater 큐로 복귀 → FileData/Resume/Candidate 저장과 현재 연결 확인.
+- 운영 배포는 승인·완료했다. 이 FileData 1건의 수동 재처리 상태 변경은 실행하지 않았다.
 - 공식 controlroom push는 동시 작업의 범위 커밋이 모두 끝나 전체 clean을 확인한 뒤 잡코리아 작업이 한 번 담당하기로 조율했다. BOM 애플리케이션 push/배포는 이 문서 동기화와 별개다.
