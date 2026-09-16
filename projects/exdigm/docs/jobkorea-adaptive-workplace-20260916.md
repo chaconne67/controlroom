@@ -97,6 +97,21 @@
 
 GBrain 공용 `project/exdigm-auto-posting-process-policy`에 「절차형 자동게시 에이전트의 판단 경계」를 기록했고 전체 본문 보존 및 재조회 일치를 확인했다. 현재 작업 상태는 이 계획이 정본이다.
 
+## 운영 배포 승인과 검증 — 2026-09-16
+
+- 주인님이 새 운영 오류 조사 후 `운영 배포`를 명시 승인했다. 이번 범위는 검증 커밋 `dd65eed0446d0589fc643c3faed4cef4cb816d5e`의 잡코리아 5파일이며, 실패 공고 재실행은 포함하지 않는다.
+- 배포 전 운영 clean main/GitHub는 `f01540043afe563d4f064227a4c79f3feaa206a4`다. 앱·SSE·알림 이미지는 `exdigm_app:20260916172633`, 서비스 5개 1/1, 작업자·지원 프로세스 11개 active/jobs 0/drain off, HTTPS 200이었다.
+- 다른 BOM 작업이 공유 개발 폴더의 미커밋 3파일을 직접 stash `bba73edd6800fc8f82d30fa1a21c9c8b42c446ae`와 별도 사본·SHA-256으로 보존했다. 배포 출발점은 clean detached `dd65eed0`로 직접 재확인했으며, 다른 작업의 변경을 이번 배포에 포함하지 않는다.
+- 정확한 clean 배포 대상에서 관련 177개(126+51), 고정 보호 계약 216개, Django check, diff 검사를 다시 통과했다. 실제 모델용 3개는 기본 제외이며 이전 실제 비게시 3건의 증거와 구분한다. 보호 기준 `fb177d6a`와 18파일을 변경하지 않았다.
+- 최소 구현 게이트 2단계: 기존 `scripts/deploy/deploy.sh prod`를 재사용한다. 새 코드·설정·의존성·배포 경로는 만들지 않는다. 공식 경로는 clean 검증 커밋 → fast-forward push → 운영 checkout → 이미지 계약 → 서비스·read-write 작업자 반영이다.
+- 보호 대상은 원래 프로젝트 `5b8d41a3-de63-4aee-a2c9-85fe67c8ec71`, PostingSite `ca718af9-0b17-4ce6-84f1-35ff55274473`, run `4751f28a-86aa-40cc-ac71-179eed60681a`, site run `cf74efdf-823f-4e76-b846-fc8b66ad29d9`다. 조회 전용 역할·transaction read-only를 확인한 뒤 각 행 전체 SHA-256을 잠갔다. 프로젝트 실행 이력 2개, 사이트 failed/외부 번호·URL 공백이며 실행 중·대기 자동게시 작업은 없었다.
+- 배포 후 같은 행 해시·이력 수와 Git/실행 이미지/작업자/HTTPS를 대조한다. 운영 DB 인프라·Hermes·외부 게시/수정/마감/삭제·실패 상태 초기화는 하지 않는다.
+- 공식 `scripts/deploy/deploy.sh prod`가 **19:03:41 KST `prod ok dd65eed0`, exit 0**으로 완료됐다. GitHub main, origin/main, 운영 clean main, 배포 직후 개발 clean detached HEAD 및 실제 app/SSE/notification의 `/app/.source-commit`이 모두 `dd65eed0446d0589fc643c3faed4cef4cb816d5e`로 일치했다.
+- 새 이미지 `exdigm_app:20260916190215`, 세 실제 실행 컨테이너의 이미지 ID `sha256:6db15cb79767204b960bb6d9ed6c466c4c344b8fe82ebbdefb8bee466b8e3a7a`를 대조했다. 새 이미지의 DOC/DOCX/PDF 실제 업로드 전달 계약이 서비스 교체 전에 통과했다. 계약 검사의 `ContractBoundaryReached`는 외부 AI 호출을 의도적으로 막은 검증 경계이며 배포 실패가 아니다.
+- app/SSE/notification update는 completed, DB·app·nginx·SSE·notification 5개 1/1, 작업자·지원 프로세스 11개 active/jobs 0/drain off, HTTPS 200이다. 공식 작업자 read-write 반영 후 auto-posting MainPID는 `3843473`에서 `3983620`으로 바뀌었고, 시작 시각 19:03:37 KST와 운영 경로 `/home/chaconne/exdigm`을 확인했다.
+- 대상 4행의 전체 해시는 전후 동일했다: Project `475dd190a323b22490a54d9566bedfbc07055f8d283ecdfe876af03e948cd8dd`, PostingSite `1473bc9da27e3c023084fb998cbc7b838884dbf9d5b98ccf505be7a7a44ba404`, run `14d8fb9eb23127676123d580b2b190472a17e5f5f76cb70769cbf9f919bd43b6`, site run `a7b10b98e756fc8931a7bb4817492a658d4511a08189665924c835792ffd01e7`. 프로젝트 실행 이력 2개와 failed/외부 번호·URL 공백도 동일했다. 게시 재시도·저장·마감·삭제·DB 복구는 하지 않았다.
+- 배포 완료 후 BOM 작업이 검증한 별도 3파일 커밋 `87683dae905f56676bb6f0d4b9916c2d86bcfb0d`로 개발 작업을 복원했다. debug는 이 커밋의 clean detached이고 부모 `dd65eed0`를 보존한다. 이 3파일은 이번 운영 배포에 포함되지 않았으며 운영은 `dd65eed0` 그대로다. 복구 stash·파일 사본도 보존했다. DB 인프라·Hermes 배포와 보호 기준 변경은 하지 않았다.
+
 ## 승인과 목표
 
 사용자는 지역 코드표에 없는 사례마다 패치하는 대신, 알려진 동작은 스크립트로 실행하고 낯선 화면은 원문과 현재 선택지를 보고 LLM이 판단하는 구성을 승인했다(“진행해”). 첫 적용 범위는 잡코리아 지역·주소 입력이다. 구현·격리 검증·리뷰·문서화는 포함하며 운영 배포, 실제 사이트 로그인·게시·수정·마감은 포함하지 않는다.
@@ -259,12 +274,12 @@ GBrain 공용 `project/exdigm-auto-posting-process-policy`에 「절차형 자�
 
 ## 재개 정보
 
-현재 상태는 **잡코리아 절차형 에이전트 구현·코드 리뷰·177개 자동검사·실제 비게시 3사례 검증 완료, 운영 미반영**이다. 원래 입력 실패 경로는 검증한 공식 dry 범위에서 통과했다. 실제 게시 성공이나 운영 장애 복구 완료로 확대 해석하지 않는다.
+현재 상태는 **잡코리아 절차형 에이전트 구현·코드 리뷰·실제 비게시 3사례 검증과 승인된 운영 배포 완료**다. 2026-09-16 19:03:41 KST 공식 prod 성공 후 실제 실행 판본·서비스·작업자·HTTPS·원래 공고 기록 보존을 확인했다. 실패 공고의 실제 게시 성공이나 재처리 완료로 확대 해석하지 않는다.
 
-- 실행/코드 정본: `chaconne@49.247.202.197:/home/chaconne/exdigm-debug`, clean detached `dd65eed0446d0589fc643c3faed4cef4cb816d5e`.
-- 앱 커밋은 5파일만 포함한다: common, JobKorea, posting workflow, 기존 failed payload 검사, 신규 workplace 검사. 앱 push·운영 배포는 하지 않았다. 운영 checkout은 확인 시점 clean main `f0154004`다.
+- 실행/코드 정본: `chaconne@49.247.202.197:/home/chaconne/exdigm-debug`. 운영 `/home/chaconne/exdigm`의 배포 판본은 `dd65eed0446d0589fc643c3faed4cef4cb816d5e`다. 배포 시 개발은 clean detached였으며 이후 별도 BOM 작업의 보존 변경을 복원하도록 인계했으므로 재개할 때 현재 Git 상태를 다시 확인한다.
+- 앱 커밋은 5파일만 포함한다: common, JobKorea, posting workflow, 기존 failed payload 검사, 신규 workplace 검사. 공식 prod에서 이 커밋의 fast-forward push와 운영 배포를 완료했다. 배포 전 재검사 177개·고정 보호 216개 및 이미지 문서 계약을 통과했다.
 - 다른 작업의 이력서/LinkedIn 커밋, 복구 stash, 별도 Hermes worktree·문서 변경을 보존했다. 후속 작업은 실제 Git 상태를 다시 확인하고 미배포 커밋을 누락하거나 다른 변경을 함께 배포하지 않는다.
 - 최신 실제 증거는 `20260916175832`, `20260916180028`, `20260916180237`이다. 앞부분의 최종 검증 표를 우선하며 아래에 보존한 과거 실패/기준선 기록을 현재 상태로 사용하지 않는다.
-- 다음 외부 반영은 별도 운영 배포 승인 후 공식 `exdigm-deploy` 절차로 진행한다. 실제 공고 저장/게시·수정/마감은 별도 범위다. 현재 구현은 잡코리아의 승인된 단계이며 다른 사이트까지 전환됐다는 뜻이 아니다.
+- 운영 배포 승인은 이행했다. 다음 외부 공고 저장/게시·수정/마감이나 실패한 실행의 재처리는 별도 승인 범위다. 현재 구현은 잡코리아의 승인된 단계이며 다른 사이트까지 전환됐다는 뜻이 아니다.
 - 조정실 문서는 이 계획과 README의 자동게시 항목만 범위 커밋했다. 별도 Hermes 작업의 미완료 문서/README 항목이 dirty여서 `git add -A`를 사용하는 공식 `controlroom push`는 실행하지 않았다. 해당 작업이 자기 문서를 커밋한 뒤 전체 dirty 상태를 재확인하고 공식 push로 저장한다. GBrain 설계 기록은 이미 반영·재조회했다.
 - 필수 정보 부족·권한 밖·현행 도구로 처리 불가·예산 소진까지 무조건 해결한다고 약속하지 않는다. 해당 상태는 증거와 함께 중단한다. 판단 자유를 넓히거나 필수 조건을 줄여 성공시키지 않는다.

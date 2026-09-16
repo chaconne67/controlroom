@@ -10,7 +10,7 @@
 
 - [LinkedIn 문자·이메일 인증 — LinkedIn만 운영 배포 완료, 실제 받은 코드 확인 대기](linkedin-verification-20260916.md)
 
-- [자동게시 에이전트 — 잡코리아 구현·실제 비게시 3건 검증 완료, 운영 미반영](jobkorea-adaptive-workplace-20260916.md)
+- [자동게시 에이전트 — 잡코리아 운영 배포 완료, 실패 공고 재시도는 미실행](jobkorea-adaptive-workplace-20260916.md)
 
 - [운영 오류 문제해결 — 배포 정리·파일 수집9건 복구, 후속 내용 추출·메일·개인 연결 잔여](operational-errors-fix-20260915.md)
 
