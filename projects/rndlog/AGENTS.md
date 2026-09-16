@@ -34,7 +34,7 @@
 | 배포 진입점 | `/home/chaconne/rndlog/deploy.sh` |
 | 운영 스택 | `Rndnote` (`Rndnote_app`, `Rndnote_nginx`) |
 | 운영 도메인 | `https://rndlog.kr` |
-| 운영 DB | 중앙 서버 `CentralDB_postgres`의 `ceo_loan`, SSH 터널 `127.0.0.1:15432` |
+| 운영 DB | 중앙 서버 `49.247.45.243`의 `CentralDB_postgres` / `company_main`, SSH 터널 `127.0.0.1:15432` (2026-09-16 실제 운영 확인) |
 
 현재 코드·서버와 이 문서가 다르면 실제 상태를 확인해 코드와 서버에 맞춰 이 문서와 GBrain을
 갱신합니다. `Rndnote`와 `rndnote.git`은 남아 있는 운영 식별자이며 제품 이름은 RNDLOG입니다.
@@ -48,7 +48,7 @@
 - `sources/original/`은 고객 원본, `sources/intake/`는 수신기록, `research/`는 회사별 조사자료,
   `deliverables/drafts/`는 기존 HTML과 신규 DOCX 작업본, `deliverables/final/`은 기존 PDF와 검토 완료 DOCX 산출물입니다.
 - 공통 참고자료·샘플·양식·도구는 `resources/`에 두고 고객사 파일과 섞지 않습니다.
-- 앱의 공식 DB는 `ceo_loan` 하나이며 RNDLOG 업무 테이블은 `rndlog` 스키마에 둡니다.
+- 앱의 공식 DB는 `company_main` 하나이며 RNDLOG 업무 테이블은 `rndlog` 스키마에 둡니다.
 
 ## 작업 전 GBrain
 

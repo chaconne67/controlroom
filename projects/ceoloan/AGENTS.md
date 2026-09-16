@@ -33,7 +33,7 @@
 | 운영 방식 | Docker Compose 프로젝트 `ceoloan` |
 | 운영 서비스 | `ceoloan-web`, `ceoloan-nginx` |
 | 운영 도메인 | `https://rogeon.kr` |
-| 운영 DB | 중앙 서버 `CentralDB_postgres`의 `ceo_loan`, SSH 터널 `127.0.0.1:15432` |
+| 운영 DB | 중앙 서버 `49.247.45.243`의 `CentralDB_postgres` / `company_main`, SSH 터널 `127.0.0.1:15432` (2026-09-16 실제 운영 확인) |
 
 현재 코드·서버와 이 문서가 다르면 실제 상태를 확인해 이 문서와 GBrain을 갱신합니다.
 
