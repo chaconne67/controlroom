@@ -8,6 +8,8 @@
 
 ## 진행 중 작업
 
+- [이력서 번역 요청 오류 2건 — 코드 수정·실제 추출/저장 검증 완료, 운영 반영·재처리 대기](resume-provider-errors-20260917.md)
+
 - [이력서 BOM 처리 수정 — 운영 배포 완료, 중단 파일 재처리 대기](resume-bom-fix-20260916.md)
 
 - [Hermes MCP 조회 개선 — 직원 6명 운영 반영·기록 보존 완료, 시간대·인증값 후속은 별도](hermes-mcp-read-improvement-20260916.md)
