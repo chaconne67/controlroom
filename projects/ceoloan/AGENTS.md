@@ -23,7 +23,7 @@
 | 항목 | 값 |
 |---|---|
 | SSH | `chaconne@49.247.192.127` |
-| 실제 저장소 | `/srv/consolidation/repos/ceoloan` |
+| 실제 저장소 | `/home/chaconne/projects/ceoloan` |
 | 통합 런타임·설정 | `/srv/consolidation/infra` |
 | GitHub / 원격 / 기준 브랜치 | `git@github.com:chaconne67/ceoloan.git` / `ceoloan` / `main` |
 | 앱 Python | Docker 이미지 Python 3.13 |
@@ -44,6 +44,19 @@
 - CEO Loan 업무 데이터는 `ceoloan` 스키마가 소유합니다.
 - CEO Loan 역할은 `company`를 읽고 `ceoloan`만 씁니다.
 - 회사 정보를 CEO Loan 모델에 복사하지 않습니다.
+
+## 서버 코드 작업
+
+- 조정실 진입 폴더는 `C:\Users\chaconne\projects\ceoloan`, main 코드 저장소는 `/home/chaconne/projects/ceoloan`입니다. 두 장비 모두 사용자 루트의 `projects/<프로젝트>` 구조를 사용합니다. 조정실은 지침·스킬·기획의 진입점이고 서버 폴더는 실제 `.git`과 코드를 가진 독립 저장소입니다.
+- main의 이 폴더에서 해당 프로젝트의 코드를 수정·검증하고, 이번 변경 파일만 커밋한 뒤 기존 `ceoloan`의 `main` 브랜치로 푸시합니다. 경로 이동을 이유로 Git 저장소·브랜치·원격을 다시 만들지 않습니다.
+
+```text
+ssh chaconne@49.247.192.127
+cd /home/chaconne/projects/ceoloan
+git status --short
+```
+
+위 `cd`와 Git 명령은 SSH 접속 후 서버 셸에서 실행합니다. 코드 검증·커밋 후 푸시는 `git push ceoloan main`입니다. 기존 수정·신규 파일을 보존하고 이번에 검증한 변경만 포함합니다.
 
 ## 작업 전 GBrain
 
@@ -85,7 +98,7 @@ GBrain은 과거 맥락이고 현재 코드와 서버가 최종 기준입니다.
 
 ## 검증 기준
 
-- 코드 검증 위치는 main `/srv/consolidation/repos/ceoloan`입니다. 호스트 `.venv`는 없으며 현재 앱의 Python 3.13 이미지와 해당 변경의 독립 테스트 환경을 사용합니다. 운영 DB/대외 효과와 분리된 검증 경로를 확인한 뒤 Django 검사·관련 pytest만 실행합니다.
+- 코드 검증 위치는 main `/home/chaconne/projects/ceoloan`입니다. 호스트 `.venv`는 없으며 현재 앱의 Python 3.13 이미지와 해당 변경의 독립 테스트 환경을 사용합니다. 운영 DB/대외 효과와 분리된 검증 경로를 확인한 뒤 Django 검사·관련 pytest만 실행합니다.
 - 원격 화면 검증의 공통 절차는 공용 `web-automation` 스킬의 「Remote development UI verification」을 따릅니다.
 - CEO Loan의 서버·테스트·CSS 설정과 디자인 기준은
   [.agents/skills/ceoloan-design-system/SKILL.md](.agents/skills/ceoloan-design-system/SKILL.md)의

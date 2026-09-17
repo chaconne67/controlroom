@@ -23,7 +23,7 @@
 | 항목 | 값 |
 |---|---|
 | SSH | `chaconne@49.247.192.127` |
-| 실제 저장소 | `/srv/consolidation/repos/fundkeeper` |
+| 실제 저장소 | `/home/chaconne/projects/fundkeeper` |
 | GitHub / 원격 / 기준 브랜치 | `git@github.com:reneesoft/fundkeeper.git` / `origin` / `master` |
 | 앱 실행 위치 | `production-coconut-web-1` 내부 `/home/work/fundkeeper` |
 | 통합 Docker 정의 | `/srv/consolidation/infra/compose.production.coconut.json` + `compose.activate.coconut.json`, Compose 프로젝트 `production-coconut` |
@@ -53,9 +53,22 @@
 - 코스콤 RA 테스트베드 공통 작업: `testbed-base`
 - 수동계좌 잔고 반영: `fundkeeper-client-balance`
 
+## 서버 코드 작업
+
+- 조정실 진입 폴더는 `C:\Users\chaconne\projects\fundkeeper`, main 코드 저장소는 `/home/chaconne/projects/fundkeeper`입니다. 두 장비 모두 사용자 루트의 `projects/<프로젝트>` 구조를 사용합니다. 조정실은 지침·스킬·기획의 진입점이고 서버 폴더는 실제 `.git`과 코드를 가진 독립 저장소입니다.
+- main의 이 폴더에서 해당 프로젝트의 코드를 수정·검증하고, 이번 변경 파일만 커밋한 뒤 기존 `origin`의 `master` 브랜치로 푸시합니다. 경로 이동을 이유로 Git 저장소·브랜치·원격을 다시 만들지 않습니다.
+
+```text
+ssh chaconne@49.247.192.127
+cd /home/chaconne/projects/fundkeeper
+git status --short
+```
+
+위 `cd`와 Git 명령은 SSH 접속 후 서버 셸에서 실행합니다. 코드 검증·커밋 후 푸시는 `git push origin master`입니다. 기존 수정·신규 파일을 보존하고 이번에 검증한 변경만 포함합니다.
+
 ## 검증 기준
 
-- 코드 검증 위치는 main `/srv/consolidation/repos/fundkeeper`입니다. 호스트 `.venv`는 없으며 기존 Coconut 앱 이미지의 Python과 운영 DB/외부 주문에서 분리한 테스트 환경으로 Django 검사·관련 테스트를 실행합니다.
+- 코드 검증 위치는 main `/home/chaconne/projects/fundkeeper`입니다. 호스트 `.venv`는 없으며 기존 Coconut 앱 이미지의 Python과 운영 DB/외부 주문에서 분리한 테스트 환경으로 Django 검사·관련 테스트를 실행합니다.
 - 관련 테스트는 테스트 코드가 운영 DB·외부 주문·파일을 바꾸지 않는지 먼저 확인한 뒤 대상만 실행합니다.
 - UI 변경은 Tailwind 빌드와 실제 화면 확인이 모두 필요합니다.
 - 운영 확인은 HTTPS 헬스체크와 main `production-coconut-web-1`의 healthy 및 `production-coconut-nginx-1`의 running 상태를 사용합니다.

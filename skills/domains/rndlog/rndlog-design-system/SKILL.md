@@ -17,12 +17,11 @@ RNDLOG 제품 화면의 기존 시각 언어와 사용자 업무 흐름을 보�
 
 ## 실행 위치
 
-1. 중앙 조정실 `/home/chaconne/projects/rndlog`에서 지침과 스킬을 읽는다.
-2. `chaconne@49.247.207.147`에 SSH로 접속한다.
-3. 실제 저장소 `/home/chaconne/rndlog`의 Git 상태를 확인한다.
-4. 기존 변경과 미추적 파일을 보존하고 요청 범위만 수정한다.
+1. 현재 조정실의 RNDLOG 프로젝트 폴더에서 `AGENTS.md`와 이 스킬을 읽는다.
+2. `AGENTS.md` 정본 표의 현행 SSH 서버에 접속해 실제 코드 저장소로 이동한다.
+3. 해당 저장소의 Git 상태를 확인하고 기존 변경·미추적 파일을 보존해 요청 범위만 수정한다.
 
-중앙 서버의 `/home/chaconne/rndlog` 복제본은 참고용이며 공식 수정·검증 경로가 아니다.
+개발 에이전트는 조정실에서 실행하며 서버에서는 SSH로 코드·빌드·검증 명령을 실행한다. 서버 주소·코드 경로·배포 정의는 프로젝트 지침을 정본으로 사용한다.
 
 ## 정본과 우선순위
 
@@ -134,13 +133,8 @@ RNDLOG 제품 화면의 기존 시각 언어와 사용자 업무 흐름을 보�
    npx tailwindcss -i static/css/input.css -o static/css/output.css --minify
    ```
 
-2. Django 검사를 실행한다.
-
-   ```bash
-   /home/chaconne/.local/bin/uv run python manage.py check --settings=main.settings.local
-   ```
-
-3. 동작을 바꿨으면 관련 테스트를 원격 가상환경에서 실행한다.
+2. 프로젝트 `AGENTS.md`의 앱 Python과 운영 DB·대외 효과에서 분리한 검증 환경에서 Django 검사를 실행한다.
+3. 동작을 바꿨으면 같은 독립 환경에서 관련 테스트를 실행한다.
 4. 실제 화면에서 모바일 390px·480px와 데스크톱 1024px 이상을 확인한다.
 5. 동적 변경은 클릭 전·처리 중·성공·실패와 콘솔·네트워크를 확인한다.
 6. 운영 DB에 쓰는 동작은 화면 검증으로 실행하지 않는다. 쓰기 검증이 필요하면 격리된 테스트

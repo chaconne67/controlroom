@@ -11,10 +11,10 @@
 
 ## 역할
 
-- 이 폴더는 ZiiN의 조정실입니다. 실제 코드·실행 및 검증 자료·코드 Git·배포 대상은 main `chaconne@49.247.192.127:/srv/consolidation/repos/ziin`입니다.
+- 이 폴더는 ZiiN의 조정실입니다. 실제 코드·실행 및 검증 자료·코드 Git·배포 대상은 main `chaconne@49.247.192.127:/home/chaconne/projects/ziin`입니다.
 - ZiiN은 Exdigm에서 운영 중인 헤드헌팅 업무 시스템을 다른 헤드헌팅 회사에도 제공할 수 있도록 범용화한 제품입니다.
 - 제품 사실의 최종 기준은 검증된 Exdigm 운영 코드입니다. ZiiN 문서와 코드가 다르면 실제 코드를 확인한 뒤 문서와 GBrain을 갱신합니다.
-- 조정실 에이전트가 SSH로 main의 `/srv/consolidation/repos/ziin`에서 개발·검증합니다. `docs/implementation/`과 `docs/product/`의 기획 원본은 조정실 문서 경로이며, 나머지 코드·디자인·운영 문서 경로는 원격 저장소 기준입니다. 배포는 별도 명시적 요청이 있을 때 해당 제품 Compose 정의와 검증·복구 경로를 대조해 실행하며 옛 `scripts/deploy.sh`를 그대로 실행하지 않습니다.
+- 조정실 에이전트가 SSH로 main의 `/home/chaconne/projects/ziin`에서 개발·검증합니다. `docs/implementation/`과 `docs/product/`의 기획 원본은 조정실 문서 경로이며, 나머지 코드·디자인·운영 문서 경로는 원격 저장소 기준입니다. 배포는 별도 명시적 요청이 있을 때 해당 제품 Compose 정의와 검증·복구 경로를 대조해 실행하며 옛 `scripts/deploy.sh`를 그대로 실행하지 않습니다.
 
 ## 정본
 
@@ -22,7 +22,7 @@
 
 | 구분 | 정본 |
 |---|---|
-| SSH / 작업 루트 | `chaconne@49.247.192.127` / `/srv/consolidation/repos/ziin` |
+| SSH / 작업 루트 | `chaconne@49.247.192.127` / `/home/chaconne/projects/ziin` |
 | GitHub | `git@github.com:chaconne67/ziin.git` |
 | 목표 브랜치 | `main` |
 | 운영 도메인 | `https://www.ziin.site` |
@@ -39,6 +39,19 @@
 
 - 공개 제품명은 `ZiiN`, AI 이름은 `지니`입니다.
 - 과거 문서의 `Ziin`, `G-in`, `지인`은 검색용 별칭으로만 취급합니다.
+
+## 서버 코드 작업
+
+- 조정실 진입 폴더는 `C:\Users\chaconne\projects\ziin`, main 코드 저장소는 `/home/chaconne/projects/ziin`입니다. 두 장비 모두 사용자 루트의 `projects/<프로젝트>` 구조를 사용합니다. 조정실은 지침·스킬·기획의 진입점이고 서버 폴더는 실제 `.git`과 코드를 가진 독립 저장소입니다.
+- main의 이 폴더에서 해당 프로젝트의 코드를 수정·검증하고, 이번 변경 파일만 커밋한 뒤 기존 `origin`의 `main` 브랜치로 푸시합니다. 경로 이동을 이유로 Git 저장소·브랜치·원격을 다시 만들지 않습니다.
+
+```text
+ssh chaconne@49.247.192.127
+cd /home/chaconne/projects/ziin
+git status --short
+```
+
+위 `cd`와 Git 명령은 SSH 접속 후 서버 셸에서 실행합니다. 코드 검증·커밋 후 푸시는 `git push origin main`입니다. 기존 수정·신규 파일을 보존하고 이번에 검증한 변경만 포함합니다.
 
 ## 작업 전 GBrain
 

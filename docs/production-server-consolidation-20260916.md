@@ -700,3 +700,50 @@ Coconut의 실제 관리자 세션 보존은 기존 검증에서 재사용할 �
 4. **최종 해지:** 정상 일정의 결과와 주소·백업·제외 서비스의 독립성을 확인한 뒤 삭제할 수 있는 서버 목록, 보관 자료, 복구 근거와 중단 영향을 검토할 수 있게 정리합니다. 주인님의 해지·삭제 지시가 필요하며 DNS 완료가 이 승인을 대신하지 않습니다. Exdigm 자체 운영서버는 이전·해지 대상이 아닙니다.
 
 가비아에서 주인님이 추가로 바꿀 레코드는 없습니다. 우선 순서는 원래 새벽·오전 예약의 실제 결과 확인, 옛 서버별 의존성·백업·용량 정리, 최종 해지 대상 결정입니다. 상세 근거는 같은 작업 outputs의 `운영서버_통합_잔여작업_20260918.md` 및 갱신된 `운영서버_통합_DNS확인_20260918.json`에 있습니다. 미래 관찰을 위한 새 자동화나 유료 수동 시험은 만들거나 실행하지 않았습니다.
+
+
+## 19. 2026-09-18 프로젝트 루트 통일·RNDLOG 자료 링크 제거
+
+**주인님 지시에 따라 조정실은 `C:\Users\chaconne\projects/<프로젝트>`, main은 `/home/chaconne/projects/<프로젝트>` 구조로 통일했다.** main의 각 프로젝트 루트는 실제 코드와 `.git`이 있는 독립 저장소다. 앞 절의 `/srv/consolidation/repos/*` 및 main RNDLOG 자료Root symlink 설명은 당시 이력이며 현행 코드 경로는 이 절을 우선한다. 개발 에이전트·기획·판단은 조정실에서 실행하고 서버 코드·빌드·테스트·Git·운영은 SSH로 관리하는 원칙은 유지한다.
+
+| 프로젝트 | 조정실 진입 폴더 | main 실제 코드 저장소 | 원격 / 브랜치 | 현재 코드 HEAD |
+|---|---|---|---|---|
+| FundKeeper / Coconut | C:\Users\chaconne\projects\fundkeeper | /home/chaconne/projects/fundkeeper | origin / master | d0a3ca1 |
+| RNDLOG | C:\Users\chaconne\projects\rndlog | /home/chaconne/projects/rndlog | origin / main | 994ef3b |
+| CEO Loan | C:\Users\chaconne\projects\ceoloan | /home/chaconne/projects/ceoloan | ceoloan / main | efc8f2d |
+| ZiiN | C:\Users\chaconne\projects\ziin | /home/chaconne/projects/ziin | origin / main | af6888f |
+
+Main의 네 Git 디렉터리를 같은 파일시스템에서 통째로 이동했다. `.git`·커밋·브랜치·기존 원격·파일 소유/권한을 보존했고 옛 코드 경로에 링크를 만들지 않았다. 비어 있는 `/srv/consolidation/repos`도 제거했다. Windows의 해당 네 프로젝트 루트는 원래 실제 조정실 폴더이므로 이동·복제하지 않았다. 공통 지침·스킬·기획 문서는 controlroom 원본과 기존 하드링크/문서 연결을 유지한다. 조정실 진입점에 운영 코드를 중복 clone하지 않는다.
+
+Exdigm 앱과 기존 전용 개발·운영 저장소/서버는 main으로 이전하지 않았다. Venture는 조정실 `C:\Users\chaconne\projects\venture`에서 실행한다. 이 두 프로젝트와 해당 지침·현재 코드 작업은 이번 변경에서 보존했다. GBrain 본체·운영 DB·미디어·고객자료 및 공통 Docker Compose/복구 설정은 역할에 맞춰 기존 `/srv/consolidation` 실제 경로를 유지한다.
+
+### RNDLOG 코드와 고객자료의 실제 연결
+
+- main `/home/chaconne/projects/rndlog`의 자료 symlink를 제거하고 실제 RNDLOG Git 저장소를 배치했다. 이 루트에 `companies/resources` 링크를 다시 만들지 않았다.
+- 기존 제한 SSH 자료 프로그램을 `deploy/workspace_storage_gateway.py`로 이동하여 RNDLOG Git으로 관리한다. 내용은 기존 구현과 같은 바이트이며 `WORKSPACE_ROOT` 상수만 실제 `/srv/consolidation/data/files-standby/workspace/companies`로 바꿨다.
+- 고객자료·제작 자원 정본은 `/srv/consolidation/data/files-standby/workspace/{companies,resources}`다. 기존 root0700/1001:1001과 retained1492항목 path/content/UID/GID/mode가 동일하며 프로그램 이동1파일 외 고객자료는 이동·변경하지 않았다. DB/고객자료/비밀값을 코드 Git에 넣지 않았다.
+- Main authorized_keys의 두 자료 제한 command만 `/home/chaconne/projects/rndlog/deploy/workspace_storage_gateway.py`로 갱신했다. 새 command를 원문으로 역치환하면 key/options/comments 전체 bytes가 동일하다. 기존 앱→old DB 제한forward→main 제한gateway→actualworkspace의 relative/base64 upload/rollback/download JSON/stream 프로토콜과 보안 경계를 유지한다.
+- main official controller에 기존 물리Root/Git/gateway/selected자료 검사를 `verify_workspace_layout`로 합쳤다. activate와 verify가 같은 준비조건을 검사하며 recover-new가 Git 루트를 자료 링크로 덮지 않는다. 잘못된 Root alias를 서비스 활성 이후에 발견하던 검토 finding1개를 선검사로 수정했다. 최종 code-review-loop는 추가 승인finding/열린질문0이다.
+
+### 실제 Git 접속·기록 저장
+
+접속은 `ssh chaconne@49.247.192.127` 후 각 `/home/chaconne/projects/<프로젝트>`에서 한다. main에는 기존 outbound Git 인증·작성자 설정이 없었다. 원 DB의 실제 사용 중인 chaconne67 인증과 Windows/DB에서 같은 작성자설정만 재사용했다. private key0600, GitHub 공식 Ed25519 hostkey와 실제scan대조, StrictHostKeyChecking 유지 및 네 기존 remote ls-remote를 확인했다. FundKeeper master와 CEO Loan remote ceoloan을 그대로 유지한다. 실제 수정 파일만 커밋하며 기존 사용자 변경을 자동으로 포함하지 않는다.
+
+RNDLOG 자료 코드994ef3b와 ZiiN af6888f는 기존 GitHub origin/main에 push했고 native ls-remote로 HEAD 일치를 확인했다. FundKeeper/CEO Loan 코드는 경로·local author설정 외 바뀌지 않아 원래 HEAD를 유지한다. ZiiN은 로컬427729d의 기존 문서정리6파일과 remote3f1d029의 인증서연결nginx1파일이1/1로 갈라져 있어 양쪽 기록을 보존하는 병합을 수행했다. nginx bytes=원래remote, 6문서 bytes=원래local를 대조했다. 코드의 새 기능수정이나 앱 배포는 없으며 GitHub 자동workflow도 없다. 공통 infra controller/README는 main local Git108181d에 저장했다.
+
+### 같은 기준의 전후 검증과 한계
+
+1. main official verify: 선택 marker SHA3084e58c...5462302, 기존 PG systemID7652763638438633511·MySQL UUID4e7e0be7-b1dc-11f1-9224-566ecede885a와 RW, runtime5, CEO Loan 공식 원본 bytes를 유지하고 실제 RNDLOG 앱의 gateway health를 추가 확인했다.
+2. 제한 SSH 실제 원본43520byte/SHA e1d95e8e...b46994, health 및 unsupported command/path traversal 거부 결과가 전후 동일하다. 실제 운영 앱 `open_asset_download`로 기존 FileAsset UUID004ccc2b-f409-4127-8464-31d862e7a4f1의57467byte/SHA fd0f9aae...b8551을 스트리밍 확인했다. 운영DB write나 고객 발송·AI 생성은 없다.
+3. official activation 정의의 격리9case(정상2·marker없음/Root alias/file alias/gateway누락/Git누락/자료누락/자료alias7)에서 준비 오류는 활성command0으로 거부하고 정상은 기존9명령 순서를 보존했다. 실제 production recover-new 재시작은 실행하지 않았으며 이 fixture 성공을 전체 서비스 장애복구 실전으로 확대하지 않는다.
+4. 운영7 container Image/StartedAt/Mounts/상태와 원래 예약13 enabled/active가 동일하다. Source4 verify-new에서 old writer disabled·private DB 새정본 ID·GBrain200을 유지했다. 일반 DNS의 HTTPS14개 TLS·firststatus/redirect가 전후 일치하고 최종응답 모두200이다. DNS 원본 완료는18절이며 이번 작업에 DNS 변경은 없다.
+5. 조정실 관리카드·네 AGENTS에 main Root와 Git/검증/접속을 반영하고 설치된 각 파일과 samefile을 확인한다. RNDLOG WORKSPACE와 고유skill2개는 고객자료Root/코드Root의 현행 정본표를 따르게 수정했다. 기존 디자인 보관원본은 옛 RNDLOG 서버에서 읽기전용으로 유지하고 새 고객자료 쓰기는 현행 main이다. 제품정책/기획기록/공통 AGENTS·CLAUDE 및 다른 프로젝트 변경을 보존한다. 공식 skill validator2개 valid, 기존 dependency validator50개 통과·기존 Fund/testbedwarning 유지다.
+
+### 최신 코드·접속 설정의 암호화 독립 보관·복원
+
+- 최신 infra108181d, RNDLOG994ef3b, ZiiNaf6888f의 full Git bundles, 기존4프로젝트 Git config·HEAD/원격/브랜치 manifest, Main 현재 authorized_keys·GitHub private/publickey·knownhosts와 선택marker metadata를 기존 통합 public encryption keyring/제한 receiver로 별도 옛 DB offsite에 보관했다. 비밀값은 Git·문서·GBrain·조정실 파일·로그로 출력하지 않았다. FundKeeper/CEO Loan은 변경없는 HEAD/config만 기록하며 이번 companion에 full bundle을 다시 넣지 않았다.
+- archive `checkpoint-base-20260917T161634Z-1d926666.tar.gz.gpg`: **147,671,494 bytes**, SHA-256 **6c413dd5a460c924ad3d80c289a2099ebd9704b77bd1ec26ba89716ef504665a**. Native Source receipt의 size/SHA 검증 후 독립 final명으로 확정했다. 서버외부 전체 DB/파일의 주기백업이 새로 구현된 것은 아니다.
+- Source 실제 offsite 암호문의 SHA/size→기존 privatekeyring 복호화→임시 Root 추출→Git bundle verify/clone/HEAD·config 일치→RNDLOG gateway/official controller compile·경로검사·ZiiN두부모 일치→SSH config bytes/mode/UID/GID와 private/public pair→markerSHA를 확인했다. 별도 호스트 원본에서 복원했으며 temp plaintext/clone을 종료시 제거했다. Main의 owned plaintext backup packet도 성공후 제거하고 암호문·manifest·receipt·기존 rollback 설정은 보존했다. 물리Data checkpoint를 다시 복사/정지하거나 실제 서비스를 재시작하지 않았다.
+- 보관위치는 옛 DB `/mnt/consolidation-20260916/offsite`, 증거는 `/mnt/consolidation-20260916/code-layout-recovery-20260918-proof.json` 및 main `/srv/consolidation/work/project-layout-20260918`. 기존16절의 실제coldData/11frozenimages·runtime companions와 이 최신code/access companion을 함께 사용한다. 복구 전에 현재 Root의 실제 `.git`/RNDLOG gateway와 selected workspace·SSH제한설정을 준비하며 과거symlink를 코드에 덮지 않는다. 선택marker 이후 OLD를 재개하지 않는다.
+
+앞18절의 정상일정 관찰·옛서버별 제외서비스/호환주소/백업·저장공간·최종해지 후속은 유지한다. 이번 변경으로 코드 진입·Git·지침의 폴더 혼동은 해소했고 old VM 해지/삭제·vdb 포맷을 실행하거나 추가AI/유료 배치·고객 발송 시험을 하지 않았다.

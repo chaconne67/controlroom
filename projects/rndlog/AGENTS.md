@@ -25,10 +25,10 @@
 | 컨트롤타워 | 현재 조정실의 `~/projects/rndlog` 또는 등록 경로 |
 | 운영 업로드·고객자료 정본(main) | `/srv/consolidation/data/files-standby/workspace/companies/<정식 회사명>/` |
 | 공통 제작 자원(main) | `/srv/consolidation/data/files-standby/workspace/resources/` |
-| 자료 게이트웨이 호환 경로(main) | `/home/chaconne/projects/rndlog` → 위 workspace |
+| 자료 접속 프로그램(main 코드) | `/home/chaconne/projects/rndlog/deploy/workspace_storage_gateway.py` |
 | 로컬 스킬 | `~/controlroom/skills/domains/rndlog` |
 | 운영서버 SSH | `chaconne@49.247.192.127` |
-| 운영 코드 | `/srv/consolidation/repos/rndlog` |
+| 운영 코드 | `/home/chaconne/projects/rndlog` |
 | GitHub / 원격 / 기준 브랜치 | `git@github.com:chaconne67/rndnote.git` / `origin` / `main` |
 | 앱 Python | Docker 이미지 Python 3.13 |
 | 배포 정의 | `/srv/consolidation/infra/compose.production.rndlog.json` + `compose.activate.rndlog.json`, Compose 프로젝트 `production-rndlog` |
@@ -39,6 +39,19 @@
 
 현재 코드·서버와 이 문서가 다르면 실제 상태를 확인해 코드와 서버에 맞춰 이 문서와 GBrain을
 갱신합니다. `Rndnote`와 `rndnote.git`은 남아 있는 운영 식별자이며 제품 이름은 RNDLOG입니다.
+
+## 서버 코드 작업
+
+- 조정실 진입 폴더는 `C:\Users\chaconne\projects\rndlog`, main 코드 저장소는 `/home/chaconne/projects/rndlog`입니다. 두 장비 모두 사용자 루트의 `projects/<프로젝트>` 구조를 사용합니다. 조정실은 지침·스킬·기획의 진입점이고 서버 폴더는 실제 `.git`과 코드를 가진 독립 저장소입니다.
+- main의 이 폴더에서 해당 프로젝트의 코드를 수정·검증하고, 이번 변경 파일만 커밋한 뒤 기존 `origin`의 `main` 브랜치로 푸시합니다. 경로 이동을 이유로 Git 저장소·브랜치·원격을 다시 만들지 않습니다.
+
+```text
+ssh chaconne@49.247.192.127
+cd /home/chaconne/projects/rndlog
+git status --short
+```
+
+위 `cd`와 Git 명령은 SSH 접속 후 서버 셸에서 실행합니다. 코드 검증·커밋 후 푸시는 `git push origin main`입니다. 기존 수정·신규 파일을 보존하고 이번에 검증한 변경만 포함합니다.
 
 ## 제품 경계
 
@@ -79,7 +92,7 @@ GBrain 본체는 main에 있습니다. 로컬 카드의 기존 DB 주소 호환 
 
 ## 검증 기준
 
-- 코드 검증 위치는 main `/srv/consolidation/repos/rndlog`입니다. 호스트 `.venv`는 없으며 기존 Python 3.13 앱 이미지와 운영 DB/대외 효과에서 분리한 테스트 환경으로 Django 검사·관련 테스트를 실행합니다.
+- 코드 검증 위치는 main `/home/chaconne/projects/rndlog`입니다. 호스트 `.venv`는 없으며 기존 Python 3.13 앱 이미지와 운영 DB/대외 효과에서 분리한 테스트 환경으로 Django 검사·관련 테스트를 실행합니다.
 - 템플릿 변경은 Tailwind 빌드와 `collectstatic` 후 실제 화면을 확인합니다.
 - 제품 화면은 `rndlog-design-system` 스킬에 따라 모바일·데스크톱과 상호작용 상태를 확인합니다.
 - 고객사 DOCX는 `rndlog` 스킬의 견적서 원본·파생 샘플 디자인을 적용하고 표 머리글 배경색만 짙은 네이비 또는 회색으로 바꿉니다.
