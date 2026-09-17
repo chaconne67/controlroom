@@ -1,12 +1,14 @@
 # IROS 부동산 등기 표본과 DB 저장 모델
 
-작성일: 2026-09-17. 상태: **실제 10건 열람·원본 보관·표본 구조화 완료 / 운영 적용 전 설계 제안**.
+작성일: 2026-09-17. 상태: **기존10건 + 추가20개 물건·첨부14개 조사 완료 / 최종 논리 모델 v2.1 / 운영 적용 전 설계 제안**.
 
-추가 검토: 10건은 일반 건물에 집중된 모델 탐색 표본이다. **논리 모델의 기본 골격은 제안했지만, 토지·집합건물·목록 원문을 확인하기 전 저장 구조를 확정하지 않는다.** 추가 표본의 필요성·권고 범위·종료 기준은 이 문서의 10절에 기록한다. 추가 열람·결제는 이번 검토에서 실행하지 않았다.
+추가 검토: 10건은 일반 건물에 집중된 모델 탐색 표본이다. 추가 표본의 필요성·권고 범위·종료 기준은10절, 주인님의 진행 승인과 실제 실행 기록은11절에 기록한다. **4절은 추가 원문·보류 표본을 반영한 최종 모델 v2.1이며,12·13절은 변경 근거와 검증 한계다. 운영 DB 적재·DDL·권한·웹 다운로드는 별도 구현 단계다.**
 
 주인님 요청에 따라 CRETOP 상세정보가 저장된 모기지 대상 회사에서 무작위 후보를 뽑아 실제 IROS 등기를 열람했다. 원본과 분석용 구조화 자료는 별도 마운트 디스크에 보관했다. 운영 DB에는 이번 자료를 적재하지 않았으며, 새 스키마·권한·웹 다운로드 기능은 아직 만들지 않았다.
 
 ## 1. 결과와 자료 위치
+
+다음 수치는 최초10개 조사 기록이다. 승인된 추가 조사까지 포함하면 고유 물건30개, PDF34개/232쪽이다. 추가20개 판독 자료와 최종 수량·비용·한계는11~13절에 있다. 추가 조사 자료의 보관 정본은 `/mnt/ceoloan/registry/studies/20260917_expand20_model/`이며 실제 검증 기록은 private validation_report/archive_verification에 보존한다.
 
 - 열람 PDF 10개, 고유번호 10개, 총 41쪽, 선불 열람료 7,000원. 말소사항 포함, 주민등록번호 미공개 조건이다.
 - 소유권 취득 관련 기록 28건: 매매 17행, 보존 6행, 증여 3행, 신탁 이전·귀속 2행. 동일 매매목록의 지분 이전 여러 행을 하나의 거래로 연결해야 한다.
@@ -137,8 +139,8 @@ erDiagram
 | 테이블 | 주요 필드와 저장 규칙 |
 |---|---|
 | `file_objects` | `storage_backend text`, `storage_key text`, `sha256 char(64)`, `byte_size bigint`, `mime_type text`, `original_filename text`, `access_scope text`, `download_path text nullable`, `link_status text`, `hash_verified_at timestamptz`. PDF·추출 JSON·위치 자료를 각각 파일 객체로 관리. UNIQUE(backend,key), SHA-256 인덱스. DB에 PDF 바이트를 넣지 않음 |
-| `registry_reads` | `request_id UUID`, `run_id text`, `requested_company_id UUID FK company`, `source_address_id UUID FK`, `address_input text`, `selected_property_id UUID FK nullable`, `expected_unique_number text`, `selection_evidence_file_id UUID`, `requested_at/paid_at/finished_at timestamptz`, `status text`, `fee_amount numeric`, `currency char(3)`, `payment_transaction_no text nullable`, `approval_no text nullable`, `document_id UUID nullable`, `failure_stage/error_code text nullable`. 결제 성공·PDF 미수령도 따로 기록. 결제정보 비밀값은 저장하지 않음 |
-| `registry_documents` | `property_id UUID`, `original_file_id UUID`, `read_id UUID nullable`, `document_kind text`, `includes_cancellations bool`, `id_disclosure_mode text`, `registry_state text`, `registry_office_code/name text`, `viewed_at timestamptz`, `viewed_at_raw text`, `page_count int`, `source_uid_raw text`, `issued_or_viewed_mode text`, `source_title text`, `history_coverage text`. 원본 해시와 고유번호로 중복 문서 판별, 열람용/발급용 구별 |
+| `registry_reads` | `request_id UUID`, `run_id text`, `requested_company_id UUID FK company`, `source_address_id UUID FK`, `address_input text`, `selected_property_id UUID FK nullable`, `expected_unique_number text`, `selection_evidence_file_id UUID`, `requested_at/paid_at/finished_at timestamptz`, `status text`, `fee_amount numeric`, `currency char(3)`, `payment_transaction_no text nullable`, `approval_no text nullable`, `document_id UUID nullable`, `failure_stage/error_code text nullable`, `listed_request_at timestamptz nullable`, `listed_timestamp_kind text`, `request_link_method text`, `resumed_from_request_id UUID nullable`. 결제 성공·PDF 미수령도 따로 기록. 결제정보 비밀값은 저장하지 않음 |
+| `registry_documents` | `property_id UUID`, `original_file_id UUID`, `read_id UUID nullable`, `document_kind text`, `includes_cancellations bool`, `id_disclosure_mode text`, `registry_state text`, `registry_office_code/name text`, `viewed_at timestamptz`, `viewed_at_raw text`, `page_count int`, `source_uid_raw text`, `issued_or_viewed_mode text`, `source_title text`, `history_coverage text`(present_register/transcribed_subset/unknown), `history_cutoff_date date nullable`, `history_cutoff_reason_raw text nullable`. 원본 해시와 고유번호로 중복 문서 판별, 열람용/발급용 구별 |
 | `extraction_runs` | `document_id UUID`, `schema_version/extractor_version/prompt_version/model_id text NOT NULL`, `started_at/finished_at timestamptz`, `status text`, `structured_file_id/layout_file_id UUID`, `validation_report jsonb`, `reviewer/reviewed_at`, `title_complete/ownership_complete/encumbrances_complete bool`, `unresolved_annex_count int`, `failure_detail jsonb nullable`. 사용하지 않는 프롬프트·모델 버전은 사전 정의된 not-used 값, 사용했다면 실제 버전 필수. 자동 추출과 검증된 결과를 구분. 확정 결과는 불변으로 보존 |
 
 `registry_reads.status`는 `requested → candidate_verified → payment_ready → payment_confirmed → document_received → source_verified`와 `selection_failed/payment_uncertain/paid_document_pending/failed`를 구분한다. 거래번호는 수단+provider 범위에서 고유하게 관리하되 한 결제에 여러 문서가 들어가는 미래 배치는 결제와 읽기 연결표를 추가하기 전 지원하지 않는다. 이번 공식 경로처럼 1건씩 운영하면 이 모델로 결제 상태와 복구를 추적할 수 있다.
@@ -147,10 +149,10 @@ erDiagram
 
 | 테이블 | 주요 필드와 저장 규칙 |
 |---|---|
-| `properties` | `registry_unique_number text UNIQUE`, `property_kind text`(land/building/unit), `registry_office_code text nullable`, `parent_building_id UUID nullable`, `published_extraction_id UUID nullable`. 주소·회사명은 PK가 아님. 토지와 건물은 같은 주소라도 다른 고유번호로 관리. 집합건물의 전유부와 건물 부모 관계는 근거 확보 후 연결 |
-| `company_property_links` | `company_id UUID FK company.companies`, `property_id UUID`, `source_address_id/source_snapshot_id UUID nullable`, `read_id/document_id UUID nullable`, `link_role text`(business_address_search_result/registered_owner_verified/other_verified), `property_scope text`(whole_building/unit/floor_or_portion), `source_address_raw text`, `match_method text`, `evidence_span_id UUID nullable`, `verified_by/verified_at`, `observed_from/to timestamptz nullable`. 이번 10개 연결은 주소 검색 결과이며 회사 소유 확인값이 아님 |
-| `property_descriptions` | `extraction_run_id UUID`, `entry_id UUID`, `property_id UUID`, `description_status text`, `land_address_raw/road_address_raw/building_name/block/unit/structure/use_raw text nullable`, `display_registration_date date nullable`, `description_cause text nullable`, `land_category_raw text nullable`, `land_area_m2 numeric nullable`, `exclusive_area_m2 numeric nullable`, `land_right_kind/share numerator/denominator nullable`, `construction_completion_date date nullable`. 모든 표제 이력 보존, 새주소로 옛주소를 덮어쓰지 않음. 준공일이 원문에 없으면 NULL |
-| `area_segments` | `description_id UUID`, `segment_order int`, `component_label/component_kind/floor_label/use_raw text`, `floor_number int nullable`, `is_basement bool nullable`, `area_value numeric`, `area_unit text`, `area_m2 numeric nullable`, `area_scope text`(total/component/exclusive/share), `parent_segment_id UUID nullable`, `conversion_method text nullable`, `evidence_span_id UUID`. 총면적과 세부 구성면적을 모두 합산하지 않도록 parent와 scope 사용 |
+| `properties` | `registry_unique_number text UNIQUE`, `property_kind text`(land/building/unit), `registry_office_code text nullable`, `registered_scope text`(whole_property/registered_floor_or_portion/exclusive_unit), `published_extraction_id UUID nullable`. 주소·회사명은 PK가 아님. 토지와 건물은 같은 주소라도 다른 고유번호로 관리. 집합건물의 전유부와 건물 부모 관계는 근거 확보 후 연결 |
+| `company_property_links` | `company_id UUID FK company.companies`, `property_id UUID`, `source_address_id/source_snapshot_id UUID nullable`, `read_id/document_id UUID nullable`, `link_role text`(business_address_search_result/registered_owner_verified/other_verified), `property_scope text`(whole_building/unit/floor_or_portion), `source_address_raw text`, `match_method text`, `evidence_span_id UUID nullable`, `verified_by/verified_at`, `observed_from/to timestamptz nullable`. 이번30개 물건의 회사 연결은 주소 검색 결과이며 회사 소유 확인값이 아님 |
+| `property_descriptions` | `extraction_run_id UUID`, `entry_id UUID`, `property_id UUID`, `component_id UUID`, `subject_scope text`, `purpose_land_number_raw text nullable`, `description_event_kind text`, `description_status text`, `land_address_raw/road_address_raw/building_name/block/unit/structure/use_raw text nullable`, `display_registration_date date nullable`, `description_cause text nullable`, `land_category_raw text nullable`, `land_area_m2 numeric nullable`, `exclusive_area_m2 numeric nullable`, `construction_completion_date date nullable`. 모든 표제 이력 보존, 새주소로 옛주소를 덮어쓰지 않음. 준공일이 원문에 없으면 NULL |
+| `area_segments` | `description_id UUID`, `segment_order int`, `component_label/component_kind/floor_label/use_raw text`, `floor_number int nullable`, `is_basement bool nullable`, `area_value numeric`, `area_unit text`, `area_m2 numeric nullable`, `area_scope text`(total/component/exclusive/share), `parent_segment_id UUID nullable`, `conversion_method text nullable`, `evidence_span_id UUID`, `is_additive bool`, `same_area_reference_to_segment_id UUID nullable`. 총면적과 세부 구성면적을 모두 합산하지 않도록 parent와 scope 사용 |
 
 `company_property_links`의 소유 확인은 실제 등기 당사자와 회사의 확인된 법인 식별정보 또는 별도 근거로 한다. 개인사업자의 이름이나 대표자 이름이 같다는 이유로 회사 소유로 확정하지 않는다. 사업장 층이 있는 회사 주소로 통건물 등기를 읽었다면 그 범위 차이를 저장한다.
 
@@ -158,9 +160,9 @@ erDiagram
 
 | 테이블 | 주요 필드와 저장 규칙 |
 |---|---|
-| `registry_entries` | `extraction_run_id UUID`, `section text`(title/A/B), `subsection text`(건물표시/전유부/대지권 등), `rank_raw text`, `main_rank int nullable`, `subrank text nullable`, `former_rank_raw text nullable`, `source_order int`, `purpose_raw text`, `receipt_date date nullable`, `receipt_no_raw text nullable`, `cause_date date nullable`, `cause_raw text nullable`, `annotation_date date nullable`, `raw_columns jsonb`, `raw_text text`, `visual_cancellation_scope text`(none/field/whole/mixed/uncertain), `page_start/end int`. 식별은 실행+section+subsection+source_order, 순위번호만 고유키로 쓰지 않음 |
-| `source_spans` | `extraction_run_id UUID`, `entry_id UUID nullable`, `section/subsection text nullable`, `target_table/field_path text`, `target_row_id UUID`, `page_no int`, `bbox numeric[]`(4좌표), `coordinate_system text`, `quoted_text text`, `strike_lines jsonb`, `field_state text`(current/historical/canceled/uncertain), `value_status text`, `interpretation_method text`, `confidence numeric nullable`, `review_status text`. 한 사실에 여러 span 허용. 빈 section의 명시 문구는 항목 FK 없이 판독에 연결. 좌표는 PDF point 단위 top-left 기준 [x0,top,x1,bottom]와 페이지 폭·높이를 보존. 대상 행 존재와 실행 일치는 저장 validator로 확인 |
-| `entry_relations` | `from_entry_id/to_entry_id UUID`, `relation_kind text`(changes/cancels/corrects/transfers_share/releases_member), `target_scope text`(whole_right/party_field/share/collateral_member), `target_party_mention_id UUID nullable`, `share_num/den numeric nullable`, `target_reference_raw text`, `evidence_span_id UUID`, `resolution_status text`. 말소 한 행 → 여러 권리, 변경 행 → 기존 설정 권리 관계 보존 |
+| `registry_entries` | `extraction_run_id UUID`, `component_id UUID`, `section_instance_no int`, `subrecord_kind text`, `inherited_rank_raw text nullable`, `section text`(title/A/B), `subsection text`(건물표시/전유부/대지권 등), `rank_raw text`, `main_rank int nullable`, `subrank text nullable`, `former_rank_raw text nullable`, `source_order int`, `purpose_raw text`, `receipt_date date nullable`, `receipt_no_raw text nullable`, `cause_date date nullable`, `cause_raw text nullable`, `annotation_date date nullable`, `raw_columns jsonb`, `raw_text text`, `visual_cancellation_scope text`(none/field/whole/mixed/uncertain), `page_start/end int`. 식별은 실행+component+section_instance+source_order, 순위번호만 고유키로 쓰지 않음 |
+| `source_spans` | `extraction_run_id UUID`, `entry_id UUID nullable`, `component_id UUID nullable`, `geometry_precision text`(field/row/table/page), `evidence_media text`(native_text/raster/mixed), `transcription_method text`, `section/subsection text nullable`, `target_table/field_path text`, `target_row_id UUID`, `page_no int`, `bbox numeric[]`(4좌표), `coordinate_system text`, `quoted_text text nullable`, `strike_lines jsonb`, `field_state text`(current/historical/canceled/uncertain), `value_status text`, `interpretation_method text`, `confidence numeric nullable`, `review_status text`. 한 사실에 여러 span 허용. 빈 section의 명시 문구는 항목 FK 없이 판독에 연결. 좌표는 PDF point 단위 top-left 기준 [x0,top,x1,bottom]와 페이지 폭·높이를 보존. 대상 행 존재와 실행 일치는 저장 validator로 확인 |
+| `entry_relations` | `from_entry_id UUID`, `to_entry_id UUID nullable`, `relation_kind text`(changes/cancels/corrects/transfers_share/releases_member/provisional_becomes_final/assigns_provisional_right/adds_land_right_to_security/splits_parcel/terminates_trust/encumbers_secured_claim/transcribed_from_prior_register/continues_registered_right), `target_scope text`(whole_right/party_field/share/collateral_member/secured_claim), `target_party_mention_id UUID nullable`, `share_num/den numeric nullable`, `target_reference_raw text`, `evidence_span_id UUID`, `resolution_status text`. 말소 한 행 → 여러 권리, 변경 행 → 기존 설정 권리 관계 보존 |
 
 원문 말소선은 일부 필드에만 있을 수 있다. 말소선 존재만으로 행 전체나 권리 전체를 삭제하지 않는다. 기록의 최신 값을 만드는 책임은 원문 행 분리·시각 정보와 사건 관계를 해석하는 공식 추출 경로에 둔다. 금액을 읽은 뒤 소비자에서 경고하는 것으로 잘못된 자동 적재를 정당화하지 않는다.
 
@@ -169,8 +171,8 @@ erDiagram
 | 테이블 | 주요 필드와 저장 규칙 |
 |---|---|
 | `party_entities` | `party_kind text`(person/corporation/public_authority/unknown), `canonical_name text nullable`, `verified_corporate_registration_no text nullable`, `company_id UUID nullable`, `resolution_method/evidence/verification_status`. 확인된 법인 식별정보만 해당 namespace에서 고유화. 개인 이름이나 마스킹 식별번호는 전역 UNIQUE로 사용하지 않음 |
-| `party_mentions` | `entry_id UUID`, `entity_id UUID nullable`, `mention_order int`, `role_raw text`, `name_raw text`, `id_type text nullable`, `id_masked_raw text nullable`, `address_raw text nullable`, `branch_name_raw text nullable`, `nationality_raw text nullable`, `field_state text`, `source_span_id UUID`. 문서에 나온 이름·주소를 그대로 남김. 같은 문서의 이름·표시 변경 관계는 연결하되 다른 문서의 개인을 자동 합치지 않음 |
-| `ownership_interests` | `extraction_run_id UUID`, `property_id UUID`, `acquisition_entry_id UUID`, `recipient_mention_id UUID`, `transaction_observation_id UUID nullable`, `acquisition_kind text`, `acquired_share_num/den numeric`, `remaining_share_num/den numeric nullable`, `acquired_cause_date/receipt_date date nullable`, `as_of_viewed_at timestamptz`, `observed_status text`, `share_resolution_status text`. 취득 시 지분과 해당 문서 시점의 남은 지분을 구분. 일부 이전 관계는 entry_relations에 정확한 분수로 저장 |
+| `party_mentions` | `entry_id UUID nullable`, `component_id UUID nullable`, `entity_id UUID nullable`, `mention_order int`, `role_raw text`, `name_raw text`, `id_type text nullable`, `id_masked_raw text nullable`, `address_raw text nullable`, `branch_name_raw text nullable`, `nationality_raw text nullable`, `field_state text`, `source_span_id UUID`. 문서에 나온 이름·주소를 그대로 남김. 같은 문서의 이름·표시 변경 관계는 연결하되 다른 문서의 개인을 자동 합치지 않음 |
+| `ownership_interests` | `extraction_run_id UUID`, `property_id UUID`, `acquisition_entry_id UUID`, `recipient_mention_id UUID`, `transaction_observation_id UUID nullable`, `acquisition_kind text`, `acquired_share_num/den numeric`, `remaining_share_num/den numeric nullable`, `acquired_cause_date/receipt_date date nullable`, `as_of_viewed_at timestamptz`, `observed_status text`, `share_resolution_status text`, `acquired_share_basis text`, `share_derivation_formula text nullable`. 취득 시 지분과 해당 문서 시점의 남은 지분을 구분. 일부 이전 관계는 entry_relations에 정확한 분수로 저장 |
 | `transactions` | `identity_status text`(unresolved/verified), `verified_sale_list_identity text nullable`, `grouping_basis/evidence text`, `published_observation_id UUID nullable`. 여러 문서에서 같은 계약으로 확인된 거래를 묶는 영구 식별 개체. 목록 번호만으로 전국/시대가 다른 거래를 병합하지 않음 |
 | `transaction_observations` | `extraction_run_id UUID`, `transaction_id UUID`, `transaction_kind text`, `contract_cause_date date nullable`, `sale_list_ref_id UUID nullable`, `price_amount numeric nullable`, `price_currency char(3) nullable`, `price_scope text`(single_property/partial_share/multiple_assets/unknown), `price_status text`, `price_source_span_id UUID nullable`, `member_scope_complete bool`. 문서별로 확인된 가격·원인·목록 범위의 불변 사실. 전역 거래의 가격 집계는 선택한 관측 1개만 사용 |
 | `transaction_members` | `transaction_observation_id UUID`, `property_id UUID nullable`, `property_reference_raw text nullable`, `entry_id UUID nullable`, `seller_mention_id/buyer_mention_id UUID nullable`, `transferred_share_num/den numeric nullable`, `allocated_price numeric nullable`, `allocation_method text nullable`, `party_role_basis text`(explicit/inferred_reviewed/unknown), `evidence_span_id UUID`. 전체 거래의 부동산·배분·매도인·매수인 연결. 매도인 명시가 없으면 이전 소유자라는 추론을 사실 칸에 자동 입력하지 않음 |
@@ -185,18 +187,47 @@ erDiagram
 
 | 테이블 | 주요 필드와 저장 규칙 |
 |---|---|
-| `rights` | `extraction_run_id UUID`, `property_id UUID`, `root_entry_id UUID`, `right_kind text`(maximum_amount_mortgage/fixed_mortgage/jeonse/lease/seizure/provisional_attachment/provisional_disposition/other), `setup_mode text`(initial/additional_collateral/unknown), `setup_cause_date/setup_receipt_date date nullable`, `initial_max_amount/latest_registered_max_amount numeric nullable`, `registered_fixed_claim_amount numeric nullable`, `deposit_amount numeric nullable`, `attachment_claim_amount numeric nullable`, `amount_currency char(3) nullable`, `observed_status text`, `cancellation_entry_id UUID nullable`, `scope_raw text`, `term_start/end/return_due_date date nullable`, `registry_stated_interest_rate numeric nullable`, `interest_terms_raw text nullable`, `collateral_group_id UUID nullable`. 종류별 허용 금액 열을 CHECK. 말소됐어도 마지막 등기금액 보존 |
-| `right_changes` | `right_id UUID`, `entry_id UUID`, `change_kind text`(debtor_assumption/creditor_transfer/merger/amount_change/cancellation/partial_cancellation/member_release/correction), `target_scope text`, `cause_date/receipt_date/annotation_date date nullable`, `max_amount_before/after numeric nullable`, `currency char(3) nullable`, `scope_reference_raw text nullable`, `changed_fields jsonb`, `evidence_span_id UUID`. 기존 설정과 관계를 유지, 채무자 변경이나 합병을 새 권리로 세지 않음 |
+| `rights` | `extraction_run_id UUID`, `property_id UUID`, `root_entry_id UUID`, `right_kind text`(maximum_amount_mortgage/fixed_mortgage/jeonse/lease/seizure/provisional_attachment/provisional_disposition/superficies/provisional_registration/registration_restriction/compulsory_auction/voluntary_auction/other), `setup_mode text`(initial/additional_collateral/unknown), `setup_cause_date/setup_receipt_date date nullable`, `initial_max_amount/latest_registered_max_amount numeric nullable`, `registered_fixed_claim_amount numeric nullable`, `deposit_amount numeric nullable`, `attachment_claim_amount numeric nullable`, `amount_currency char(3) nullable`, `observed_status text`, `cancellation_entry_id UUID nullable`, `scope_raw text`, `registered_object_scope text`(whole_property/ownership_share/building_only/land_right_only/unit_and_land_right/secured_claim/unknown), `court_name_raw text nullable`, `court_case_ref_raw text nullable`, `term_start/end/return_due_date date nullable`, `registry_stated_interest_rate numeric nullable`, `interest_terms_raw text nullable`, `collateral_group_id UUID nullable`. 종류별 허용 금액 열을 CHECK. 말소됐어도 마지막 등기금액 보존 |
+| `right_changes` | `right_id UUID`, `entry_id UUID`, `change_kind text`(debtor_assumption/creditor_transfer/merger/amount_change/cancellation/partial_cancellation/member_release/correction/scope_clarification), `target_scope text`, `cause_date/receipt_date/annotation_date date nullable`, `max_amount_before/after numeric nullable`, `currency char(3) nullable`, `scope_reference_raw text nullable`, `changed_fields jsonb`, `evidence_span_id UUID`. 기존 설정과 관계를 유지, 채무자 변경이나 합병을 새 권리로 세지 않음 |
 | `right_party_roles` | `right_id UUID`, `party_mention_id UUID`, `role text`(debtor/creditor/jeonse_holder/collateral_provider/other), `from_entry_id/to_entry_id UUID nullable`, `from_receipt_date/to_receipt_date date nullable`, `role_status_as_of_document text`, `scope_raw text nullable`, `evidence_span_id UUID`. 다수 채무자·채권자와 변경 이력, 현재 역할 모두 조회 가능 |
 | `annex_references` | `document_id UUID`, `source_entry_id UUID`, `annex_kind text`(sale_list/joint_collateral_list/trust_ledger/other), `office_namespace_raw text nullable`, `number_raw text`, `year int nullable`, `received_file_id UUID nullable`, `received_document_id UUID nullable`, `collection_status text`(referenced_only/received/verified/not_available), `scope_resolved bool`. 목록 번호의 관할·시대·문서 맥락을 보존. 전국의 같은 숫자라고 바로 병합하지 않음 |
 | `collateral_groups` | `verified_annex_ref_id UUID nullable`, `identity_status text`(unresolved/verified), `verification_basis text`, `evidence_span_id UUID nullable`. 목록 원문이나 명시적 연결이 확인된 동일 담보권 집합만 그룹화 |
-| `collateral_members` | `collateral_group_id UUID`, `source_extraction_id UUID nullable`, `source_annex_ref_id UUID nullable`, `property_id UUID nullable`, `property_reference_raw text`, `member_right_id UUID nullable`, `member_status_as_of_document text`, `addition_entry_id/release_entry_id UUID nullable`, `receipt_date/annotation_date date nullable`, `evidence_span_id UUID`. 문서/목록 관측별 구성 이력을 보존하고 부동산당 선택한 판독으로 현재 구성 판단. 다른 부동산 UID를 모르면 원문 참조와 미해결 상태 유지. 본건 밖 아파트 말소를 본건 전체 말소로 처리하지 않음 |
+| `collateral_members` | `collateral_group_id UUID`, `source_extraction_id UUID nullable`, `source_annex_ref_id UUID nullable`, `property_id UUID nullable`, `property_reference_raw text`, `member_right_id UUID nullable`, `member_status_as_of_document text`, `member_ordinal_raw text`, `predecessor_member_observation_id UUID nullable`, `change_kind_raw text nullable`, `member_scope_kind text`, `member_scope_raw text`, `addition_entry_id/release_entry_id UUID nullable`, `receipt_date/annotation_date date nullable`, `evidence_span_id UUID`. 문서/목록 관측별 구성 이력을 보존하고 부동산당 선택한 판독으로 현재 구성 판단. 다른 부동산 UID를 모르면 원문 참조와 미해결 상태 유지. 본건 밖 아파트 말소를 본건 전체 말소로 처리하지 않음 |
 
 같은 채권자·금액·날짜만으로 공동담보 그룹을 만들지 않는다. 미확인 공동담보가 있으면 회사/소유자 포트폴리오의 정확한 합계는 NULL 또는 '중복 가능·해결 미완료' 상태로 제공한다. 건물별로 기록된 최고액 합계를 표시할 때도 범위를 분명히 적는다.
 
 등기 순위번호·접수일·접수번호는 원문 사실로 저장하지만 실제 배당 우선순위나 대출 가능액을 자동 확정하지 않는다. 채무자와 소유자가 다르면 '등기상 다른 당사자'라는 관측을 남기고, 보증·실제 담보 제공 계약의 법률관계를 추정해 채우지 않는다.
 
 **실제 대출은 별도 자료 영역:** 잔액증명·금융기관 자료를 얻는 후속 단계가 승인되면 `loan_observations`를 도입해 실제 원금·잔액 기준일·약정 대출일·만기·금리·기관·원문을 보관하고 확인된 대출-담보 연결을 만든다. IROS만으로는 이 테이블의 값을 생성하지 않는다. 채권최고액을 120%/130%로 나누거나 설정연도를 대출 시작연도로 바꿔 실제 대출값을 만들지 않는다.
+
+
+### F. 문서 구성·물건 관계·대지권·신탁
+
+다음9개 테이블도 동일한 UUID·판독 실행·원문 근거 규칙을 적용한다. 생략한 FK는 UUID, *_raw와 상태/종류는 text, 날짜는 date, 기간은 int, 수익권 금액은 numeric(20,2), 지분은 numeric(38,0), 진위는 bool, 구조화 부수 조건은 jsonb다. 아래는 SQL 마이그레이션이 아니라 논리 필드 계약이다.
+
+| 테이블 | 주요 필드와 저장 규칙 |
+|---|---|
+| `document_components` | `extraction_run_id`, `document_id`, `parent_component_id nullable`, `component_kind`(registry_body/title_subject/sale_list_copy/joint_list_copy/trust_change_table/trust_contract_copy/separator), `logical_annex_ref_id nullable`, `physical_copy_ordinal`, `subject_kind`, `subject_property_id nullable`, `subject_reference_raw`, `page_regions jsonb`(쪽·PDF point bbox·정밀도), `content_mode`(native_text/raster/mixed), `review_status`. 같은 쪽에 본문과 목록이 섞이거나 한 목록이 여러 번 인쇄되어도 물리 사본을 보존한다. 사본 수를 거래·권리 수로 계산하지 않음 |
+| `property_relations` | `source_extraction_id`, `from_property_id`, `to_property_id nullable`, `to_subject_component_id nullable`, `target_reference_raw`, `relation_kind`(land_building_reference/purpose_land/part_of_described_collective_building/split_from/split_to/register_continuation), `reference_role`(prior_register/current_register), `record_transcription_date date nullable`, `record_transcription_reason_raw text nullable`, `event_entry_id nullable`, `cause_date/annotation_date nullable`, `identity_resolution_status`, `evidence_span_id`. 다대다 연결. 확인되지 않은 토지/부모 건물 UID는 NULL이고 원문 지번·동 설명만 보존 |
+| `land_right_observations` | `extraction_run_id`, `unit_property_id`, `entry_id`, `title_component_id`, `purpose_land_number_raw`, `purpose_land_property_id nullable`, `purpose_land_component_id`, `right_kind_raw`, `share_num/share_den numeric(38,0) nullable`, `share_raw`, `cause_date/registration_annotation_date nullable`, `observed_status`, `evidence_span_id`. 목적 토지별 종류와 정확한 비율·변경 이력을 보존. 비율 분자에 소수가 있으면 원문을 유지하고 정확한 정수 분수로 정규화. 전유부분의 소유 지분과 별개 |
+| `trust_agreements` | `office_namespace`, `ledger_number_raw`, `permanent_document_uid nullable`, `identity_status`, `verified_identity_basis`, `published_observation_id nullable`. 관할+연도 포함 원부번호와 실제 연결로 식별. 내용이 비슷하다는 이유로 다른 물건의 원부를 병합하지 않음 |
+| `trust_observations` | `extraction_run_id`, `agreement_id`, `annex_ref_id`, `contract_component_id`, `registration_entry_id nullable`, `contract_signed_date nullable`, `registration_cause_date/receipt_date nullable`, `receipt_no_raw`, `base_term_start_event`, `base_duration_months nullable`, `stated_start_date date nullable`, `scheduled_end_date nullable`, `scheduled_end_is_conditional bool`, `extension_condition_raw`, `termination_entry_id nullable`, `observed_termination_date nullable`, `observed_status`, `selected_fields_complete bool`, `full_clause_transcription_complete bool`. 원부의 역사적 계약과 본문의 관측시점 종료를 연결 |
+| `trust_roles` | `trust_observation_id`, `party_mention_id`, `role`(grantor/trustee/priority_beneficiary/residual_principal_beneficiary/income_beneficiary/debtor/agent), `priority_rank nullable`, `priority_group_key nullable`, `branch_name_raw`, `role_scope_raw`, `from_component_id`, `evidence_span_id`. 같은 사람/법인이 여러 역할을 가져도 각각 보존. 채무자는 위탁자와 같다고 자동 복사하지 않음 |
+| `trust_assets` | `trust_observation_id`, `member_order`, `property_id nullable`, `property_kind`, `property_reference_raw`, `description_component_id nullable`, `share_num/share_den nullable`, `area_m2 nullable`, `member_resolution_status`, `evidence_span_id`. 별지의 신탁재산 범위와 본문 UID의 실제 대응. 토지 계약과 건물 계약의 각 재산 범위를 보존 |
+| `trust_benefit_limits` | `trust_observation_id`, `beneficiary_role_id`, `priority_rank`, `priority_group_key nullable`, `secured_credit_agreement_date date nullable`, `certificate_no_raw nullable`, `limit_amount numeric(20,2)`, `currency`, `limit_kind`, `loan_ratio_num/den nullable`, `loan_ratio_raw`, `claim_scope_raw`, `scope_resolution_status`, `evidence_span_id`. 실제 잔액·근저당 최고액과 별개. 명시된120%에서 계산한 계약상 기준금액은 분석 파생값에 계산식·원문 한도/비율·비실행 확인 상태를 함께 저장 |
+| `trust_terms` | `trust_observation_id`, `component_id`, `clause_reference_raw`, `term_kind`, `value_type`, `date_value/duration_months/amount_value/rate_value/currency nullable`, `raw_text`, `value_json nullable`, `selected_option bool nullable`, `overrides_term_id nullable`, `excluded_clause_reference_raw nullable`, `effective_scope`, `evidence_span_id`. 기간 연장·변제 범위·처분 조건·특약 우선·적용 제외·선택된 비용과 미선택 대안을 구분. 핵심 날짜·금액·역할은 위 정규화 열에 저장하고 장문의 표준 조항/계약별 부수 조건은 원문과 JSONB 보존 |
+
+추가 참조 조건:
+
+- party_mentions는 같은 판독 실행의 entry 또는 component 중 하나 이상에 연결한다. 원부의 당사자에게 본문 항목을 지어내지 않는다.
+- entry_relations의 to_entry_id가 NULL이면 실제 target_reference_raw와 unresolved_prior_register 상태가 필수다. 다른 등기기록의 항목 UUID를 추정하지 않는다.
+- 대지권의 종류·목적 토지별 비율·이력은 land_right_observations에서 보존한다. 1동 전체·목적 토지·전유부분 면적을 섞지 않는다.
+- 같은 1순위 우선수익자가3곳이면 trust_roles와 trust_benefit_limits를 각각3행으로 저장하고 priority_group_key로 공동1순위를 연결한다. 수탁자인 은행과 세 우선수익 법인은 별개다.
+- 우선수익권 한도는 실제 대출잔액이나 근저당 최고액이 아니다. 계약에 명시된 비율로 계산한 값도 분석 파생값으로만 보존하며 대출 사실로 승격하지 않는다.
+- 신탁의 고정 시작/예정 종료 날짜와 기간·연장 조건, 실제 본문 종료일을 따로 저장한다. 계약상 신탁 종료 예정일을 대출 만기로 사용하지 않는다.
+- 전산분할 이기의 기록일은 원래 권리의 설정일과 다르다. 기존 설정 사건과 split_transcription 항목, 그 연결을 보존한다.
+- 등기기록 이기로 현재 문서의 이전 순위와 새 순위가 연결되면 register_continuation과 continues_registered_right, 공동담보 member predecessor를 남긴다. 이를 새 담보나 말소로 세지 않는다.
+- source_spans의 페이지 전체 근거는 geometry_precision=page다. 조사 자료의 페이지 bbox를 필드 단위 좌표가 확인된 것처럼 표시하지 않는다.
 
 ## 5. 날짜·누락·현재 상태·중복 계약
 
@@ -435,3 +466,89 @@ IROS 원문을 추가로 읽어도 실제 대출 잔액·금리·만기가 자�
 - 최소 구현 게이트: 2단계에서 멈춤. 기존 표본·설계·용어·문서 색인을 재사용하며 수집 도구나 분석 프로그램을 추가하지 않는다. 확인 검색은 `parse_registry_text`, `parse_registry_pdf`, `대지권`, `공동담보`, `매매목록`, `신탁원부`다.
 - 수정 후 확인: 같은 JSON의 일반 건물10/매매17행/가격 상태8+9 집계, 로컬·마운트 SHA-256 일치, 23개 기존 논리 테이블 보존, 추가 본문20/첨부6 수량, 문서 링크3개·diff 검사를 확인했다. 원격 코드의 clean 상태와 기존 HEAD, 범위 밖 통합 문서의 SHA-256도 보존됐다. 이 문서 검증으로 자동 판독 정확도나 운영 DB 적용을 통과 처리하지 않는다.
 - 다음 행동: 추가 조사 범위를 진행하게 되면 먼저 기존 사례의 관련 토지와 참조 목록·원부의 실제 선택·신청 가능 여부·비용을 확인한다. 기존 PDF를 다시 결제하지 않고 재사용한다. 이번 검토의 제안만으로 새 20개 등기와 6개 첨부를 자동 결제하지 않는다.
+
+## 11. 승인된 추가 조사 실행과 재개 정보
+
+2026-09-17 주인님이 10절의 추가 등기20개·목록/원부6개 제안에 "OK 진행해"라고 승인했다. 이 절이 10절의 추가 조사 미승인 상태를 대체한다. 10절의 조사 목적·선정·종료 기준은 유지한다.
+
+- 실행 목표: 기존 복잡 사례의 관련 토지·목록을 먼저 확인하고 토지10/집합건물6/새 변형 일반 건물4와 매매목록2/공동담보목록2/신탁원부2를 확보한다. 유형이 겹치면 불필요한 중복을 줄이고 확인하지 못한 유형은 사유를 남긴다. 마지막 본문5개는 설계 보완에 쓰지 않고 대조한다.
+- 승인된 효과: 필요한 IROS 열람·선불 결제·PDF 수령, 전용 마운트 원본 보관, 조사용 구조화, 실제 원문에 따른 논리 모델 보완. 신청마다 정확한 고유번호·종류·개수·화면 금액을 확인한다. 기존 단가700원의 신청은 최대26회/18,200원으로 실행 상한을 두며 첨부 포함으로 줄어든 비용을 기록한다. 단가가 다르면 금액/포함 방식의 근거부터 확인한다.
+- 변경 경계: 기존 공식 `scripts/iros_dom.py`·`iros_ssp.py`에서 추가 자료 수집에 필요한 기능과 직접 테스트만 보완할 수 있다. 브라우저 수명주기는 shared HiddenBrowser를 재사용한다. 운영 DB 스키마·역할·적재, 웹 배포·문자·예약 작업·기존자료 삭제는 이번 조사 범위에 포함하지 않는다.
+- 수정 전 기준선: 원격 main `e9c013929378815c7294f52c9e76c330ef285ce9`, clean, GitHub main과 일치. Windows 설치본의 두 IROS 파일 SHA-256은 정본과 일치. 공식 관련 pytest78개가 통과했다. 전용 IROS Chrome 잔여 PID는0이다. 다른 controlroom 문서의 기존 변경은 보존한다.
+- 최소 구현 게이트: 2단계에서 멈춤. 공식 실행기·기존 DesktopObserver·선불 결제/PDF 저장·기존 표본 파일과 설치된 PDF 도구를 재사용한다. 검색/추가사항/목록 선택 기능은 실제 화면을 조사한 뒤 필요한 경우 해당 공식 단계에 통합한다. 새 브라우저/결제 runner나 운영 DB 적재 코드는 만들지 않는다.
+- 작업본: `C:\\iros-agent\\studies\\20260917_expand20_model\\`. 보관 정본: 기존 DB 서버 `/mnt/ceoloan/registry/studies/20260917_expand20_model/`. 원본은 기존 content-addressed original 경로를 재사용한다. 회사/개인정보가 포함된 원문·JSON은 Git/GBrain에 넣지 않는다.
+- 경로/검증: 원격 공식 코드 확인 → Windows 동일 설치본 → 숨은 Chrome 검색·선택·추가사항·결제전 확인 → 승인 범위 결제·PDF → 원본 해시/마운트 → 원문 화면·표 구조와 사실 대조 → 조사용 구조화/모델 보완. 결제 완료·수령 실패는 기존 view-only로 재개하고 재결제하지 않는다. 입력 데스크톱과 도구 Chrome 전경 전환·잔여 PID를 별도로 확인한다.
+- 현재 위치: 수집과 원문 판독 완료. 조사 JSON·최종 필드 계약·보관 해시와 코드 리뷰 결과를 정리한다. 운영 적용은 후속 단계다.
+
+
+### 추가 수집 경로 보완 및 코드 리뷰 계약
+
+- 원천: 주인님의 추가 등기20개·첨부6개 승인과 이 절의 범위, 기존 공식 IROS 실행기 계약.
+- 역할: 기존 숨은 Chrome에서 확인한 토지/건물/호실을 선택하고, 요청한 목록이 포함된 신청을 결제해 원문을 수령한다. 의미 판독·운영 적재는 이 코드의 책임이 아니다.
+- 리뷰 경계: base `e9c013929378815c7294f52c9e76c330ef285ce9`와 원격 작업트리의 `scripts/iros_dom.py`, `iros_ssp.py`, 두 직접 테스트. CLI→DomRunner→match_result_row→기존 PDF parser/summary의 직접 계약을 확인한다.
+- 입력: 기존 회사 주소와 실제 IROS 행에서 확인한 고유번호/종류; 선택한 공동담보·매매·영구보존 목록. 추가 인증은 중단하고 원문 비밀값을 기록하지 않는다.
+- 절차: 기존 로그인/검색/신청/개인정보 미공개/결제/PDF 경로를 유지한다. WebSquare 처리 모달이 끝나야 단계 완료로 판단한다. 개별 목록은 실제 대상 UID와 맞는 행만 선택한다.
+- 출력: 신청/선택 목록번호·결제 결과·PDF·고유번호/세 section 검사 결과와 실패 단계를 summary로 남긴다. 실제 목록 본문 수령은 조사에서 별도 대조한다.
+- 보호: 기존 78개 pytest 기대값과 브라우저 소유권/정리, 정확한 주소 경계, 1건700원, 기존 파일/자료/인증/서비스/DB 권한을 보존한다.
+- 비목표: 운영 DB/DDL/역할/배포/스케줄/금융 자료 연결·기존 C04 의미 파서 오류·생산 완전성 승인. 기본 구조 검사만으로 의미 정확성을 주장하지 않는다.
+- 근거: 원격 diff와 두 직접 테스트, 공식 preflight/paid/view-only summary 및 실제 PDF. 기본 관점은 변경 diff와 직접 호출/소비자이고, 실제 IROS 신청/선택/페이지 계약도 대조한다.
+
+2026-09-17 첫 첨부 신청은 목록 행을 선택했으나 결제대상 첫 페이지의 이전 신청을 선택해, 첨부 없는 기존 물건의 PDF만 수령했다. 실제 비용700원과 PDF6쪽을 보존하며 첨부 수령으로 집계하지 않는다. 결제대상은 10행씩 여러 페이지이고 새 신청은 마지막에 추가됐다. 이 사실에 따라 `pay`를 전체 페이지/건수 대조→기존 선택 해제→이번 신청의 마지막 행 UID/종류 확인→1건700원 검사로 보완한다. 기존 신청은 삭제하지 않는다. 이 경로로 새 첨부 PDF가 확인돼야 첨부 수집 성공이다.
+
+### 최종 실행 결과
+
+- 기존78개 검사를 보존하고23개를 추가한101개가 통과했다. 루트 에이전트가 고정된 리뷰 계약으로4파일 전체 diff와 직접 호출/소비자를 검토했으며 승인된 finding과 열린 material contract question은 없었다.
+- 추가 물건20개=토지10·집합건물6·건물4, 연결 원천회사19개, 고유번호20개는 기존10개와 중복되지 않는다. 회사 주소 연결이며 회사 소유 확인값은 아니다.
+- 실제 PDF24개/191쪽:20본문114쪽, 추가 재열람4파일77쪽. 이 중 A01은 이전 신청 선택으로 받은 첨부 없는6쪽 문서여서 성공 첨부로 집계하지 않는다.
+- 원문으로 확인한 논리 첨부14개=매매목록8·공동담보목록3·신탁원부3. 반복 인쇄된 같은 목록은1개로 센다. 첨부는 본문에 포함된 것도 있어14개의 별도 PDF나 추가 결제를 뜻하지 않는다.
+- 영수증이 확인된 유료 신청24회, 추가16,800원. 이전 신청 선택으로 지출된700원을 포함해 보존한다. 기존10회7,000원과 합계23,800원. 승인 상한26회/18,200원 이내다.
+- PDF 저장 실패4대상(L05/U01/U02/T01)은 기존 결제의 view-only에서 수령했다. T01 보안 프로그램 안내 뒤에도 설치·보안 설정을 변경하지 않고 기존 신청의 공식 재열람에서 수령했다.
+- 보류5개는32테이블 모델과15개 판독의 파일/해시를 동결한 후 확인했다. 원래 모델을 수정 없이 통과시킨 것은 아니다.13절의 실제 공백을 보완한v2.1을 같은5개에 재대조했고 새로운 독립 보류 표본은 남아 있지 않다.
+-20개의 현재 소유 지분 합계는 모두1이며 숫자/날짜/권리 관계를 원문에 대조했다. 근저당·가압류·전세금·우선수익 한도·계약가격의 금액 종류를 분리했다.
+- 마운트 원본의 SHA-256과 수령 파일 해시를24건 대조했다. 입력 데스크톱 Default 전후, 공식 호출의 도구 Chrome 전경 이벤트0·호출후 소유 Chrome PID0을 monitor로 확인했다. 일반 조사 probe 전부에 같은 관측이 있었던 것으로 확대하지 않는다.
+
+### 재개 정보
+
+공식 수집 코드 변경은 원격 main `864420e`로 저장하고 GitHub ceoloan/main에 push했다. Windows 실행본 두 파일은 같은 SHA-256이다. 제품 웹 배포는 실행하지 않았다.
+
+조사/모델 보완 결과는 최종 v2.1이다. 다음 단계는 승인된 스키마/수집 역할/적재 transaction 및 자동 의미 판독의 구현 계획이다. 본 조사에서는 운영 DB·권한·웹 서비스·배포를 바꾸지 않았다. 변형 검증은 담보권 피담보채권 제한·등기기록 이기·건물만 담보·공동1순위 신탁을 우선한다. 일반 무작위20건 반복보다 확인한 위험별 검증 사례와 독립 검증 표본을 확보한다.
+
+## 12. 추가 원문으로 보완한 저장 모델
+
+추가20물건과 실제 목록·스캔 신탁원부에서 확인한 필드는4절의32개 논리 테이블에 통합했다. 최초23개에서 문서구성·물건관계·대지권·신탁9개를 추가했다. 회사 정보는 company.companies 참조를 유지하고 원본/판독 사실은 중앙 real_estate 저장 소유를 제안한다.
+
+- 집합건물의 반복 표제부·1동/전유부/목적 토지를 분리했고 별도 고유번호 없는1동 설명을 가짜 부모 물건으로 만들지 않는다.
+- 동일 순위 아래 가등기와 본등기를 분리하고 임의의 순위번호 UNIQUE를 제거했다. 근저당 목적에 대지권이 추가되는 명시 사건은 동일 담보 관계로 연결한다.
+- 표제 이력의 분할970→433㎡와 신규537㎡ 참조, 별도 등록된3층 부분, 반복49.16㎡ 문구를 보존한다.
+- 매매목록 가격은 계약 전체 값으로1회 보존한다.65억원이라는 같은 금액의 서로 다른2021·2023계약을 합치지 않는다.
+- 64.2억원 동일 공동담보권이 건물1·토지2에 반복됨을 목록으로 확인했다.19,260,000,000원을 대출액으로 합산하지 않는다. 나머지2물건 본문 미확인이라 전체 포트폴리오 완전성은 미확인이다.
+- 신탁원부3개를 판독했다. 같은2021년 당사자·조건·12억원 한도의 토지/건물 원부2개도 담보재산·원부번호가 다르다. 계약 이미지23쪽 중19쪽이 같고4쪽이 다르지만 실제 동일 피담보채권 식별은 미확인이다. 서로 다른 실제 대출2건으로 세거나 금액을 무조건 합산하지 않는다.
+- 현재2025년 신탁은 수탁은행1곳과 공동1순위 우선수익기관3곳이다. 기관별 한도34.8/14.4/21.6억원, 합계70.8억원은 해당 신탁의 우선수익 한도 관측일 뿐 실제 잔액이 아니다. 고정 신탁기간·자동 연장·기관별 비용 부담·처분비 공식도 따로 보존했다.
+- 스캔 신탁의 계약 분석 핵심 항목은 원문 화면으로 판독했다. 스캔 본문은 PDF 텍스트층이 없으며 자동 OCR·전 조항 전사·필드좌표 의미 검증 완료를 주장하지 않는다.
+- 원문 텍스트층과 화면의 은행명 불일치, 기존/작업중 판독의 이름·날짜·금액 오타를 발견해 정정 관측으로 기록했다. 이전10건·모델 동결15건은 보존한다.
+- 실제 영수증 승인 시각과 신청목록/재열람 표시시각을 구분했다. 저장 실패4건은 공식 view-only로 재개했고 재결제하지 않았다.
+
+운영 자동 의미 추출기, 필드 단위 좌표 validator, 중앙 DB 마이그레이션·전용 수집 역할·원자적 적재, 인증 다운로드 엔드포인트는 아직 구현하지 않았다. 조사 결과의 완성을 운영 자동 적재 경로의 완성으로 판정하지 않는다.
+
+## 13. 보류 표본 대조와 v2.1 보완
+
+비보류15개와 논리 테이블32개의 모델을 `model_spec_v2_frozen.md` 및 `model_contract_v2.json`으로 고정하고 해시·시각을 남긴 뒤 L09/L10/U05/U06/B04의 본문23쪽을 열었다. 이 기록은 기계 검증용 JSON Schema나 운영 DDL이 아니다. **고정 v2가 변경 없이 모든 보류 표본을 수용했다는 종료 조건은 충족하지 못했다.** 새 핵심 테이블은 필요하지 않았으나 아래 관계·분석 필드를 추가해야 했다.
+
+| 표본 | 실제 확인한 내용 | 기존 모델과 보완 |
+|---|---|---|
+| L09 | 기존1/14+6/14가 남고 나중에1/2을 받아 현재1/1. 금액·은행·날짜가 같은 설정2개는 접수번호가 다름 | 기존 지분 누적·사건 식별·한 말소→복수 권리로 표현 가능 |
+| L10 | 근저당권부채권의 가처분. 분할로 이전 등기에서 전사된 담보의 원래 설정 접수와 전사 접수가 다름 | 채권 대상 가처분 관계와 전사 출처를 추가 |
+| U05 | 보존만 있고 을구는 명시적으로 기록사항 없음. 목적 토지와 대지권 비율 별도 | 기존 전유부분/대지권/확인된0건 계약으로 표현 가능 |
+| U06 | 대지권이2022년에 기록됐지만2017년 근저당은 '건물만에 관한 것임' | 원문 범위 보존 외에 분석용 담보 범위·범위 명시 부기 종류를 추가 |
+| B04 | 등기기록 과다로2023년에 이기. 목록의 옛44번과 현재2번은 같은 본건 담보의 연속. 근저당4개는 모두 말소됐지만 현재 신탁등기 존재 | 등기기록 연속·목록 구성원 승계·제한된 이력 범위를 명시. 신탁원부 별도 확보·대조 |
+
+v2.1의 추가 계약:
+
+- `entry_relations.relation_kind`에 `encumbers_secured_claim`, `transcribed_from_prior_register`, `continues_registered_right`를 추가한다. `target_scope`에 `secured_claim`을 추가해 L10의 가처분 항목→근저당 설정 항목을 연결한다. 부동산 자체의 가처분과 구분한다. 이전 기록을 실제로 수령하지 못한 관계는 `to_entry_id NULL`, `target_reference_raw NOT NULL`, `resolution_status=unresolved_prior_register`로 보존하며 이전 항목 UUID를 만들지 않는다.
+- 분할 전사는 원래 `rights.setup_cause_date/setup_receipt_date`를 유지하고 별도 `registry_entries.subrecord_kind=split_transcription`에 전사 접수일/번호·원문 순서·근거를 저장한다. 전사 접수를 새 담보 설정이나 새 대출로 세지 않는다. `property_relations`의 실제 분할 참조와 연결한다.
+- `rights.registered_object_scope`에 `whole_property/ownership_share/building_only/land_right_only/unit_and_land_right/secured_claim/unknown`을 둔다. `right_changes.change_kind=scope_clarification`은 명시된 범위 부기와 관측일을 저장하며 금액 변경이나 새 대출로 만들지 않는다. 과거 적용 범위가 원문에서 확인되지 않으면 소급해 단정하지 않는다.
+- `property_relations.relation_kind=register_continuation`, `reference_role=prior_register/current_register`, `record_transcription_date`, `record_transcription_reason_raw`를 추가한다. 이전 등기 UID가 없으면 NULL과 원문 참조를 보존한다. 물리 필지 분할과 다른 관계다. `registry_documents.history_coverage=transcribed_subset`, `history_cutoff_reason_raw`로 B04의 보존 범위를 표시하며 이 문서의2개 취득을 물건의 전체 취득 이력으로 보고하지 않는다.
+- `collateral_members`에 `member_ordinal_raw`, `predecessor_member_observation_id nullable`, `change_kind_raw`, `member_scope_kind/member_scope_raw`를 추가한다. 같은 목록 안의 B04구성원1→7을 연결하고 이기로 옮겨진 상태와 해지를 구분한다. 행7개·물건 참조6종·확인된 UID1개를 각각 집계한다. 옛 행의 말소선만 보고 본건 담보가2023년에 끝났다고 판단하지 않는다.
+- 계산된 취득 지분은 `ownership_interests.share_resolution_status=calculated_from_verified_transferors`와 계산식·근거를 보존한다. L10의 최종 '소유자' 기록은 기존992/3306을 남기고 다른 두 공유자의2314/3306을 취득한 결과다. 원문이 취득 지분1/1을 직접 적었다고 저장하지 않는다.
+
+v2.1은 이5개를 다시 대조해 사실을 표현하도록 보완한 모델이다. 보완 후의 **새로운 독립 보류 표본**으로 일반성이 검증된 것은 아니다. 근저당권부채권 가처분·기록 이기·건물만 담보 범위는 이번 조사에서 각각1개 실제 사례이므로 해당 변형의 자동 적재 승인은 추가 표적 검증을 필요로 한다. 다필지 대지권, 외화 담보, 말소회복·경정의 복잡한 연쇄, 여러 수익순위·증서의 신탁 변경은 아직 지원 검증 범위 밖이다.
