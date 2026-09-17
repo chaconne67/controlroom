@@ -9,6 +9,7 @@
 ## 문서
 
 - [진행 중: 새 운영서버 통합](../../../docs/production-server-consolidation-20260916.md) — 대상 `chaconne@49.247.192.127`. 현재 운영은 `49.247.38.186`입니다. 새 서버에서는 전체 Swarm 스택을 제거하는 기존 배포 스크립트를 실행하지 않으며, 운영 배치의 중복 실행을 막은 상태로 준비합니다.
+- [2026-09-17 테스트베드 알고리즘 심사 발표 자료](<plans/2026-09-17-testbed-algorithm-review-pt-plan.md>) — 국내ETF·퇴직연금 레시피(1336~1339, 1342, 1343) 심사 PT. HTML은 [presentations/2026-09-testbed-algorithm-review](<presentations/2026-09-testbed-algorithm-review/index.html>), PDF는 Drive `MOA/테스트베드3차/심사발표자료`에 있습니다.
 - [2026-03-10-chatbot-enhancement-design.md](<plans/2026-03-10-chatbot-enhancement-design.md>)
 - [2026-03-10-chatbot-implementation-plan.md](<plans/2026-03-10-chatbot-implementation-plan.md>)
 - [2026-07-29-mix-losscut-next-day-execution-plan.md](<plans/2026-07-29-mix-losscut-next-day-execution-plan.md>)

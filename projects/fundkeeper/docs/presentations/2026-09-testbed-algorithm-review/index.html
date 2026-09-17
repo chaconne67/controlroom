@@ -1,0 +1,1601 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>모멘텀 국내ETF·퇴직연금 레시피 알고리즘 설명</title>
+
+    <!-- Fonts: IBM Plex Sans KR (한글 본문·제목) + Manrope (숫자·영문 라벨) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@400;500;600;700&family=Manrope:wght@500;600;700;800&display=swap" rel="stylesheet">
+
+    <style>
+        /* ===========================================
+           THEME (Electric Studio)
+           색·글꼴을 바꾸려면 이 블록만 수정합니다.
+           =========================================== */
+        :root {
+            --blue: #4361ee;
+            --blue-deep: #2f46d6;
+            --blue-mid: #7489f2;
+            --blue-soft: #c9d2fb;
+            --blue-tint: #eef1fe;
+            --ink: #0a0a0a;
+            --ink-2: #262a35;
+            --gray-6: #5d6273;
+            --gray-4: #9aa0b1;
+            --gray-2: #dfe2ea;
+            --gray-1: #f4f5f9;
+            --white: #ffffff;
+
+            --stage-bg: #0a0a0a;
+            --slide-bg: #ffffff;
+
+            --font-kr: 'IBM Plex Sans KR', sans-serif;
+            --font-num: 'Manrope', 'IBM Plex Sans KR', sans-serif;
+
+            --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        /* ===========================================
+           FIXED 16:9 STAGE: MANDATORY BASE STYLES (viewport-base.css 전체)
+           =========================================== */
+        html,
+        body {
+            width: 100%;
+            height: 100%;
+            margin: 0;
+            overflow: hidden;
+            background: var(--stage-bg, #000);
+        }
+
+        .deck-viewport {
+            position: fixed;
+            inset: 0;
+            overflow: hidden;
+            background: var(--stage-bg, #000);
+        }
+
+        .deck-stage {
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 1920px;
+            height: 1080px;
+            overflow: hidden;
+            transform-origin: 0 0;
+            background: var(--slide-bg, #fff);
+        }
+
+        .slide {
+            position: absolute;
+            inset: 0;
+            width: 1920px;
+            height: 1080px;
+            overflow: hidden;
+            display: block;
+            visibility: hidden;
+            opacity: 0;
+            pointer-events: none;
+            background: var(--slide-bg, #fff);
+        }
+
+        .slide.active,
+        .slide.visible {
+            visibility: visible;
+            opacity: 1;
+            pointer-events: auto;
+            z-index: 1;
+        }
+
+        img,
+        video,
+        canvas,
+        svg {
+            max-width: 100%;
+            max-height: 100%;
+        }
+
+        .deck-controls {
+            position: fixed;
+            left: 50%;
+            bottom: 22px;
+            transform: translateX(-50%);
+            z-index: 1000;
+        }
+
+        @media print {
+            html,
+            body {
+                width: 1920px;
+                height: auto;
+                overflow: visible;
+                background: #fff;
+            }
+
+            .deck-viewport {
+                position: static;
+                overflow: visible;
+                background: #fff;
+            }
+
+            .deck-stage {
+                position: static;
+                width: auto;
+                height: auto;
+                transform: none !important;
+                background: none;
+            }
+
+            .slide {
+                position: relative;
+                display: block !important;
+                visibility: visible !important;
+                opacity: 1 !important;
+                pointer-events: auto !important;
+                width: 1920px;
+                height: 1080px;
+                break-after: page;
+                page-break-after: always;
+            }
+
+            .slide:last-child {
+                break-after: auto;
+                page-break-after: auto;
+            }
+
+            .deck-controls {
+                display: none !important;
+            }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            *,
+            *::before,
+            *::after {
+                animation-duration: 0.01ms !important;
+                transition-duration: 0.2s !important;
+            }
+        }
+
+        /* ===========================================
+           ENTRANCE ANIMATION
+           활성 슬라이드에 .visible이 붙으면 순서대로 나타납니다.
+           =========================================== */
+        .reveal {
+            opacity: 0;
+            transform: translateY(24px);
+            transition: opacity .55s var(--ease-out-expo), transform .55s var(--ease-out-expo);
+        }
+        .slide.visible .reveal { opacity: 1; transform: none; }
+        .d1 { transition-delay: .05s; }
+        .d2 { transition-delay: .12s; }
+        .d3 { transition-delay: .2s; }
+        .d4 { transition-delay: .28s; }
+        .d5 { transition-delay: .36s; }
+        .d6 { transition-delay: .44s; }
+        @media print { .reveal { opacity: 1 !important; transform: none !important; } }
+
+        /* ===========================================
+           COMMON SLIDE CHROME
+           =========================================== */
+        body { font-family: var(--font-kr); color: var(--ink); word-break: keep-all; overflow-wrap: break-word; }
+
+        .chrome {
+            position: absolute; left: 96px; right: 96px; top: 44px; height: 36px;
+            display: flex; justify-content: space-between; align-items: center;
+            font-family: var(--font-num); font-size: 18px; letter-spacing: .22em; color: var(--ink);
+        }
+        .chrome .wordmark { font-weight: 800; }
+        .chrome .wordmark b { color: var(--blue); font-weight: 800; }
+        .chrome .chrome-right { display: flex; gap: 28px; align-items: center; letter-spacing: 0; }
+        .chrome .part { font-family: var(--font-kr); font-weight: 500; font-size: 20px; color: var(--gray-6); }
+        .chrome .pg { font-family: var(--font-num); font-weight: 700; font-size: 20px; letter-spacing: .08em; color: var(--ink); }
+
+        .kicker {
+            position: absolute; left: 96px; top: 116px;
+            font-weight: 600; font-size: 28px; color: var(--blue);
+        }
+        .headline {
+            position: absolute; left: 96px; right: 96px; top: 160px;
+            font-weight: 700; font-size: 56px; line-height: 1.26; letter-spacing: -0.02em; color: var(--ink);
+        }
+        .body { position: absolute; left: 96px; right: 96px; top: 318px; bottom: 96px; }
+        .has-band .body { bottom: 196px; }
+
+        .band {
+            position: absolute; left: 0; right: 0; bottom: 0; height: 140px;
+            background: var(--blue); color: var(--white);
+            display: flex; align-items: center; padding: 0 96px;
+            font-weight: 600; font-size: 34px; letter-spacing: -0.01em;
+        }
+        .band::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 24px; background: var(--ink); }
+        .source {
+            position: absolute; right: 96px; bottom: 36px;
+            font-size: 20px; color: var(--gray-6);
+        }
+        .has-band .source { bottom: 154px; }
+
+        /* ===========================================
+           TYPE & COMPONENTS
+           =========================================== */
+        .num { font-family: var(--font-num); font-weight: 800; }
+        .blue { color: var(--blue); }
+        .muted { color: var(--gray-6); }
+        .label {
+            font-family: var(--font-num); font-weight: 800; font-size: 19px; letter-spacing: .18em;
+            color: var(--blue); text-transform: uppercase;
+        }
+        .h3 { font-weight: 700; font-size: 34px; line-height: 1.3; letter-spacing: -0.01em; }
+        .txt { font-size: 28px; line-height: 1.55; color: var(--ink-2); }
+        .small { font-size: 23px; line-height: 1.5; color: var(--gray-6); }
+
+        .card { background: var(--gray-1); border-radius: 18px; padding: 34px 36px; }
+        .card.line-blue { border-top: 8px solid var(--blue); }
+        .card.line-ink { border-top: 8px solid var(--ink); }
+        .card.solid-blue { background: var(--blue); color: var(--white); }
+        .card.solid-blue .txt, .card.solid-blue .small { color: rgba(255,255,255,.9); }
+        .card.solid-blue .label { color: var(--white); opacity: .85; }
+
+        .chip {
+            display: inline-flex; align-items: center; justify-content: center;
+            padding: 5px 18px; border-radius: 999px; font-weight: 600; font-size: 22px; line-height: 1.3;
+            white-space: nowrap;
+        }
+        .chip.atk { background: var(--blue); color: var(--white); }
+        .chip.def { background: var(--ink); color: var(--white); }
+        .chip.soft { background: var(--blue-tint); color: var(--blue-deep); }
+        .chip.outline { border: 2px solid var(--gray-2); color: var(--ink-2); }
+
+        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 44px; }
+        .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 36px; }
+
+        /* 표 */
+        table.tbl { width: 100%; border-collapse: collapse; font-size: 26px; line-height: 1.4; }
+        .tbl th {
+            text-align: left; font-weight: 600; font-size: 22px; color: var(--gray-6);
+            padding: 12px 18px; border-bottom: 3px solid var(--ink); white-space: nowrap;
+        }
+        .tbl td { padding: 15px 18px; border-bottom: 1px solid var(--gray-2); vertical-align: middle; color: var(--ink-2); }
+        .tbl td.n, .tbl th.n { text-align: right; font-family: var(--font-num); font-weight: 700; }
+        .tbl td.c, .tbl th.c { text-align: center; }
+        .tbl td.rowhead { font-weight: 600; color: var(--ink); white-space: nowrap; }
+        .tbl tr.total td { border-top: 3px solid var(--ink); border-bottom: none; font-weight: 700; color: var(--ink); }
+        .tbl .hl { background: var(--blue-tint); }
+
+        /* 배합 막대 */
+        .mixbar { display: flex; height: 46px; border-radius: 8px; overflow: hidden; background: var(--gray-1); }
+        .seg {
+            display: flex; align-items: center; justify-content: center;
+            font-family: var(--font-num); font-weight: 700; font-size: 20px; color: var(--white); white-space: nowrap;
+        }
+        .seg.a { background: var(--blue); }
+        .seg.b { background: var(--blue-mid); }
+        .seg.s { background: var(--blue-soft); color: var(--ink); }
+        .seg.c { background: var(--gray-2); color: var(--ink); }
+        .swatch { width: 26px; height: 26px; border-radius: 6px; flex: none; }
+        .swatch.a { background: var(--blue); }
+        .swatch.b { background: var(--blue-mid); }
+        .swatch.s { background: var(--blue-soft); }
+        .swatch.c { background: var(--gray-2); }
+
+        /* 단계 번호 */
+        .step-no {
+            width: 56px; height: 56px; border-radius: 50%; flex: none;
+            display: flex; align-items: center; justify-content: center;
+            background: var(--blue); color: var(--white);
+            font-family: var(--font-num); font-weight: 800; font-size: 24px;
+        }
+        .step-no.ink { background: var(--ink); }
+        .step-no.ghost { background: var(--blue-tint); color: var(--blue-deep); }
+
+        /* ===========================================
+           S01 TITLE (두 패널 분할)
+           =========================================== */
+        .title-slide .panel-top { position: absolute; left: 0; top: 0; width: 1920px; height: 650px; background: var(--white); }
+        .title-slide .panel-bottom { position: absolute; left: 0; top: 650px; width: 1920px; height: 430px; background: var(--blue); }
+        .title-slide .edge-bar {
+            position: absolute; left: 0; top: 650px; width: 28px; height: 430px; background: var(--ink);
+            transform-origin: top; transform: scaleY(0); transition: transform 1s var(--ease-out-expo) .2s;
+        }
+        .title-slide.visible .edge-bar { transform: scaleY(1); }
+        @media print { .title-slide .edge-bar { transform: none !important; } }
+        .title-slide .brand { position: absolute; left: 128px; top: 84px; font-family: var(--font-num); font-weight: 800; font-size: 22px; letter-spacing: .26em; }
+        .title-slide .brand b { color: var(--blue); }
+        .title-slide .corner { position: absolute; right: 128px; top: 84px; font-family: var(--font-num); font-weight: 700; font-size: 20px; letter-spacing: .2em; color: var(--gray-6); }
+        .title-slide .t-kicker { position: absolute; left: 128px; top: 220px; font-weight: 500; font-size: 34px; color: var(--blue); }
+        .title-slide .t-title { position: absolute; left: 128px; top: 290px; font-weight: 700; font-size: 104px; line-height: 1.17; letter-spacing: -0.025em; }
+        .title-slide .t-sub { position: absolute; left: 128px; top: 740px; font-weight: 500; font-size: 44px; color: var(--white); }
+        .title-slide .t-chips { position: absolute; left: 128px; top: 850px; display: flex; gap: 20px; }
+        .title-slide .t-chip { border: 2px solid rgba(255,255,255,.75); color: var(--white); border-radius: 999px; padding: 14px 32px; font-weight: 500; font-size: 28px; }
+        .title-slide .t-meta { position: absolute; right: 128px; bottom: 84px; text-align: right; color: var(--white); font-size: 27px; line-height: 1.55; }
+        .title-slide .t-meta b { display: block; font-family: var(--font-num); font-weight: 800; font-size: 26px; letter-spacing: .14em; opacity: .85; }
+
+        /* ===========================================
+           S02 AGENDA
+           =========================================== */
+        .agenda-left { position: absolute; left: 96px; top: 118px; width: 560px; }
+        .agenda-left .big { margin-top: 18px; font-weight: 700; font-size: 84px; line-height: 1.15; letter-spacing: -0.03em; }
+        .agenda-left .txt { margin-top: 34px; }
+        .agenda-list { position: absolute; left: 760px; right: 96px; top: 118px; }
+        .agenda-row { display: grid; grid-template-columns: 110px 1fr 150px; align-items: center; padding: 22px 0; border-bottom: 1px solid var(--gray-2); }
+        .agenda-row:first-child { border-top: 3px solid var(--ink); }
+        .agenda-row .no { font-family: var(--font-num); font-weight: 800; font-size: 52px; color: var(--blue); }
+        .agenda-row .ttl { font-weight: 700; font-size: 34px; }
+        .agenda-row .desc { margin-top: 4px; font-size: 24px; color: var(--gray-6); }
+        .agenda-row .pages { text-align: right; font-family: var(--font-num); font-weight: 700; font-size: 22px; color: var(--gray-6); }
+
+        /* ===========================================
+           S04 MIX (재료와 배합)
+           =========================================== */
+        .ingredients { display: flex; flex-direction: column; gap: 22px; }
+        .ingredient { display: grid; grid-template-columns: 26px 1fr; gap: 20px; align-items: start; padding: 22px 26px; background: var(--gray-1); border-radius: 14px; }
+        .ingredient .swatch { margin-top: 6px; }
+        .ingredient .h3 { font-size: 30px; }
+        .ingredient .small { margin-top: 4px; }
+        .mix-rows { display: flex; flex-direction: column; gap: 14px; }
+        .mix-group { font-weight: 700; font-size: 26px; margin: 10px 0 2px; }
+        .mix-row { display: grid; grid-template-columns: 190px 1fr 210px; gap: 20px; align-items: center; }
+        .mix-row .name { font-size: 25px; font-weight: 600; }
+        .mix-row .name span { font-family: var(--font-num); font-weight: 700; font-size: 20px; color: var(--gray-6); margin-left: 8px; }
+        .mix-row .cap { text-align: right; font-size: 23px; color: var(--gray-6); }
+        .mix-row .cap b { font-family: var(--font-num); font-weight: 800; font-size: 28px; color: var(--ink); }
+
+        /* ===========================================
+           S05 QUESTIONS
+           =========================================== */
+        .q-card { display: flex; flex-direction: column; gap: 16px; min-height: 470px; }
+        .q-card .q { font-weight: 700; font-size: 38px; line-height: 1.3; letter-spacing: -0.02em; }
+        .q-card .kind { font-weight: 600; font-size: 26px; color: var(--blue); }
+        .q-card.solid-blue .kind { color: var(--white); }
+        .q-card .effect { margin-top: auto; padding-top: 18px; border-top: 2px solid rgba(10,10,10,.12); font-size: 24px; line-height: 1.5; color: var(--ink-2); }
+        .q-card.solid-blue .effect { border-top-color: rgba(255,255,255,.35); color: var(--white); }
+        .q-foot { margin-top: 26px; font-size: 24px; color: var(--gray-6); }
+
+        /* ===========================================
+           S06 SIGNAL BOARD
+           =========================================== */
+        .signal-board { border: 3px solid var(--ink); border-radius: 18px; overflow: hidden; align-self: start; }
+        .signal-head { display: flex; justify-content: space-between; padding: 16px 28px; background: var(--ink); color: var(--white); font-family: var(--font-num); font-weight: 700; font-size: 19px; letter-spacing: .16em; }
+        .signal-row { display: grid; grid-template-columns: 130px 1fr 52px; gap: 18px; align-items: center; padding: 24px 30px; border-bottom: 1px solid var(--gray-2); }
+        .signal-row .tk { font-family: var(--font-num); font-weight: 800; font-size: 44px; }
+        .signal-row .nm { font-size: 27px; color: var(--ink-2); }
+        .lamp { width: 44px; height: 44px; border-radius: 50%; background: var(--blue); box-shadow: 0 0 0 7px var(--blue-tint); justify-self: end; }
+        .signal-rule { display: grid; grid-template-columns: 1fr 1fr; }
+        .signal-rule div { padding: 26px 30px; font-weight: 600; font-size: 28px; display: flex; align-items: center; gap: 14px; }
+        .signal-rule div + div { border-left: 1px solid var(--gray-2); }
+        .how-steps { display: flex; flex-direction: column; gap: 26px; }
+        .how-step { display: grid; grid-template-columns: 56px 1fr; gap: 22px; align-items: start; }
+        .how-step .h3 { font-size: 30px; }
+        .how-step .txt { font-size: 26px; margin-top: 4px; }
+        .formula { margin-top: 10px; display: inline-block; padding: 12px 22px; border-radius: 12px; background: var(--blue-tint); color: var(--blue-deep); font-weight: 600; font-size: 25px; }
+
+        /* ===========================================
+           S07 SELECTION
+           =========================================== */
+        .mode-title { display: flex; align-items: center; gap: 16px; }
+        .mode-title .h3 { font-size: 36px; }
+        .mode-sub { margin-top: 8px; font-size: 26px; color: var(--ink-2); }
+        .sel-tbl { margin-top: 20px; }
+        .sel-tbl td, .sel-tbl th { font-size: 23px; padding: 12px 14px; }
+        .sel-tbl th { font-size: 21px; }
+        .def-list { margin-top: 20px; display: flex; flex-direction: column; gap: 12px; }
+        .def-item { display: flex; align-items: center; gap: 16px; padding: 13px 20px; background: var(--white); border-radius: 12px; font-size: 25px; font-weight: 500; }
+        .def-item .num { font-size: 22px; color: var(--gray-4); width: 24px; }
+
+        /* ===========================================
+           S08 ENGINES CASE
+           =========================================== */
+        .eng-points { display: flex; flex-direction: column; gap: 24px; }
+        .eng-point { padding: 24px 28px; border-radius: 16px; background: var(--gray-1); }
+        .eng-point .h3 { font-size: 29px; }
+        .eng-point .txt { font-size: 25px; margin-top: 6px; }
+        .case-tbl td, .case-tbl th { font-size: 23px; padding: 11px 12px; }
+        .case-tbl th { font-size: 20px; }
+        .case-tbl td.n { font-size: 25px; }
+        .case-tbl .chip { font-size: 19px; padding: 3px 14px; }
+        .zero { color: var(--gray-4) !important; }
+        .full { color: var(--blue) !important; }
+
+        /* ===========================================
+           S09 UNIVERSE
+           =========================================== */
+        .stat-big { font-family: var(--font-num); font-weight: 800; font-size: 128px; line-height: 1; color: var(--blue); letter-spacing: -0.02em; }
+        .stat-unit { font-weight: 700; font-size: 44px; margin-left: 8px; color: var(--ink); }
+        .crit { margin-top: 22px; display: flex; flex-direction: column; gap: 14px; }
+        .crit div { display: flex; gap: 14px; align-items: baseline; font-size: 26px; line-height: 1.45; color: var(--ink-2); }
+        .crit div::before { content: ""; width: 10px; height: 10px; background: var(--blue); border-radius: 2px; flex: none; transform: translateY(-4px); }
+        .grade-strip { margin-top: 26px; display: grid; grid-template-columns: repeat(6, 1fr); border-radius: 12px; overflow: hidden; }
+        .grade-strip div { padding: 10px 6px; text-align: center; font-size: 19px; line-height: 1.35; background: var(--gray-1); }
+        .grade-strip div:nth-child(1) { background: var(--blue); color: #fff; }
+        .grade-strip div:nth-child(2) { background: var(--blue-mid); color: #fff; }
+        .grade-strip div:nth-child(3) { background: var(--blue-soft); }
+        .grade-strip div:nth-child(4) { background: var(--blue-tint); }
+        .grade-strip b { display: block; font-family: var(--font-num); font-weight: 800; font-size: 20px; }
+
+        /* ===========================================
+           S10 FLOW
+           =========================================== */
+        .flow { display: grid; grid-template-columns: repeat(6, 1fr); gap: 18px; }
+        .flow-card { position: relative; background: var(--gray-1); border-radius: 16px; padding: 30px 24px; min-height: 430px; }
+        .flow-card .step-no { margin-bottom: 22px; }
+        .flow-card .h3 { font-size: 32px; }
+        .flow-card .txt { margin-top: 12px; font-size: 25px; line-height: 1.55; }
+        .flow-card:not(:last-child)::after {
+            content: ""; position: absolute; right: -16px; top: 52px; width: 14px; height: 14px;
+            border-top: 4px solid var(--blue); border-right: 4px solid var(--blue); transform: rotate(45deg); z-index: 2;
+        }
+        .flow-card.key { background: var(--blue); color: var(--white); }
+        .flow-card.key .txt { color: rgba(255,255,255,.92); }
+        .flow-card.key .step-no { background: var(--white); color: var(--blue); }
+        .use-row { margin-top: 30px; display: flex; align-items: center; gap: 18px; font-size: 26px; font-weight: 600; }
+        .use-row .arrow { color: var(--blue); font-family: var(--font-num); font-weight: 800; }
+        .use-row .chip { font-size: 24px; padding: 8px 22px; }
+
+        /* ===========================================
+           S11 EXAMPLE TABLE
+           =========================================== */
+        .calc-strip { display: flex; gap: 18px; }
+        .calc-strip .chip { font-size: 24px; padding: 10px 22px; }
+        .ex-wrap { margin-top: 22px; display: grid; grid-template-columns: 1fr 420px; gap: 40px; }
+        .ex-tbl td, .ex-tbl th { font-size: 22px; padding: 5px 14px; }
+        .ex-tbl th { font-size: 20px; padding-top: 6px; }
+        .ex-tbl td.n { font-size: 23px; }
+        .ex-note { display: flex; flex-direction: column; gap: 18px; align-self: start; }
+        .ex-note .card { padding: 24px 26px; }
+        .ex-note .txt { font-size: 24px; line-height: 1.5; }
+
+        /* ===========================================
+           S12 LIMITS
+           =========================================== */
+        .limit-points { display: flex; flex-direction: column; gap: 22px; }
+        .limit-point { display: grid; grid-template-columns: 56px 1fr; gap: 20px; }
+        .limit-point .txt { font-size: 26px; }
+        .limit-tbl td, .limit-tbl th { font-size: 23px; padding: 12px 10px; }
+        .limit-tbl th { font-size: 20px; text-align: center; white-space: normal; line-height: 1.3; }
+        .limit-tbl td { text-align: center; }
+        .limit-tbl td.rowhead { text-align: left; }
+        .limit-tbl .grp th { border-bottom: 1px solid var(--gray-2); color: var(--ink); font-size: 22px; padding-bottom: 6px; }
+        .formula-card { margin-top: 26px; padding: 24px 28px; border-radius: 16px; background: var(--ink); color: var(--white); }
+        .formula-card .label { color: var(--blue-soft); }
+        .formula-card .eq { margin-top: 10px; font-family: var(--font-num); font-weight: 700; font-size: 34px; letter-spacing: .01em; }
+        .formula-card .small { color: rgba(255,255,255,.75); margin-top: 8px; font-size: 22px; }
+
+        /* ===========================================
+           S13 / S14 TYPE CARDS
+           =========================================== */
+        .type-card { background: var(--gray-1); border-radius: 18px; padding: 30px 32px; }
+        .type-card.hot { background: var(--blue); color: var(--white); }
+        .type-card .tname { display: flex; justify-content: space-between; align-items: baseline; }
+        .type-card .tname .h3 { font-size: 40px; }
+        .type-card .tname .id { font-family: var(--font-num); font-weight: 700; font-size: 22px; opacity: .7; }
+        .type-card .who { margin-top: 6px; font-size: 26px; font-weight: 600; }
+        .type-card dl { margin-top: 20px; display: grid; grid-template-columns: 150px 1fr; row-gap: 10px; font-size: 24px; }
+        .type-card dt { color: var(--gray-6); }
+        .type-card.hot dt { color: rgba(255,255,255,.75); }
+        .type-card dd { font-weight: 600; }
+        .type-card .mixbar { margin-top: 22px; height: 40px; }
+        .type-card.hot .mixbar { background: rgba(255,255,255,.15); }
+        .type-card.hot .seg.a { background: var(--white); color: var(--blue); }
+        .type-card.hot .seg.b { background: rgba(255,255,255,.62); color: var(--blue-deep); }
+        .type-card.hot .seg.s { background: rgba(255,255,255,.34); }
+        .type-card.hot .seg.c { background: rgba(255,255,255,.2); }
+        .type-card .style { margin-top: 18px; padding-top: 16px; border-top: 2px solid rgba(10,10,10,.1); font-size: 24px; line-height: 1.5; color: var(--ink-2); }
+        .type-card.hot .style { border-top-color: rgba(255,255,255,.3); color: var(--white); }
+        .fact-row { margin-top: 30px; display: flex; gap: 16px; flex-wrap: wrap; }
+        .fact-row .chip { font-size: 24px; padding: 10px 22px; }
+
+        .ptype { display: grid; grid-template-columns: 150px 1fr; gap: 20px; align-items: center; padding: 20px 24px; background: var(--gray-1); border-radius: 14px; }
+        .ptype + .ptype { margin-top: 16px; }
+        .ptype .h3 { font-size: 34px; }
+        .ptype .small { font-size: 21px; }
+        .ptype .facts { font-size: 23px; line-height: 1.5; color: var(--ink-2); }
+        .ptype .facts b { font-family: var(--font-num); font-weight: 800; color: var(--ink); }
+        .ptype .mixbar { margin-top: 10px; height: 32px; }
+        .ptype .seg { font-size: 17px; }
+        .law { display: grid; grid-template-columns: 44px 1fr; gap: 18px; padding: 18px 0; border-bottom: 1px solid var(--gray-2); }
+        .law:first-child { border-top: 3px solid var(--ink); }
+        .law .ok { width: 40px; height: 40px; border-radius: 50%; background: var(--blue); color: #fff; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 22px; }
+        .law .h3 { font-size: 27px; }
+        .law .ref { font-size: 20px; color: var(--gray-6); margin-top: 2px; }
+        .law .txt { font-size: 24px; margin-top: 6px; }
+
+        /* ===========================================
+           S15 DIFFERENTIATORS
+           =========================================== */
+        .diff-grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 26px; }
+        .diff-card { grid-column: span 2; background: var(--gray-1); border-radius: 18px; padding: 36px 36px; min-height: 300px; }
+        .diff-card.wide { grid-column: span 3; min-height: 260px; }
+        .diff-card .no { font-family: var(--font-num); font-weight: 800; font-size: 52px; color: var(--blue); line-height: 1; }
+        .diff-card .h3 { margin-top: 18px; font-size: 36px; }
+        .diff-card .txt { margin-top: 14px; font-size: 27px; line-height: 1.55; }
+
+        /* ===========================================
+           S16 PROS & LIMITS
+           =========================================== */
+        .pc-wrap { display: grid; grid-template-columns: 560px 1fr; gap: 40px; height: 100%; }
+        .pros { background: var(--blue); color: var(--white); border-radius: 18px; padding: 32px 34px; }
+        .pros .h3 { font-size: 36px; }
+        .pros ul { list-style: none; margin-top: 18px; display: flex; flex-direction: column; gap: 18px; }
+        .pros li { display: grid; grid-template-columns: 34px 1fr; font-size: 25px; line-height: 1.5; }
+        .pros li::before { content: "+"; font-family: var(--font-num); font-weight: 800; font-size: 28px; line-height: 1.25; }
+        .cons-tbl td, .cons-tbl th { font-size: 23px; padding: 13px 14px; line-height: 1.45; }
+        .cons-tbl th { font-size: 21px; }
+        .cons-tbl td:first-child { width: 47%; }
+        .cons-tbl td:last-child { color: var(--blue-deep); font-weight: 500; }
+
+        /* ===========================================
+           S17 CALENDAR
+           =========================================== */
+        .day-line { position: relative; height: 250px; margin-top: 12px; }
+        .day-axis { position: absolute; left: 0; right: 0; top: 118px; height: 4px; background: var(--ink); }
+        .day-evt { position: absolute; transform: translateX(-50%); text-align: center; width: 230px; }
+        .day-evt .dot { width: 18px; height: 18px; border-radius: 50%; background: var(--blue); margin: 0 auto; }
+        .day-evt .tm { font-family: var(--font-num); font-weight: 800; font-size: 26px; }
+        .day-evt .nm { font-size: 21px; line-height: 1.35; color: var(--ink-2); }
+        .day-evt.up { top: 0; }
+        .day-evt.up .dot { margin-top: 8px; }
+        .day-evt.down { top: 109px; }
+        .day-evt.down .dot { margin-bottom: 30px; }
+        .month-flow { margin-top: 16px; display: grid; grid-template-columns: repeat(4, 1fr); gap: 18px; }
+        .m-card { position: relative; border-radius: 16px; padding: 22px 24px; background: var(--gray-1); }
+        .m-card .when { font-weight: 700; font-size: 22px; color: var(--blue); }
+        .m-card .h3 { margin-top: 6px; font-size: 28px; }
+        .m-card .txt { margin-top: 6px; font-size: 22px; line-height: 1.45; }
+        .m-card:not(:last-child)::after { content: ""; position: absolute; right: -14px; top: 40px; width: 12px; height: 12px; border-top: 4px solid var(--blue); border-right: 4px solid var(--blue); transform: rotate(45deg); }
+        .sec-title { display: flex; align-items: center; gap: 14px; font-weight: 700; font-size: 28px; }
+
+        /* ===========================================
+           S18 REGULAR REBALANCING
+           =========================================== */
+        .reb-wrap { display: grid; grid-template-columns: 1fr 520px; gap: 40px; }
+        .reb-steps { display: grid; grid-template-columns: 1fr 1fr; column-gap: 28px; row-gap: 18px; }
+        .reb-step { display: grid; grid-template-columns: 52px 1fr; gap: 18px; align-items: start; padding: 22px 22px; border-radius: 14px; background: var(--gray-1); min-height: 132px; }
+        .reb-step .step-no { width: 50px; height: 50px; font-size: 22px; }
+        .reb-step .h3 { font-size: 28px; }
+        .reb-step .tag { font-size: 19px; font-weight: 600; color: var(--blue-deep); margin-left: 8px; }
+        .reb-step .txt { font-size: 23px; line-height: 1.45; margin-top: 4px; }
+        .reb-step.pre { background: var(--ink); color: var(--white); }
+        .reb-step.pre .txt { color: rgba(255,255,255,.85); }
+        .reb-step.pre .step-no { background: var(--white); color: var(--ink); }
+        .order-box { background: var(--blue); color: var(--white); border-radius: 18px; padding: 30px 32px; }
+        .order-box .h3 { font-size: 32px; }
+        .order-box ul { list-style: none; margin-top: 18px; display: flex; flex-direction: column; gap: 16px; }
+        .order-box li { font-size: 24px; line-height: 1.5; padding-left: 26px; position: relative; }
+        .order-box li::before { content: ""; position: absolute; left: 0; top: 13px; width: 10px; height: 10px; background: var(--white); border-radius: 2px; }
+
+        /* ===========================================
+           S19 OPTIMIZATION
+           =========================================== */
+        .opt-wrap { display: grid; grid-template-columns: 640px 1fr; gap: 48px; }
+        .opt-steps { display: flex; flex-direction: column; gap: 20px; }
+        .opt-step { display: grid; grid-template-columns: 56px 1fr; gap: 18px; }
+        .opt-step .h3 { font-size: 28px; }
+        .opt-step .txt { font-size: 24px; margin-top: 2px; }
+        .opt-tbl td, .opt-tbl th { font-size: 23px; padding: 12px 12px; }
+        .opt-tbl th { font-size: 20px; }
+        .opt-tbl .after { background: var(--blue-tint); }
+        .opt-tbl .after-h { background: var(--blue); color: var(--white); border-bottom-color: var(--blue); }
+        .opt-round { margin-top: 20px; padding: 20px 24px; border-radius: 14px; background: var(--gray-1); font-size: 23px; line-height: 1.55; color: var(--ink-2); }
+        .opt-round b { color: var(--ink); }
+
+        /* ===========================================
+           S20 STOP-LOSS FLOW
+           =========================================== */
+        .sl-flow { display: grid; grid-template-columns: 1fr 60px 1fr 60px 1fr; align-items: stretch; }
+        .sl-card { border-radius: 16px; padding: 32px 30px; background: var(--gray-1); min-height: 250px; }
+        .sl-card .label { margin-bottom: 10px; }
+        .sl-card .h3 { font-size: 32px; }
+        .sl-card .txt { font-size: 25px; margin-top: 10px; line-height: 1.55; }
+        .sl-example { display: flex; align-items: center; gap: 22px; margin-top: 14px; }
+        .sl-example .val { font-family: var(--font-num); font-weight: 800; font-size: 40px; }
+        .sl-example .val small { font-family: var(--font-kr); font-weight: 600; font-size: 22px; margin-left: 4px; color: var(--gray-6); }
+        .sl-example .arr { font-family: var(--font-num); font-weight: 800; font-size: 30px; color: var(--blue); }
+        .sl-card.hit { background: var(--ink); color: var(--white); }
+        .sl-card.hit .txt { color: rgba(255,255,255,.85); }
+        .sl-card.hit .label { color: var(--blue-soft); }
+        .sl-arrow { display: flex; align-items: center; justify-content: center; font-family: var(--font-num); font-weight: 800; font-size: 40px; color: var(--blue); }
+        .sl-bottom { margin-top: 26px; display: grid; grid-template-columns: 1fr 1fr; gap: 26px; }
+        .rule-card { border: 3px solid var(--blue); border-radius: 16px; padding: 24px 28px; }
+        .rule-card .txt { font-size: 25px; margin-top: 8px; }
+
+        /* ===========================================
+           S21 RISK TABLE
+           =========================================== */
+        .risk-tbl td, .risk-tbl th { font-size: 27px; padding: 26px 18px; line-height: 1.45; }
+        .risk-tbl th { font-size: 23px; padding: 14px 18px; }
+        .risk-tbl td.rowhead { width: 230px; font-size: 29px; }
+        .risk-tbl td:nth-child(2) { width: 560px; color: var(--gray-6); }
+
+        /* ===========================================
+           S22 TESTBED STATUS
+           =========================================== */
+        .tb-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 28px; }
+        .tb-stat { padding: 26px 30px; border-radius: 18px; background: var(--gray-1); }
+        .tb-stat .v { font-family: var(--font-num); font-weight: 800; font-size: 64px; line-height: 1.05; color: var(--blue); }
+        .tb-stat .v small { font-family: var(--font-kr); font-weight: 700; font-size: 30px; color: var(--ink); margin-left: 4px; }
+        .tb-stat .txt { margin-top: 6px; font-size: 24px; }
+        .tb-lower { margin-top: 28px; display: grid; grid-template-columns: 1fr 560px; gap: 36px; }
+        .tb-tbl td, .tb-tbl th { font-size: 23px; padding: 12px 12px; }
+        .tb-tbl th { font-size: 20px; }
+        .docs { background: var(--ink); color: var(--white); border-radius: 18px; padding: 26px 30px; }
+        .docs .h3 { font-size: 28px; }
+        .docs ul { list-style: none; margin-top: 14px; display: flex; flex-direction: column; gap: 9px; }
+        .docs li { font-size: 22px; display: grid; grid-template-columns: 58px 1fr; }
+        .docs li b { font-family: var(--font-num); font-weight: 800; color: var(--blue-soft); }
+
+        /* ===========================================
+           S23 SUMMARY (분할 레이아웃)
+           =========================================== */
+        .summary-slide .panel-bottom { position: absolute; left: 0; right: 0; bottom: 0; height: 300px; background: var(--blue); }
+        .summary-slide .edge-bar { position: absolute; left: 0; bottom: 0; width: 28px; height: 300px; background: var(--ink); }
+        .sum-grid { position: absolute; left: 96px; right: 96px; top: 300px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 40px; }
+        .sum-item { border-top: 4px solid var(--ink); padding-top: 22px; }
+        .sum-item .no { font-family: var(--font-num); font-weight: 800; font-size: 26px; color: var(--blue); letter-spacing: .08em; }
+        .sum-item .h3 { margin-top: 8px; font-size: 40px; }
+        .sum-item .txt { margin-top: 12px; font-size: 27px; line-height: 1.55; }
+        .thanks { position: absolute; left: 128px; bottom: 96px; color: var(--white); }
+        .thanks .big { font-weight: 700; font-size: 72px; letter-spacing: -0.02em; }
+        .thanks .txt { color: rgba(255,255,255,.9); font-size: 28px; }
+        .summary-slide .t-meta { position: absolute; right: 128px; bottom: 96px; text-align: right; color: var(--white); font-size: 26px; line-height: 1.55; }
+        .summary-slide .t-meta b { display: block; font-family: var(--font-num); font-weight: 800; letter-spacing: .14em; font-size: 24px; opacity: .85; }
+
+        /* ===========================================
+           APPENDIX
+           =========================================== */
+        .app-tbl td, .app-tbl th { font-size: 22px; padding: 10px 12px; }
+        .app-tbl th { font-size: 19px; }
+        .app-sub { font-weight: 700; font-size: 26px; margin-bottom: 8px; }
+        .gloss { display: grid; grid-template-columns: 1fr 1fr; column-gap: 48px; }
+        .gloss-item { display: grid; grid-template-columns: 270px 1fr; gap: 22px; padding: 30px 0; border-bottom: 1px solid var(--gray-2); min-height: 150px; }
+        .gloss-item:nth-child(1), .gloss-item:nth-child(2) { border-top: 3px solid var(--ink); }
+        .gloss-item .h3 { font-size: 30px; }
+        .gloss-item .txt { font-size: 26px; line-height: 1.5; }
+
+        /* ===========================================
+           DECK CONTROLS (슬라이드 밖 UI)
+           =========================================== */
+        .deck-progress { position: fixed; left: 0; bottom: 0; height: 4px; background: var(--blue); width: 0; z-index: 1001; opacity: 0; transition: width .3s ease, opacity .3s ease; }
+        body:hover .deck-progress { opacity: 1; }
+        .deck-counter {
+            padding: 6px 16px; border-radius: 999px; background: rgba(10,10,10,.55); color: #fff;
+            font-family: var(--font-num); font-weight: 700; font-size: 13px; letter-spacing: .08em;
+            opacity: 0; transition: opacity .3s ease;
+        }
+        body:hover .deck-counter { opacity: 1; }
+
+        /* ===========================================
+           INLINE EDITING (E 키 또는 왼쪽 위 모서리)
+           =========================================== */
+        .edit-hotzone { position: fixed; top: 0; left: 0; width: 80px; height: 80px; z-index: 10000; cursor: pointer; }
+        .edit-toggle {
+            position: fixed; top: 16px; left: 16px; z-index: 10001; width: 44px; height: 44px; border-radius: 50%;
+            border: none; background: #fff; box-shadow: 0 2px 12px rgba(0,0,0,.25); font-size: 20px; cursor: pointer;
+            opacity: 0; pointer-events: none; transition: opacity .3s ease;
+        }
+        .edit-toggle.show, .edit-toggle.active { opacity: 1; pointer-events: auto; }
+        .edit-toggle.active { background: var(--blue); }
+        body.editing [contenteditable="true"] { outline: 2px dashed rgba(67, 97, 238, .45); outline-offset: 4px; }
+        body.editing [contenteditable="true"]:focus { outline-color: var(--blue); }
+        @media print { .edit-hotzone, .edit-toggle, .deck-progress { display: none !important; } }
+    </style>
+</head>
+<body>
+    <div class="deck-viewport">
+        <main class="deck-stage" id="deckStage">
+
+            <!-- ============ S01 표지 ============ -->
+            <section class="slide title-slide" aria-label="표지">
+                <div class="panel-top"></div>
+                <div class="panel-bottom"></div>
+                <div class="edge-bar"></div>
+                <div class="brand reveal d1">MOMENTUM <b>ASSET</b></div>
+                <div class="corner reveal d1">RA TESTBED · 2026</div>
+                <p class="t-kicker reveal d2">모멘텀 국내ETF레시피 · 모멘텀 퇴직연금레시피</p>
+                <h1 class="t-title reveal d3">추세에 따라 공격과 방어를<br>전환하는 규칙 기반 자산배분</h1>
+                <p class="t-sub reveal d4">알고리즘 원리 · 모델포트폴리오 생성 · 리밸런싱 절차</p>
+                <div class="t-chips reveal d5">
+                    <span class="t-chip">매운맛</span>
+                    <span class="t-chip">중간맛</span>
+                    <span class="t-chip">순한맛</span>
+                </div>
+                <div class="t-meta reveal d5">
+                    <b>ALGORITHM REVIEW</b>
+                    모멘텀에셋주식회사 · 2026. 09
+                </div>
+            </section>
+
+            <!-- ============ S02 발표 순서 ============ -->
+            <section class="slide has-band" aria-label="발표 순서">
+                <header class="chrome"><span class="wordmark">MOMENTUM <b>ASSET</b></span><span class="chrome-right"><span class="part"></span><span class="pg"></span></span></header>
+                <div class="agenda-left reveal d1">
+                    <p class="label">Contents</p>
+                    <h2 class="big">발표 순서</h2>
+                    <p class="txt">모멘텀 국내ETF레시피와 모멘텀 퇴직연금레시피의 알고리즘, 모델포트폴리오 생성 절차, 운용·리밸런싱 절차를 설명합니다.</p>
+                </div>
+                <div class="agenda-list">
+                    <div class="agenda-row reveal d1"><span class="no">01</span><div><p class="ttl">한눈에 보기</p><p class="desc">두 레시피 비교, 전략을 이루는 네 가지 재료</p></div><span class="pages">P.03–04</span></div>
+                    <div class="agenda-row reveal d2"><span class="no">02</span><div><p class="ttl">바탕 원리</p><p class="desc">듀얼 모멘텀, 시장 신호, 종목 선택, 두 엔진의 조합</p></div><span class="pages">P.05–08</span></div>
+                    <div class="agenda-row reveal d3"><span class="no">03</span><div><p class="ttl">모델포트폴리오 생성 절차</p><p class="desc">투자 유니버스, 여섯 단계, 비중 계산 예시, 위험 한도</p></div><span class="pages">P.09–12</span></div>
+                    <div class="agenda-row reveal d4"><span class="no">04</span><div><p class="ttl">레시피별 특징</p><p class="desc">국내ETF·퇴직연금 레시피, 차별점, 장점과 한계</p></div><span class="pages">P.13–16</span></div>
+                    <div class="agenda-row reveal d5"><span class="no">05</span><div><p class="ttl">운용·리밸런싱 절차</p><p class="desc">운영 캘린더, 정기·수시 리밸런싱, 위험 관리, 운용 현황</p></div><span class="pages">P.17–22</span></div>
+                </div>
+                <div class="band reveal d6">심사 대상 전략: 국내ETF레시피 1336·1337·1338 &nbsp;/&nbsp; 퇴직연금레시피 1339·1342·1343</div>
+            </section>
+
+            <!-- ============ S03 두 레시피 비교 ============ -->
+            <section class="slide has-band" data-part="01 한눈에 보기" aria-label="두 레시피 비교">
+                <header class="chrome"><span class="wordmark">MOMENTUM <b>ASSET</b></span><span class="chrome-right"><span class="part"></span><span class="pg"></span></span></header>
+                <p class="kicker reveal d1">01 한눈에 보기</p>
+                <h2 class="headline reveal d2">두 레시피는 알고리즘 구조가 같고,<br>위험 한도와 배합 비율이 다릅니다</h2>
+                <div class="body reveal d3">
+                    <table class="tbl">
+                        <thead>
+                            <tr><th style="width:300px">구분</th><th>모멘텀 국내ETF레시피</th><th>모멘텀 퇴직연금레시피</th></tr>
+                        </thead>
+                        <tbody>
+                            <tr><td class="rowhead">대상 고객</td><td>연금저축 가입자</td><td>퇴직연금 가입자</td></tr>
+                            <tr><td class="rowhead">최소 운용금액</td><td><b class="num">150</b>만 원 (최대 제한 없음)</td><td><b class="num">50</b>만 원 (최대 제한 없음)</td></tr>
+                            <tr><td class="rowhead">투자 대상</td><td>국내 상장 ETF</td><td>국내 상장 ETF 중 퇴직연금 투자 적격 ETF</td></tr>
+                            <tr><td class="rowhead">유형 (투자성향)</td><td>매운맛(공격형) · 중간맛(적극투자형) · 순한맛(위험중립형)</td><td>매운맛(적극투자형) · 중간맛(위험중립형) · 순한맛(안정추구형)</td></tr>
+                            <tr><td class="rowhead">위험자산 최대 편입</td><td class="hl"><b class="num">90% · 70% · 50%</b></td><td class="hl"><b class="num">70% · 50% · 30%</b></td></tr>
+                            <tr><td class="rowhead">리밸런싱</td><td colspan="2">매월 1회 정기 리밸런싱 + 평가액 15% 하락 시 수시 리밸런싱</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+                <p class="source">근거: 11번 알고리즘설명서, 13번 법규준수설명자료</p>
+                <div class="band reveal d4">알고리즘은 하나 — 고객 성향과 퇴직연금 법규에 맞춰 ‘배합 비율’만 달라집니다</div>
+            </section>
+
+            <!-- ============ S04 네 가지 재료 ============ -->
+            <section class="slide has-band" data-part="01 한눈에 보기" aria-label="전략 구성">
+                <header class="chrome"><span class="wordmark">MOMENTUM <b>ASSET</b></span><span class="chrome-right"><span class="part"></span><span class="pg"></span></span></header>
+                <p class="kicker reveal d1">01 한눈에 보기 · 전략 구성</p>
+                <h2 class="headline reveal d2">레시피는 네 가지 재료를 성향별 비율로 섞어 만듭니다</h2>
+                <div class="body" style="display:grid; grid-template-columns: 640px 1fr; gap: 56px;">
+                    <div class="ingredients">
+                        <div class="ingredient reveal d2"><span class="swatch a"></span><div><p class="h3">엔진 A · 기울기형</p><p class="small">빠른 시장 신호(30일) · 추세 기울기로 종목 선택</p></div></div>
+                        <div class="ingredient reveal d3"><span class="swatch b"></span><div><p class="h3">엔진 B · 이격도형</p><p class="small">느린 시장 신호(120일) · 9개월 이격도로 종목 선택</p></div></div>
+                        <div class="ingredient reveal d4"><span class="swatch s"></span><div><p class="h3">안전자산 (고정 비중)</p><p class="small">TDF 2030 50% · KOFR 금리 25% · 단기채권 25%</p></div></div>
+                        <div class="ingredient reveal d5"><span class="swatch c"></span><div><p class="h3">현금</p><p class="small">모든 전략에서 항상 5%</p></div></div>
+                    </div>
+                    <div class="mix-rows reveal d3">
+                        <p class="mix-group">모멘텀 국내ETF레시피</p>
+                        <div class="mix-row"><span class="name">매운맛<span>1336</span></span><div class="mixbar"><span class="seg a" style="width:60%">60</span><span class="seg b" style="width:30%">30</span><span class="seg s" style="width:5%">5</span><span class="seg c" style="width:5%">5</span></div><span class="cap">위험자산 최대 <b>90%</b></span></div>
+                        <div class="mix-row"><span class="name">중간맛<span>1337</span></span><div class="mixbar"><span class="seg a" style="width:47%">47</span><span class="seg b" style="width:23%">23</span><span class="seg s" style="width:25%">25</span><span class="seg c" style="width:5%">5</span></div><span class="cap">위험자산 최대 <b>70%</b></span></div>
+                        <div class="mix-row"><span class="name">순한맛<span>1338</span></span><div class="mixbar"><span class="seg a" style="width:33%">33</span><span class="seg b" style="width:17%">17</span><span class="seg s" style="width:45%">45</span><span class="seg c" style="width:5%">5</span></div><span class="cap">위험자산 최대 <b>50%</b></span></div>
+                        <p class="mix-group" style="margin-top:26px">모멘텀 퇴직연금레시피</p>
+                        <div class="mix-row"><span class="name">매운맛<span>1339</span></span><div class="mixbar"><span class="seg a" style="width:47%">47</span><span class="seg b" style="width:23%">23</span><span class="seg s" style="width:25%">25</span><span class="seg c" style="width:5%">5</span></div><span class="cap">위험자산 최대 <b>70%</b></span></div>
+                        <div class="mix-row"><span class="name">중간맛<span>1342</span></span><div class="mixbar"><span class="seg a" style="width:33%">33</span><span class="seg b" style="width:17%">17</span><span class="seg s" style="width:45%">45</span><span class="seg c" style="width:5%">5</span></div><span class="cap">위험자산 최대 <b>50%</b></span></div>
+                        <div class="mix-row"><span class="name">순한맛<span>1343</span></span><div class="mixbar"><span class="seg a" style="width:20%">20</span><span class="seg b" style="width:10%">10</span><span class="seg s" style="width:65%">65</span><span class="seg c" style="width:5%">5</span></div><span class="cap">위험자산 최대 <b>30%</b></span></div>
+                    </div>
+                </div>
+                <p class="source">근거: 전략 구성 설정값 (부록 A1)</p>
+                <div class="band reveal d5">엔진 A와 B의 비중 합계가 곧 위험자산 최대치입니다 (엔진 A : B ≈ 2 : 1)</div>
+            </section>
+
+            <!-- ============ S05 듀얼 모멘텀 ============ -->
+            <section class="slide has-band" data-part="02 바탕 원리" aria-label="듀얼 모멘텀">
+                <header class="chrome"><span class="wordmark">MOMENTUM <b>ASSET</b></span><span class="chrome-right"><span class="part"></span><span class="pg"></span></span></header>
+                <p class="kicker reveal d1">02 바탕 원리</p>
+                <h2 class="headline reveal d2">두 가지 질문에 차례로 답하는 듀얼 모멘텀 전략입니다</h2>
+                <div class="body">
+                    <div class="grid-3">
+                        <div class="card line-blue q-card reveal d2">
+                            <p class="label">Question 1</p>
+                            <p class="q">지금 위험자산에<br>들어가도 될까?</p>
+                            <p class="kind">절대 모멘텀</p>
+                            <p class="txt">시장 전체의 추세를 확인해 오르면 공격, 꺾이면 방어로 전환합니다.</p>
+                            <p class="effect">시장 전체가 함께 떨어지는 <b>체계적 위험</b>에 대비합니다.</p>
+                        </div>
+                        <div class="card line-blue q-card reveal d3">
+                            <p class="label">Question 2</p>
+                            <p class="q">무엇을<br>살까?</p>
+                            <p class="kind">상대 모멘텀</p>
+                            <p class="txt">후보 ETF끼리 추세의 강도를 비교해 가장 강한 종목을 고릅니다.</p>
+                            <p class="effect">오르는 시장·업종에 집중하고, 개별 종목 위험은 <b>ETF 분산</b>으로 줄입니다.</p>
+                        </div>
+                        <div class="card solid-blue q-card reveal d4">
+                            <p class="label">Design</p>
+                            <p class="q">한 가지 신호에<br>모두 걸지 않는다</p>
+                            <p class="kind">전략 조합 (Portfolio of Portfolios)</p>
+                            <p class="txt">반응 속도가 다른 두 엔진과 안전자산·현금을 함께 섞습니다.</p>
+                            <p class="effect">신호 오류와 매매 시점 위험을 나눕니다.</p>
+                        </div>
+                    </div>
+                </div>
+                <p class="source">근거: 11번 알고리즘설명서 (알고리즘 개요·특장점), 별첨2 적용기술</p>
+                <div class="band reveal d5">시장의 추세를 따라 위험자산 비중을 조절하는 추세추종형 동적 자산배분입니다</div>
+            </section>
+
+            <!-- ============ S06 시장 신호 ============ -->
+            <section class="slide" data-part="02 바탕 원리" aria-label="시장 신호">
+                <header class="chrome"><span class="wordmark">MOMENTUM <b>ASSET</b></span><span class="chrome-right"><span class="part"></span><span class="pg"></span></span></header>
+                <p class="kicker reveal d1">02 바탕 원리 · ① 시장 신호 (절대 모멘텀)</p>
+                <h2 class="headline reveal d2">네 시장 지표의 추세가 모두 올라야 공격 자산을 담습니다</h2>
+                <div class="body" style="display:grid; grid-template-columns: 780px 1fr; gap: 64px;">
+                    <div class="signal-board reveal d2">
+                        <div class="signal-head"><span>MARKET SIGNAL</span><span>MA SLOPE</span></div>
+                        <div class="signal-row"><span class="tk">SPY</span><span class="nm">미국 주식 (S&amp;P 500)</span><span class="lamp"></span></div>
+                        <div class="signal-row"><span class="tk">EFA</span><span class="nm">선진국 주식 (미국 제외)</span><span class="lamp"></span></div>
+                        <div class="signal-row"><span class="tk">EEM</span><span class="nm">신흥국 주식</span><span class="lamp"></span></div>
+                        <div class="signal-row"><span class="tk">AGG</span><span class="nm">미국 종합채권</span><span class="lamp"></span></div>
+                        <div class="signal-rule">
+                            <div><span class="chip atk">공격</span>4개 모두 상승</div>
+                            <div><span class="chip def">방어</span>하나라도 하락</div>
+                        </div>
+                    </div>
+                    <div class="how-steps">
+                        <p class="label reveal d2">How it works</p>
+                        <div class="how-step reveal d3"><span class="step-no">1</span><div><p class="h3">지표별 이동평균선을 구합니다</p><p class="txt">엔진 A는 30일, 엔진 B는 120일 이동평균을 씁니다.</p></div></div>
+                        <div class="how-step reveal d4"><span class="step-no">2</span><div><p class="h3">이동평균선의 기울기를 봅니다</p><p class="txt">이동평균이 전날보다 올라갔으면 상승 추세입니다.</p><p class="formula">기울기 = 오늘 이동평균 ÷ 전날 이동평균 − 1</p></div></div>
+                        <div class="how-step reveal d5"><span class="step-no">3</span><div><p class="h3">리밸런싱 기준일에 판정합니다</p><p class="txt">네 기울기가 모두 0보다 크면 공격, 하나라도 아니면 방어입니다.</p></div></div>
+                        <p class="small reveal d6">신호 지표는 판단에만 쓰고 직접 매매하지 않습니다. 이동평균은 거래일 기준입니다.</p>
+                    </div>
+                </div>
+                <p class="source">근거: 11번 알고리즘설명서, 전략 설정값 (부록 A1)</p>
+            </section>
+
+            <!-- ============ S07 종목 선택 ============ -->
+            <section class="slide has-band" data-part="02 바탕 원리" aria-label="종목 선택">
+                <header class="chrome"><span class="wordmark">MOMENTUM <b>ASSET</b></span><span class="chrome-right"><span class="part"></span><span class="pg"></span></span></header>
+                <p class="kicker reveal d1">02 바탕 원리 · ② 종목 선택 (상대 모멘텀)</p>
+                <h2 class="headline reveal d2">추세가 가장 강한 ETF를 골라 같은 비율로 나눠 담습니다</h2>
+                <div class="body" style="display:grid; grid-template-columns: 1fr 560px; gap: 40px;">
+                    <div class="card line-blue reveal d2" style="padding: 28px 32px;">
+                        <div class="mode-title"><span class="chip atk">공격 모드</span><p class="h3">후보 중 상위 6종 · 균등 비중</p></div>
+                        <table class="tbl sel-tbl">
+                            <thead><tr><th style="width:170px"></th><th>엔진 A · 기울기형</th><th>엔진 B · 이격도형</th></tr></thead>
+                            <tbody>
+                                <tr><td class="rowhead">순위 기준</td><td>110일 이동평균선의 기울기</td><td>기준일 가격 ÷ 최근 9개월 평균 가격</td></tr>
+                                <tr><td class="rowhead">뜻</td><td>최근 가장 가파르게 오르는 ETF</td><td>평균보다 가장 높이 올라와 있는 ETF</td></tr>
+                                <tr><td class="rowhead">공격 후보</td><td>국내 업종·지수, 해외 주식 ETF <b class="num">38</b>종</td><td>국내 지수, 해외 주식 ETF <b class="num">25</b>종<br><span class="muted">(퇴직연금 <b class="num">26</b>종)</span></td></tr>
+                                <tr class="hl"><td class="rowhead">6/30 선택 예<br><span class="muted">(국내ETF)</span></td><td>KODEX 200TR · KODEX 한국대만IT프리미어 · TIGER 미국필라델피아반도체나스닥 · KODEX 미국반도체 · KODEX 우량주 · KODEX AI반도체</td><td>왼쪽 앞 4종 + TIGER 차이나과창판STAR50(합성) · TIMEFOLIO 미국나스닥100액티브</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="card line-ink reveal d3" style="padding: 28px 32px;">
+                        <div class="mode-title"><span class="chip def">방어 모드</span><p class="h3">방어 후보 5종 · 균등</p></div>
+                        <p class="mode-sub">두 엔진이 같은 후보를 씁니다.</p>
+                        <div class="def-list">
+                            <div class="def-item"><span class="num">1</span>미국달러 단기채권</div>
+                            <div class="def-item"><span class="num">2</span>미국 단기 투자등급 회사채</div>
+                            <div class="def-item"><span class="num">3</span>TDF 2030</div>
+                            <div class="def-item"><span class="num">4</span>아시아 달러채권</div>
+                            <div class="def-item"><span class="num">5</span>국제 금 커버드콜</div>
+                        </div>
+                    </div>
+                </div>
+                <p class="source">근거: 전략 설정값 (부록 A1), 12번 투자유니버스자료</p>
+                <div class="band reveal d4">두 엔진이 같은 종목을 고르면 비중을 더합니다 → 두 기준을 모두 통과한 추세에 더 많이 투자</div>
+            </section>
+
+            <!-- ============ S08 두 엔진 조합 + 실제 사례 ============ -->
+            <section class="slide" data-part="02 바탕 원리" aria-label="두 엔진 조합">
+                <header class="chrome"><span class="wordmark">MOMENTUM <b>ASSET</b></span><span class="chrome-right"><span class="part"></span><span class="pg"></span></span></header>
+                <p class="kicker reveal d1">02 바탕 원리 · ③ 두 엔진의 조합</p>
+                <h2 class="headline reveal d2">빠른 엔진과 느린 엔진을 섞어 위험자산을 단계적으로 조절합니다</h2>
+                <div class="body" style="display:grid; grid-template-columns: 520px 1fr; gap: 48px;">
+                    <div class="eng-points">
+                        <div class="eng-point reveal d2"><p class="h3"><span class="chip atk" style="margin-right:10px">A</span>30일 신호</p><p class="txt">빨리 반응합니다. 하락 초기에 먼저 방어로 바꿉니다.</p></div>
+                        <div class="eng-point reveal d3"><p class="h3"><span class="chip soft" style="margin-right:10px">B</span>120일 신호</p><p class="txt">천천히 반응합니다. 일시적인 흔들림에 덜 흔들립니다.</p></div>
+                        <div class="eng-point reveal d4" style="background:var(--ink); color:#fff;"><p class="h3">두 신호가 엇갈리면</p><p class="txt" style="color:rgba(255,255,255,.88)">위험자산이 0%와 최대치 사이의 중간 단계가 됩니다.</p></div>
+                    </div>
+                    <div class="reveal d3">
+                        <p class="app-sub">테스트베드 모델포트폴리오의 공격 자산(주식형 ETF) 비중</p>
+                        <table class="tbl case-tbl">
+                            <thead>
+                                <tr><th>기준일</th><th class="c">5/6 운용개시</th><th class="c">5/30</th><th class="c">6/30</th><th class="c">7/30</th><th class="c">8/28</th></tr>
+                            </thead>
+                            <tbody>
+                                <tr class="hl"><td class="rowhead">엔진 A 상태</td><td class="c"><span class="chip def">방어</span></td><td class="c"><span class="chip def">방어</span></td><td class="c"><span class="chip atk">공격</span></td><td class="c"><span class="chip def">방어</span></td><td class="c"><span class="chip def">방어</span></td></tr>
+                                <tr class="hl"><td class="rowhead">엔진 B 상태</td><td class="c"><span class="chip atk">공격</span></td><td class="c"><span class="chip atk">공격</span></td><td class="c"><span class="chip atk">공격</span></td><td class="c"><span class="chip def">방어</span></td><td class="c"><span class="chip def">방어</span></td></tr>
+                                <tr><td class="rowhead">국내ETF 매운맛</td><td class="n">30%</td><td class="n">30%</td><td class="n full">90%</td><td class="n zero">0%</td><td class="n zero">0%</td></tr>
+                                <tr><td class="rowhead">국내ETF 중간맛</td><td class="n">23%</td><td class="n">23%</td><td class="n full">70%</td><td class="n zero">0%</td><td class="n zero">0%</td></tr>
+                                <tr><td class="rowhead">국내ETF 순한맛</td><td class="n">17%</td><td class="n">17%</td><td class="n full">50%</td><td class="n zero">0%</td><td class="n zero">0%</td></tr>
+                                <tr><td class="rowhead">퇴직연금 매운맛</td><td class="n">23%</td><td class="n">23%</td><td class="n full">70%</td><td class="n zero">0%</td><td class="n zero">0%</td></tr>
+                                <tr><td class="rowhead">퇴직연금 중간맛</td><td class="n">17%</td><td class="n">17%</td><td class="n full">50%</td><td class="n zero">0%</td><td class="n zero">0%</td></tr>
+                                <tr><td class="rowhead">퇴직연금 순한맛</td><td class="n">10%</td><td class="n">10%</td><td class="n full">30%</td><td class="n zero">0%</td><td class="n zero">0%</td></tr>
+                            </tbody>
+                        </table>
+                        <p class="small" style="margin-top:14px">방어 상태에서는 채권·TDF·금 커버드콜 ETF를 보유하며, 안전자산과 현금은 항상 유지합니다.</p>
+                    </div>
+                </div>
+                <p class="source">근거: 21번 리밸런싱 발생내역 MP내역 (2026.09.07 제출본)</p>
+            </section>
+
+            <!-- ============ S09 투자 유니버스 ============ -->
+            <section class="slide" data-part="03 모델포트폴리오 생성" aria-label="투자 유니버스">
+                <header class="chrome"><span class="wordmark">MOMENTUM <b>ASSET</b></span><span class="chrome-right"><span class="part"></span><span class="pg"></span></span></header>
+                <p class="kicker reveal d1">03 모델포트폴리오 생성 절차 · 투자 유니버스</p>
+                <h2 class="headline reveal d2">위험점수를 매긴 국내 상장 ETF 54종에서 고릅니다</h2>
+                <div class="body" style="display:grid; grid-template-columns: 1fr 600px; gap: 56px;">
+                    <div class="reveal d2">
+                        <table class="tbl">
+                            <thead><tr><th class="c" style="width:110px">위험점수</th><th style="width:180px">위험등급</th><th>자산종류 (종목 수)</th><th class="c" style="width:110px">위험자산</th></tr></thead>
+                            <tbody>
+                                <tr><td class="n c blue" style="font-size:32px">6</td><td>매우높은위험</td><td>국내주식 12 · 해외주식 7</td><td class="c"><span class="chip atk">Y</span></td></tr>
+                                <tr><td class="n c blue" style="font-size:32px">5</td><td>높은위험</td><td>국내주식 7 · 해외주식 17 · 해외원자재 1</td><td class="c"><span class="chip atk">Y</span></td></tr>
+                                <tr><td class="n c blue" style="font-size:32px">4</td><td>다소높은위험</td><td>해외주식 1</td><td class="c"><span class="chip atk">Y</span></td></tr>
+                                <tr><td class="n c" style="font-size:32px">3</td><td>보통위험</td><td>국내주식채권혼합형 2 · 해외단기채권 2 · 해외중기채권 1</td><td class="c"><span class="chip outline">N</span></td></tr>
+                                <tr><td class="n c" style="font-size:32px">1</td><td>매우낮은위험</td><td>국내안전자산채권 4</td><td class="c"><span class="chip outline">N</span></td></tr>
+                            </tbody>
+                        </table>
+                        <div class="grade-strip">
+                            <div><b>1등급</b>5.5 이상</div><div><b>2등급</b>4.5~5.5</div><div><b>3등급</b>3.5~4.5</div><div><b>4등급</b>2.5~3.5</div><div><b>5등급</b>1.5~2.5</div><div><b>6등급</b>1.5 미만</div>
+                        </div>
+                        <p class="small" style="margin-top:12px">포트폴리오 위험도 = Σ(자산 비중 × 위험점수). 위 기준으로 포트폴리오 위험등급을 나눕니다.</p>
+                    </div>
+                    <div class="reveal d3">
+                        <div><span class="stat-big">54</span><span class="stat-unit">종</span></div>
+                        <p class="txt" style="margin-top:8px">위험자산 <b class="num">45</b>종 · 비위험자산 <b class="num">9</b>종</p>
+                        <div class="crit">
+                            <div>위험도·유동성·수익성 기준으로 선별합니다.</div>
+                            <div>거래대금으로 걸러 유동성 위험을 미리 막습니다.</div>
+                            <div>국내외 여러 업종·지역을 폭넓게 담습니다.</div>
+                            <div>개별 주식은 편입하지 않고 ETF만 씁니다.</div>
+                        </div>
+                    </div>
+                </div>
+                <p class="source">근거: 11번 알고리즘설명서 (편입자산 현황), 21번 투자유니버스</p>
+            </section>
+
+            <!-- ============ S10 MP 생성 6단계 ============ -->
+            <section class="slide" data-part="03 모델포트폴리오 생성" aria-label="MP 생성 절차">
+                <header class="chrome"><span class="wordmark">MOMENTUM <b>ASSET</b></span><span class="chrome-right"><span class="part"></span><span class="pg"></span></span></header>
+                <p class="kicker reveal d1">03 모델포트폴리오 생성 절차</p>
+                <h2 class="headline reveal d2">모델포트폴리오(MP)는 매월 여섯 단계로 만들어집니다</h2>
+                <div class="body">
+                    <div class="flow">
+                        <div class="flow-card reveal d1"><span class="step-no">1</span><p class="h3">데이터 갱신</p><p class="txt">매일 09:30·17:30 가격(수정종가)을 갱신하고 전략을 다시 계산합니다.</p></div>
+                        <div class="flow-card reveal d2"><span class="step-no">2</span><p class="h3">기준일 확정</p><p class="txt">매월 30일, 휴장이면 그 이전 마지막 거래일입니다.</p></div>
+                        <div class="flow-card reveal d3"><span class="step-no">3</span><p class="h3">시장 신호</p><p class="txt">엔진마다 네 지표로 공격·방어를 판정합니다.</p></div>
+                        <div class="flow-card reveal d4"><span class="step-no">4</span><p class="h3">종목 선택</p><p class="txt">공격이면 상위 6종, 방어면 방어 후보 5종을 고릅니다.</p></div>
+                        <div class="flow-card key reveal d5"><span class="step-no">5</span><p class="h3">비중 계산</p><p class="txt">엔진 비중 ÷ 종목 수. 같은 종목은 더하고, 안전자산·현금은 고정 비중을 더합니다.</p></div>
+                        <div class="flow-card reveal d6"><span class="step-no">6</span><p class="h3">계좌별 MP</p><p class="txt">계좌 평가금액 × 비중으로 종목별 목표 수량을 계산해 저장합니다.</p></div>
+                    </div>
+                    <div class="use-row reveal d6">
+                        <span class="chip soft">MP (목표 비중·목표 수량)</span><span class="arrow">→</span>
+                        <span class="chip soft">주문표 (목표 − 보유)</span><span class="arrow">→</span>
+                        <span class="chip soft">21번 리밸런싱 발생내역 ‘MP내역’</span>
+                    </div>
+                    <p class="small reveal d6" style="margin-top:18px">가격 데이터: 국내 종목 pykrx, 해외 지표 EODHD·Yahoo Finance</p>
+                </div>
+                <p class="source">근거: 22번 시스템운용메뉴얼, 시스템 예약 작업·코드</p>
+            </section>
+
+            <!-- ============ S11 비중 계산 예시 ============ -->
+            <section class="slide" data-part="03 모델포트폴리오 생성" aria-label="비중 계산 예시">
+                <header class="chrome"><span class="wordmark">MOMENTUM <b>ASSET</b></span><span class="chrome-right"><span class="part"></span><span class="pg"></span></span></header>
+                <p class="kicker reveal d1">03 모델포트폴리오 생성 절차 · 계산 예시</p>
+                <h2 class="headline reveal d2">같은 신호, 다른 배합: 2026년 6월 30일 매운맛 MP</h2>
+                <div class="body" style="top:300px; bottom:70px;">
+                    <div class="calc-strip reveal d2">
+                        <span class="chip soft">국내ETF: 엔진 A 60% ÷ 6 = 10% · 엔진 B 30% ÷ 6 = 5%</span>
+                        <span class="chip soft">퇴직연금: 엔진 A 47% ÷ 6 = 7.83% · 엔진 B 23% ÷ 6 = 3.83%</span>
+                    </div>
+                    <div class="ex-wrap">
+                        <table class="tbl ex-tbl reveal d3">
+                            <thead><tr><th>종목</th><th style="width:230px">구분</th><th class="n" style="width:190px">국내ETF 매운맛</th><th class="n" style="width:200px">퇴직연금 매운맛</th></tr></thead>
+                            <tbody>
+                                <tr><td>KODEX 200TR</td><td>A + B</td><td class="n">15%</td><td class="n">11.67%</td></tr>
+                                <tr><td>KODEX 한국대만IT프리미어</td><td>A + B</td><td class="n">15%</td><td class="n">11.67%</td></tr>
+                                <tr><td>TIGER 미국필라델피아반도체나스닥</td><td>A + B</td><td class="n">15%</td><td class="n">11.67%</td></tr>
+                                <tr><td>KODEX 미국반도체</td><td>A + B</td><td class="n">15%</td><td class="n">11.67%</td></tr>
+                                <tr><td>KODEX 우량주</td><td>A <span class="muted">(퇴직연금 A + B)</span></td><td class="n">10%</td><td class="n">11.67%</td></tr>
+                                <tr><td>KODEX AI반도체</td><td>A</td><td class="n">10%</td><td class="n">7.83%</td></tr>
+                                <tr><td>TIGER 차이나과창판STAR50(합성)</td><td>B</td><td class="n">5%</td><td class="n">3.83%</td></tr>
+                                <tr><td>TIMEFOLIO 미국나스닥100액티브</td><td>B <span class="muted">(국내ETF만)</span></td><td class="n">5%</td><td class="n zero">–</td></tr>
+                                <tr class="hl"><td>RISE TDF 2030 액티브</td><td>안전자산</td><td class="n">2.5%</td><td class="n">12.5%</td></tr>
+                                <tr class="hl"><td>KODEX KOFR금리액티브(합성)</td><td>안전자산</td><td class="n">1.25%</td><td class="n">6.25%</td></tr>
+                                <tr class="hl"><td>TIGER 단기채권액티브</td><td>안전자산</td><td class="n">1.25%</td><td class="n">6.25%</td></tr>
+                                <tr><td>현금</td><td>현금</td><td class="n">5%</td><td class="n">5%</td></tr>
+                                <tr class="total"><td>합계</td><td></td><td class="n">100%</td><td class="n">100%</td></tr>
+                            </tbody>
+                        </table>
+                        <div class="ex-note reveal d4">
+                            <div class="card"><p class="label">Read</p><p class="txt">두 엔진이 함께 고른 종목은 비중을 더합니다. (10% + 5% = 15%)</p></div>
+                            <div class="card"><p class="label">Diff</p><p class="txt">퇴직연금 엔진 B의 후보에는 KODEX 우량주가 있어 고른 종목이 1개 다릅니다.</p></div>
+                            <div class="card solid-blue"><p class="label">Limit</p><p class="txt">공격 자산 합계는 국내ETF 90%, 퇴직연금 70%로 각 한도와 같습니다.</p></div>
+                        </div>
+                    </div>
+                </div>
+                <p class="source">근거: 21번 리밸런싱 발생내역 MP내역 (소수점 반올림)</p>
+            </section>
+
+            <!-- ============ S12 위험 한도 ============ -->
+            <section class="slide" data-part="03 모델포트폴리오 생성" aria-label="위험 한도">
+                <header class="chrome"><span class="wordmark">MOMENTUM <b>ASSET</b></span><span class="chrome-right"><span class="part"></span><span class="pg"></span></span></header>
+                <p class="kicker reveal d1">03 모델포트폴리오 생성 절차 · 위험 한도</p>
+                <h2 class="headline reveal d2">위험 한도는 배합 비율로 미리 묶어 두었습니다</h2>
+                <div class="body" style="display:grid; grid-template-columns: 560px 1fr; gap: 52px;">
+                    <div class="limit-points">
+                        <div class="limit-point reveal d2"><span class="step-no">1</span><p class="txt"><b>엔진 A+B 비중 = 위험자산 최대치.</b> 두 엔진이 모두 공격이어도 한도를 넘지 않습니다.</p></div>
+                        <div class="limit-point reveal d3"><span class="step-no">2</span><p class="txt"><b>안전자산과 현금은 늘 유지합니다.</b> 신호와 관계없이 고정 비중입니다.</p></div>
+                        <div class="limit-point reveal d4"><span class="step-no">3</span><p class="txt"><b>한 종목 최대 비중도 정해집니다.</b> 예) 국내ETF 매운맛은 두 엔진이 모두 방어일 때 12% + 6% = 18%.</p></div>
+                    </div>
+                    <div class="reveal d3">
+                        <table class="tbl limit-tbl">
+                            <thead>
+                                <tr class="grp"><th></th><th colspan="3">모멘텀 국내ETF레시피</th><th colspan="3">모멘텀 퇴직연금레시피</th></tr>
+                                <tr><th></th><th>매운맛</th><th>중간맛</th><th>순한맛</th><th>매운맛</th><th>중간맛</th><th>순한맛</th></tr>
+                            </thead>
+                            <tbody>
+                                <tr class="hl"><td class="rowhead">위험자산 최대</td><td class="num">90%</td><td class="num">70%</td><td class="num">50%</td><td class="num">70%</td><td class="num">50%</td><td class="num">30%</td></tr>
+                                <tr><td class="rowhead">위험등급</td><td>1등급</td><td>2등급</td><td>3등급</td><td>2등급</td><td>3등급</td><td>4등급</td></tr>
+                                <tr><td class="rowhead">위험도 범위</td><td class="num">2.85~5.55</td><td class="num">2.65~4.75</td><td class="num">2.45~3.95</td><td class="num">2.65~4.75</td><td class="num">2.45~3.95</td><td class="num">2.25~3.15</td></tr>
+                                <tr><td class="rowhead">단일 종목 한도</td><td class="num">18%</td><td class="num">14%</td><td class="num">22.5%</td><td class="num">14%</td><td class="num">22.5%</td><td class="num">32.5%</td></tr>
+                            </tbody>
+                        </table>
+                        <div class="formula-card">
+                            <p class="label">Risk score · 국내ETF 매운맛 최대 위험도</p>
+                            <p class="eq">0.90 × 6 + 0.025 × 3 + 0.075 × 1 = 5.55</p>
+                            <p class="small">위험자산 90% × 6점 + TDF 절반 2.5% × 3점 + 안전채권 2.5%·현금 5% × 1점 (위험등급은 최대 위험도 기준)</p>
+                        </div>
+                    </div>
+                </div>
+                <p class="source">근거: 11번 알고리즘설명서 (위험자산 편입 비중·위험도 산출·투자 한도)</p>
+            </section>
+
+            <!-- ============ S13 국내ETF레시피 ============ -->
+            <section class="slide" data-part="04 레시피별 특징" aria-label="국내ETF레시피 특징">
+                <header class="chrome"><span class="wordmark">MOMENTUM <b>ASSET</b></span><span class="chrome-right"><span class="part"></span><span class="pg"></span></span></header>
+                <p class="kicker reveal d1">04 레시피별 특징 · 모멘텀 국내ETF레시피</p>
+                <h2 class="headline reveal d2">연금저축 고객에게 공격형까지 세 가지 맛을 제공합니다</h2>
+                <div class="body">
+                    <div class="grid-3">
+                        <div class="type-card hot reveal d2">
+                            <div class="tname"><p class="h3">매운맛</p><span class="id">1336</span></div>
+                            <p class="who">공격형 · 위험 1등급</p>
+                            <dl><dt>위험자산</dt><dd>0~90%</dd><dt>위험도</dt><dd>2.85~5.55</dd><dt>단일 종목</dt><dd>최대 18%</dd></dl>
+                            <div class="mixbar"><span class="seg a" style="width:60%">A 60</span><span class="seg b" style="width:30%">B 30</span><span class="seg s" style="width:5%"></span><span class="seg c" style="width:5%"></span></div>
+                            <p class="style">약간의 위험을 감수하고 높은 수익을 추구합니다.</p>
+                        </div>
+                        <div class="type-card reveal d3">
+                            <div class="tname"><p class="h3">중간맛</p><span class="id">1337</span></div>
+                            <p class="who">적극투자형 · 위험 2등급</p>
+                            <dl><dt>위험자산</dt><dd>0~70%</dd><dt>위험도</dt><dd>2.65~4.75</dd><dt>단일 종목</dt><dd>최대 14%</dd></dl>
+                            <div class="mixbar"><span class="seg a" style="width:47%">A 47</span><span class="seg b" style="width:23%">B 23</span><span class="seg s" style="width:25%">25</span><span class="seg c" style="width:5%"></span></div>
+                            <p class="style">균형 잡힌 수익과 위험 관리를 추구합니다.</p>
+                        </div>
+                        <div class="type-card reveal d4">
+                            <div class="tname"><p class="h3">순한맛</p><span class="id">1338</span></div>
+                            <p class="who">위험중립형 · 위험 3등급</p>
+                            <dl><dt>위험자산</dt><dd>0~50%</dd><dt>위험도</dt><dd>2.45~3.95</dd><dt>단일 종목</dt><dd>최대 22.5%</dd></dl>
+                            <div class="mixbar"><span class="seg a" style="width:33%">A 33</span><span class="seg b" style="width:17%">17</span><span class="seg s" style="width:45%">안전 45</span><span class="seg c" style="width:5%"></span></div>
+                            <p class="style">위험을 최소화하여 안정적인 수익을 추구합니다.</p>
+                        </div>
+                    </div>
+                    <div class="fact-row reveal d5">
+                        <span class="chip outline">최소 150만 원 · 최대 제한 없음</span>
+                        <span class="chip outline">공수 전환에 따라 위험자산을 0%까지 낮춤</span>
+                        <span class="chip outline">본인 성향보다 위험이 낮은 유형도 선택 가능</span>
+                    </div>
+                    <p class="small reveal d5" style="margin-top:18px">막대: 엔진 A · 엔진 B · 안전자산 · 현금 5% 배합 (%)</p>
+                </div>
+                <p class="source">근거: 11번 알고리즘설명서 (포트폴리오 유형·투자자 성향 구분)</p>
+            </section>
+
+            <!-- ============ S14 퇴직연금레시피 ============ -->
+            <section class="slide" data-part="04 레시피별 특징" aria-label="퇴직연금레시피 특징">
+                <header class="chrome"><span class="wordmark">MOMENTUM <b>ASSET</b></span><span class="chrome-right"><span class="part"></span><span class="pg"></span></span></header>
+                <p class="kicker reveal d1">04 레시피별 특징 · 모멘텀 퇴직연금레시피</p>
+                <h2 class="headline reveal d2">퇴직연금 법규의 한도 안에서 설계했습니다</h2>
+                <div class="body" style="display:grid; grid-template-columns: 820px 1fr; gap: 56px;">
+                    <div>
+                        <div class="ptype reveal d2"><div><p class="h3">매운맛</p><p class="small">1339</p></div><div><p class="facts">적극투자형 · 2등급 · 위험자산 <b>0~70%</b> · 위험도 2.65~4.75</p><div class="mixbar"><span class="seg a" style="width:47%">A 47</span><span class="seg b" style="width:23%">B 23</span><span class="seg s" style="width:25%">안전 25</span><span class="seg c" style="width:5%"></span></div></div></div>
+                        <div class="ptype reveal d3"><div><p class="h3">중간맛</p><p class="small">1342</p></div><div><p class="facts">위험중립형 · 3등급 · 위험자산 <b>0~50%</b> · 위험도 2.45~3.95</p><div class="mixbar"><span class="seg a" style="width:33%">A 33</span><span class="seg b" style="width:17%">17</span><span class="seg s" style="width:45%">안전 45</span><span class="seg c" style="width:5%"></span></div></div></div>
+                        <div class="ptype reveal d4"><div><p class="h3">순한맛</p><p class="small">1343</p></div><div><p class="facts">안정추구형 · 4등급 · 위험자산 <b>0~30%</b> · 위험도 2.25~3.15</p><div class="mixbar"><span class="seg a" style="width:20%">A 20</span><span class="seg b" style="width:10%">10</span><span class="seg s" style="width:65%">안전 65</span><span class="seg c" style="width:5%"></span></div></div></div>
+                        <p class="small reveal d5" style="margin-top:18px">최소 운용금액 50만 원 · 최대 제한 없음</p>
+                    </div>
+                    <div class="reveal d3">
+                        <div class="law"><span class="ok">✓</span><div><p class="h3">위험자산 총투자한도 70%</p><p class="ref">퇴직급여법 시행규칙 §10①</p><p class="txt">안전자산+현금을 최소 30%·50%·70%로 설계</p></div></div>
+                        <div class="law"><span class="ok">✓</span><div><p class="h3">위험 큰 자산은 집합투자로만</p><p class="ref">퇴직급여법 시행규칙 §10②</p><p class="txt">개별 주식 없이 퇴직연금 투자 적격 ETF만 편입</p></div></div>
+                        <div class="law"><span class="ok">✓</span><div><p class="h3">이해상충 자산 투자 금지</p><p class="ref">퇴직연금 감독규정 §11②</p><p class="txt">투자 대상이 ETF로 한정되어 해당 없음</p></div></div>
+                        <div class="law"><span class="ok">✓</span><div><p class="h3">집중투자 한도</p><p class="ref">퇴직연금 감독규정 §12</p><p class="txt">집합투자증권은 적용 제외, 5종목 이상 ETF로 구성</p></div></div>
+                    </div>
+                </div>
+                <p class="source">근거: 13번 법규준수설명자료, 11번 알고리즘설명서</p>
+            </section>
+
+            <!-- ============ S15 차별점 ============ -->
+            <section class="slide" data-part="04 레시피별 특징" aria-label="차별점">
+                <header class="chrome"><span class="wordmark">MOMENTUM <b>ASSET</b></span><span class="chrome-right"><span class="part"></span><span class="pg"></span></span></header>
+                <p class="kicker reveal d1">04 레시피별 특징 · 차별점</p>
+                <h2 class="headline reveal d2">다섯 가지 설계 차별점</h2>
+                <div class="body" style="top:280px">
+                    <div class="diff-grid">
+                        <div class="diff-card reveal d2"><p class="no">01</p><p class="h3">시장 국면에 대응</p><p class="txt">비중을 고정하는 정적 배분과 달리, 시장 신호에 따라 위험자산을 0%에서 한도까지 조절합니다.</p></div>
+                        <div class="diff-card reveal d3"><p class="no">02</p><p class="h3">이중 모멘텀 엔진</p><p class="txt">반응 속도가 다른 두 엔진을 섞어 신호 오류와 매매 시점 위험을 나눕니다.</p></div>
+                        <div class="diff-card reveal d4"><p class="no">03</p><p class="h3">한도를 구조에 내장</p><p class="txt">성향별 위험 한도를 배합 비율로 고정해, 신호와 관계없이 한도를 지킵니다.</p></div>
+                        <div class="diff-card wide reveal d5"><p class="no">04</p><p class="h3">국내 상장 ETF로 글로벌 분산</p><p class="txt">미국·중국·인도·일본·베트남 주식과 달러채권·금까지 연금계좌에서 투자합니다.</p></div>
+                        <div class="diff-card wide reveal d6" style="background:var(--blue); color:#fff;"><p class="no" style="color:#fff">05</p><p class="h3">규칙 기반 월 1회</p><p class="txt" style="color:rgba(255,255,255,.9)">같은 규칙을 매월 반복해 감정이 끼어들 틈과 잦은 매매를 줄입니다.</p></div>
+                    </div>
+                </div>
+                <p class="source">근거: 11번 알고리즘설명서, 12번 투자유니버스자료</p>
+            </section>
+
+            <!-- ============ S16 장점과 한계 ============ -->
+            <section class="slide" data-part="04 레시피별 특징" aria-label="장점과 한계">
+                <header class="chrome"><span class="wordmark">MOMENTUM <b>ASSET</b></span><span class="chrome-right"><span class="part"></span><span class="pg"></span></span></header>
+                <p class="kicker reveal d1">04 레시피별 특징 · 장점과 한계</p>
+                <h2 class="headline reveal d2">장점과 한계, 그리고 한계를 보완하는 장치</h2>
+                <div class="body" style="top:290px; bottom:80px;">
+                    <div class="pc-wrap">
+                        <div class="pros reveal d2">
+                            <p class="h3">장점</p>
+                            <ul>
+                                <li>하락 추세에서는 방어 자산으로 옮겨 손실 확대를 줄이도록 설계했습니다.</li>
+                                <li>규칙이 명확해 모든 판단 근거를 설명하고 검증할 수 있습니다.</li>
+                                <li>엔진·자산·시간(월 단위) 세 겹으로 분산합니다.</li>
+                                <li>성향별 위험 한도를 구조적으로 지킵니다.</li>
+                            </ul>
+                        </div>
+                        <table class="tbl cons-tbl reveal d3">
+                            <thead><tr><th>한계</th><th>보완 장치</th></tr></thead>
+                            <tbody>
+                                <tr><td>추세를 확인한 뒤 움직여 전환 초기에는 늦을 수 있습니다.</td><td>빠른 엔진(30일)과 느린 엔진(120일)을 함께 씁니다.</td></tr>
+                                <tr><td>방향 없이 오르내리는 장에서는 공격·방어가 자주 바뀔 수 있습니다.</td><td>월 1회만 판단하고, 보유와 차이 나는 수량만 매매합니다.</td></tr>
+                                <tr><td>네 지표가 모두 올라야 해 상승 초기 참여가 늦을 수 있습니다.</td><td>하락 위험 관리를 우선한 설계이며, 안전자산·현금으로 변동을 줄입니다.</td></tr>
+                                <tr><td>공격 때 반도체 등 특정 업종으로 쏠릴 수 있습니다.</td><td>6종 균등 분산, 단일 종목 한도, 두 엔진 합산 구조로 제한합니다.</td></tr>
+                                <tr><td>과거 데이터로 만든 모델이라 미래와 다를 수 있습니다.</td><td>매월 모의 실행으로 결과를 확인한 뒤 주문하고, 체결 후 검증합니다.</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <p class="source">근거: 11번 알고리즘설명서 (주요 위험·위험 관리), 시스템 운영 절차</p>
+            </section>
+
+            <!-- ============ S17 운영 캘린더 ============ -->
+            <section class="slide" data-part="05 운용·리밸런싱" aria-label="운영 캘린더">
+                <header class="chrome"><span class="wordmark">MOMENTUM <b>ASSET</b></span><span class="chrome-right"><span class="part"></span><span class="pg"></span></span></header>
+                <p class="kicker reveal d1">05 운용·리밸런싱 절차 · 운영 캘린더</p>
+                <h2 class="headline reveal d2">매일 데이터를 준비하고, 매월 한 번 리밸런싱합니다</h2>
+                <div class="body" style="top:290px;">
+                    <p class="sec-title reveal d2"><span class="chip atk">매일</span>서버 예약 작업 (자동)</p>
+                    <div class="day-line reveal d3">
+                        <div class="day-axis"></div>
+                        <div class="day-evt up" style="left:8%"><p class="tm">02:10</p><p class="nm">데이터 캐시 갱신</p><div class="dot"></div></div>
+                        <div class="day-evt down" style="left:25%"><div class="dot"></div><p class="tm">08:30</p><p class="nm">증권사 API 토큰 갱신</p></div>
+                        <div class="day-evt up" style="left:42%"><p class="tm">09:10</p><p class="nm">계좌 평가액·잔고 저장</p><div class="dot"></div></div>
+                        <div class="day-evt down" style="left:58%"><div class="dot"></div><p class="tm">09:30</p><p class="nm">가격 갱신·전략 재계산</p></div>
+                        <div class="day-evt up" style="left:75%"><p class="tm">16:10</p><p class="nm">계좌 평가액·잔고 저장</p><div class="dot"></div></div>
+                        <div class="day-evt down" style="left:92%"><div class="dot"></div><p class="tm">17:30</p><p class="nm">가격 갱신·전략 재계산</p></div>
+                    </div>
+                    <p class="sec-title reveal d4" style="margin-top:6px"><span class="chip def">매월</span>리밸런싱 주기</p>
+                    <div class="month-flow">
+                        <div class="m-card reveal d4"><p class="when">기준일 (30일)</p><p class="h3">MP 확정</p><p class="txt">기준일 종가로 신호와 목표 비중을 확정합니다.</p></div>
+                        <div class="m-card reveal d5"><p class="when">다음 영업일</p><p class="h3">모의 실행</p><p class="txt">전 계좌의 주문표를 미리 만들어 운영자가 확인합니다.</p></div>
+                        <div class="m-card reveal d5"><p class="when">같은 날</p><p class="h3">실제 주문</p><p class="txt">매도 → 매수 순서로 주문하고 체결을 확인합니다.</p></div>
+                        <div class="m-card reveal d6"><p class="when">체결 후</p><p class="h3">검증·보고</p><p class="txt">목표와 잔고를 대조하고 리밸런싱 발생내역을 작성합니다.</p></div>
+                    </div>
+                    <p class="small reveal d6" style="margin-top:14px">예) 6월 30일 기준일 → 7월 1일 주문</p>
+                </div>
+                <p class="source">근거: 시스템 예약 작업 설정, 22번 시스템운용메뉴얼, 21번 리밸런싱 발생내역</p>
+            </section>
+
+            <!-- ============ S18 정기 리밸런싱 ============ -->
+            <section class="slide" data-part="05 운용·리밸런싱" aria-label="정기 리밸런싱">
+                <header class="chrome"><span class="wordmark">MOMENTUM <b>ASSET</b></span><span class="chrome-right"><span class="part"></span><span class="pg"></span></span></header>
+                <p class="kicker reveal d1">05 운용·리밸런싱 절차 · 정기 리밸런싱</p>
+                <h2 class="headline reveal d2">모의 실행으로 확인한 뒤, 매도부터 실제 주문합니다</h2>
+                <div class="body" style="top:290px; bottom:80px;">
+                    <div class="reb-wrap">
+                        <div class="reb-steps">
+                            <div class="reb-step pre reveal d1"><span class="step-no">0</span><div><p class="h3">사전 확인</p><p class="txt">모의 모드로 전 계좌의 목표 비중·주문표를 만들고 운영자가 확인</p></div></div>
+                            <div class="reb-step reveal d2"><span class="step-no">1</span><div><p class="h3">미체결 정리</p><p class="txt">남아 있는 미체결 주문을 모두 취소</p></div></div>
+                            <div class="reb-step reveal d2"><span class="step-no">2</span><div><p class="h3">잔고 조회<span class="tag">잔고조회</span></p><p class="txt">증권사 API로 총평가금액과 보유 수량 확인</p></div></div>
+                            <div class="reb-step reveal d3"><span class="step-no">3</span><div><p class="h3">목표 계산<span class="tag">타겟포트폴리오</span></p><p class="txt">MP 비중 × 총평가금액 → 종목별 목표 수량</p></div></div>
+                            <div class="reb-step reveal d3"><span class="step-no">4</span><div><p class="h3">수량 최적화<span class="tag">최적화</span></p><p class="txt">남은 금액으로 1주씩 추가하며 비중 오차 최소화</p></div></div>
+                            <div class="reb-step reveal d4"><span class="step-no">5</span><div><p class="h3">주문표 생성<span class="tag">주문정보</span></p><p class="txt">목표 수량 − 보유 수량 = 주문 수량 (차이만 매매)</p></div></div>
+                            <div class="reb-step reveal d4"><span class="step-no">6</span><div><p class="h3">주문 실행<span class="tag">리밸런싱</span></p><p class="txt">매도 → 3분 대기(예수금 반영) → 매수</p></div></div>
+                            <div class="reb-step reveal d5"><span class="step-no">7</span><div><p class="h3">체결 검증</p><p class="txt">목표 수량과 실제 잔고가 다른 종목 확인</p></div></div>
+                        </div>
+                        <div class="order-box reveal d4">
+                            <p class="h3">주문 방식</p>
+                            <ul>
+                                <li>지정가 주문: 체결되기 쉽도록 매수는 현재가보다 10호가 위, 매도는 10호가 아래로 냅니다.</li>
+                                <li>30초 동안 체결을 기다린 뒤 미체결은 취소하고, 잔고를 다시 조회해 남은 수량을 재주문합니다.</li>
+                                <li>재주문은 계좌·방향마다 최대 30회 반복합니다.</li>
+                                <li>단계 이름 옆 파란 글씨는 11번 설명서의 리밸런싱 절차 이름입니다.</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+                <p class="source">근거: 11번 알고리즘설명서 (리밸런싱 절차), 22번 시스템운용메뉴얼, 주문 시스템 코드</p>
+            </section>
+
+            <!-- ============ S19 주문 최적화 ============ -->
+            <section class="slide" data-part="05 운용·리밸런싱" aria-label="주문 최적화">
+                <header class="chrome"><span class="wordmark">MOMENTUM <b>ASSET</b></span><span class="chrome-right"><span class="part"></span><span class="pg"></span></span></header>
+                <p class="kicker reveal d1">05 운용·리밸런싱 절차 · 주문 최적화 (그리디 알고리즘)</p>
+                <h2 class="headline reveal d2">ETF는 1주 단위로 사므로, 비중 오차가 가장 작아지게 수량을 맞춥니다</h2>
+                <div class="body">
+                    <div class="opt-wrap">
+                        <div class="opt-steps">
+                            <div class="opt-step reveal d2"><span class="step-no">1</span><div><p class="h3">먼저 내림으로 삽니다</p><p class="txt">목표 금액 ÷ 현재가의 정수 부분만큼 담습니다.</p></div></div>
+                            <div class="opt-step reveal d3"><span class="step-no">2</span><div><p class="h3">1주씩 더해 봅니다</p><p class="txt">남은 현금으로 살 수 있는 종목마다 1주를 더했을 때의 비중 오차를 계산합니다.</p></div></div>
+                            <div class="opt-step reveal d4"><span class="step-no">3</span><div><p class="h3">가장 좋아지는 1주만 삽니다</p><p class="txt">오차를 가장 크게 줄이는 종목에 1주를 추가합니다.</p></div></div>
+                            <div class="opt-step reveal d5"><span class="step-no ink">4</span><div><p class="h3">더 줄일 수 없으면 멈춥니다</p><p class="txt">살 수 있는 종목이 없거나 오차가 줄지 않으면 끝냅니다.</p></div></div>
+                            <p class="formula reveal d5">비중 오차 = Σ | 실제 매수 비중 − 목표 비중 |</p>
+                        </div>
+                        <div class="reveal d3">
+                            <p class="app-sub">설명용 예시 · 계좌 100만 원 (가상의 가격)</p>
+                            <table class="tbl opt-tbl">
+                                <thead><tr><th>종목</th><th class="n">목표</th><th class="n">1주 가격</th><th class="n">① 내림</th><th class="n after-h">② 1주 추가 후</th></tr></thead>
+                                <tbody>
+                                    <tr><td class="rowhead">ETF 가</td><td class="n">40%</td><td class="n">7만 원</td><td class="n">5주 · 35%</td><td class="n after">6주 · 42%</td></tr>
+                                    <tr><td class="rowhead">ETF 나</td><td class="n">40%</td><td class="n">9만 원</td><td class="n">4주 · 36%</td><td class="n after">4주 · 36%</td></tr>
+                                    <tr><td class="rowhead">ETF 다</td><td class="n">20%</td><td class="n">6만 원</td><td class="n">3주 · 18%</td><td class="n after">3주 · 18%</td></tr>
+                                    <tr><td class="rowhead">남은 현금</td><td></td><td></td><td class="n">11만 원</td><td class="n after">4만 원</td></tr>
+                                    <tr class="total"><td>비중 오차 합계</td><td></td><td></td><td class="n">11%p</td><td class="n after blue">8%p</td></tr>
+                                </tbody>
+                            </table>
+                            <div class="opt-round"><b>1주 추가 시험:</b> 가 +1주 → 오차 8%p, 나 +1주 → 12%p, 다 +1주 → 13%p. 가장 줄어드는 <b>가</b>를 1주 더 삽니다. 남은 4만 원으로는 더 살 수 있는 종목이 없어 끝납니다.</div>
+                        </div>
+                    </div>
+                </div>
+                <p class="source">근거: 주문 시스템 코드 (목표 비중 오차 최소화)</p>
+            </section>
+
+            <!-- ============ S20 수시 리밸런싱 ============ -->
+            <section class="slide" data-part="05 운용·리밸런싱" aria-label="수시 리밸런싱">
+                <header class="chrome"><span class="wordmark">MOMENTUM <b>ASSET</b></span><span class="chrome-right"><span class="part"></span><span class="pg"></span></span></header>
+                <p class="kicker reveal d1">05 운용·리밸런싱 절차 · 수시 리밸런싱 (손절)</p>
+                <h2 class="headline reveal d2">평가액이 15% 이상 떨어지면 전 종목을 현금으로 바꿉니다</h2>
+                <div class="body">
+                    <div class="sl-flow">
+                        <div class="sl-card reveal d2"><p class="label">Monitor</p><p class="h3">평가액 확인</p><p class="txt">서버가 매일 09:10·16:10에 계좌 평가액을 저장하고, 운영자가 전월 리밸런싱일 평가액과 비교합니다.</p></div>
+                        <div class="sl-arrow reveal d3">→</div>
+                        <div class="sl-card hit reveal d3"><p class="label">Trigger</p><p class="h3">15% 이상 하락</p><p class="txt">운영자가 전량매도 명령을 실행합니다. 매도는 정기 리밸런싱과 같은 주문 모듈로 처리합니다.</p></div>
+                        <div class="sl-arrow reveal d4">→</div>
+                        <div class="sl-card reveal d4"><p class="label">Re-entry</p><p class="h3">현금 보유 후 재진입</p><p class="txt">다음 정기 리밸런싱 기준일에 MP 비중으로 다시 투자합니다.</p></div>
+                    </div>
+                    <div class="sl-bottom">
+                        <div class="rule-card reveal d5"><p class="label">Rule · 11번 알고리즘설명서</p><p class="txt">계좌 평가액이 전월 리밸런싱 날짜 평가액 대비 15% 이상 하락한 경우 전 종목을 현금으로 전환합니다.</p><p class="small" style="margin-top:12px">15% 미만 하락이면 보유를 유지하고, 다음 정기 리밸런싱에서 신호에 따라 조정합니다.</p></div>
+                        <div class="card reveal d6" style="padding:26px 30px;">
+                            <p class="label">Example · 설명용 숫자</p>
+                            <div class="sl-example"><span class="val">1,000<small>만 원</small></span><span class="arr">→</span><span class="val">850<small>만 원 이하</small></span><span class="arr">→</span><span class="chip def" style="font-size:24px; padding:8px 20px;">전량 현금화</span></div>
+                            <p class="small" style="margin-top:12px">전월 리밸런싱일 평가액이 1,000만 원이면, 850만 원 이하로 떨어질 때 조건에 도달합니다.</p>
+                        </div>
+                    </div>
+                </div>
+                <p class="source">근거: 11번 알고리즘설명서 (리밸런싱 기준·절차), 시스템 예약 작업·주문 시스템</p>
+            </section>
+
+            <!-- ============ S21 위험 관리 ============ -->
+            <section class="slide" data-part="05 운용·리밸런싱" aria-label="위험 관리">
+                <header class="chrome"><span class="wordmark">MOMENTUM <b>ASSET</b></span><span class="chrome-right"><span class="part"></span><span class="pg"></span></span></header>
+                <p class="kicker reveal d1">05 운용·리밸런싱 절차 · 위험 관리</p>
+                <h2 class="headline reveal d2">투자 위험과 운영 위험을 함께 관리합니다</h2>
+                <div class="body reveal d3" style="top:290px;">
+                    <table class="tbl risk-tbl">
+                        <thead><tr><th>위험</th><th>내용</th><th>관리 방법</th></tr></thead>
+                        <tbody>
+                            <tr><td class="rowhead">시장 위험</td><td>시장 상황 변화에 따른 가격 하락</td><td>시장 신호로 방어 전환, 성향별 위험자산 한도, 15% 손절 규칙</td></tr>
+                            <tr><td class="rowhead">개별종목 위험</td><td>기초자산과 ETF 사이의 추종 오차</td><td>지수·업종 ETF에 투자하고 여러 ETF에 균등 분산</td></tr>
+                            <tr><td class="rowhead">유동성 위험</td><td>일시적인 거래량 부족</td><td>거래대금 기준으로 유니버스 선별, 지정가 분할·재주문</td></tr>
+                            <tr><td class="rowhead">모델 위험</td><td>과거 데이터와 실제 시장의 괴리, 시스템 오작동</td><td>월 1회 장기 모멘텀으로 잦은 변경 억제, 모의 실행·검산 후 주문, 체결 검증</td></tr>
+                            <tr><td class="rowhead">운영 위험</td><td>장애, 데이터 손실, 무단 접근</td><td>1일 1회 백업, 최고관리자만 접근·SSH 키 인증, 코드 변경 이력 관리</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+                <p class="source">근거: 11번 알고리즘설명서 (주요 위험 및 관리), 22번 시스템운용메뉴얼</p>
+            </section>
+
+            <!-- ============ S22 테스트베드 운용 현황 ============ -->
+            <section class="slide" data-part="05 운용·리밸런싱" aria-label="테스트베드 운용 현황">
+                <header class="chrome"><span class="wordmark">MOMENTUM <b>ASSET</b></span><span class="chrome-right"><span class="part"></span><span class="pg"></span></span></header>
+                <p class="kicker reveal d1">05 운용·리밸런싱 절차 · RA 테스트베드</p>
+                <h2 class="headline reveal d2">RA 테스트베드 운용 현황</h2>
+                <div class="body" style="top:280px; bottom:80px;">
+                    <div class="tb-stats">
+                        <div class="tb-stat reveal d2"><p class="v">18<small>개 계좌</small></p><p class="txt">레시피 2 × 유형 3 × 운용금액 3</p></div>
+                        <div class="tb-stat reveal d3"><p class="v">2026.05.06</p><p class="txt">운용개시</p></div>
+                        <div class="tb-stat reveal d4"><p class="v">4<small>회</small></p><p class="txt">정기 리밸런싱 (5/30 · 6/30 · 7/30 · 8/28 기준)</p></div>
+                    </div>
+                    <div class="tb-lower">
+                        <div class="reveal d4">
+                            <table class="tbl tb-tbl">
+                                <thead><tr><th>레시피</th><th class="c">매운맛</th><th class="c">중간맛</th><th class="c">순한맛</th></tr></thead>
+                                <tbody>
+                                    <tr><td class="rowhead">모멘텀 국내ETF레시피</td><td class="c">175만·250만·325만 원</td><td class="c">175만·250만·325만 원</td><td class="c">175만·250만·325만 원</td></tr>
+                                    <tr><td class="rowhead">모멘텀 퇴직연금레시피</td><td class="c">175만·250만·325만 원</td><td class="c">175만·250만·325만 원</td><td class="c">175만·250만·325만 원</td></tr>
+                                </tbody>
+                            </table>
+                            <p class="txt" style="margin-top:20px">테스트베드 계좌는 일반 고객 계좌와 같은 알고리즘, 같은 주문 절차로 운용합니다.</p>
+                        </div>
+                        <div class="docs reveal d5">
+                            <p class="h3">관련 제출 서류</p>
+                            <ul>
+                                <li><b>11</b>알고리즘설명서 (별첨1 투자성향 설문, 별첨2 적용기술)</li>
+                                <li><b>12</b>투자유니버스자료</li>
+                                <li><b>13</b>법규준수설명자료</li>
+                                <li><b>14</b>백테스팅결과분석자료 (유형별)</li>
+                                <li><b>20</b>포트폴리오 운용개시 현황</li>
+                                <li><b>21</b>리밸런싱 발생내역</li>
+                                <li><b>22</b>시스템운용메뉴얼</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+                <p class="source">근거: 21번 리밸런싱 발생내역, 20번 운용개시 현황, 시스템 운영 기록</p>
+            </section>
+
+            <!-- ============ S23 정리 ============ -->
+            <section class="slide summary-slide" aria-label="정리">
+                <header class="chrome"><span class="wordmark">MOMENTUM <b>ASSET</b></span><span class="chrome-right"><span class="part"></span><span class="pg"></span></span></header>
+                <p class="kicker reveal d1">정리</p>
+                <h2 class="headline reveal d2">세 문장으로 정리합니다</h2>
+                <div class="sum-grid">
+                    <div class="sum-item reveal d2"><p class="no">01 · 원리</p><p class="h3">신호와 선택</p><p class="txt">네 시장 지표가 모두 오를 때만 공격하고, 추세가 가장 강한 ETF를 고르는 듀얼 모멘텀입니다.</p></div>
+                    <div class="sum-item reveal d3"><p class="no">02 · 구조</p><p class="h3">배합으로 한도 준수</p><p class="txt">속도가 다른 두 엔진·안전자산·현금을 성향별 비율로 섞어 위험 한도를 구조적으로 지킵니다.</p></div>
+                    <div class="sum-item reveal d4"><p class="no">03 · 운용</p><p class="h3">월 1회, 확인 후 주문</p><p class="txt">매월 MP를 확정하고 모의 확인 → 매도·매수 → 체결 검증 순서로 운용하며, 15% 손절 규칙을 둡니다.</p></div>
+                </div>
+                <div class="panel-bottom"></div>
+                <div class="edge-bar"></div>
+                <div class="thanks reveal d5"><p class="big">감사합니다</p><p class="txt">질의응답</p></div>
+                <div class="t-meta reveal d5"><b>MOMENTUM ASSET</b>모멘텀에셋주식회사</div>
+            </section>
+
+            <!-- ============ A1 부록: 전략 번호·설정값 ============ -->
+            <section class="slide" data-part="부록" aria-label="부록 전략 번호와 설정값">
+                <header class="chrome"><span class="wordmark">MOMENTUM <b>ASSET</b></span><span class="chrome-right"><span class="part"></span><span class="pg"></span></span></header>
+                <p class="kicker reveal d1">부록 A1</p>
+                <h2 class="headline reveal d2">전략 번호와 설정값</h2>
+                <div class="body" style="top:270px; bottom:70px; display:grid; grid-template-columns: 930px 1fr; gap: 44px;">
+                    <div class="reveal d2">
+                        <p class="app-sub">전략 구성 (하위 전략 번호)</p>
+                        <table class="tbl app-tbl">
+                            <thead><tr><th>전략</th><th class="n">엔진 A</th><th class="n">엔진 B</th><th class="n">안전자산</th><th class="n">현금</th></tr></thead>
+                            <tbody>
+                                <tr><td class="rowhead">1336 국내ETF 매운맛</td><td class="n">60% <span class="muted">1405</span></td><td class="n">30% <span class="muted">1406</span></td><td class="n">5% <span class="muted">1363</span></td><td class="n">5% <span class="muted">1360</span></td></tr>
+                                <tr><td class="rowhead">1337 국내ETF 중간맛</td><td class="n">47% <span class="muted">1405</span></td><td class="n">23% <span class="muted">1406</span></td><td class="n">25% <span class="muted">1363</span></td><td class="n">5% <span class="muted">1360</span></td></tr>
+                                <tr><td class="rowhead">1338 국내ETF 순한맛</td><td class="n">33% <span class="muted">1405</span></td><td class="n">17% <span class="muted">1406</span></td><td class="n">45% <span class="muted">1363</span></td><td class="n">5% <span class="muted">1360</span></td></tr>
+                                <tr><td class="rowhead">1339 퇴직연금 매운맛</td><td class="n">47% <span class="muted">1444</span></td><td class="n">23% <span class="muted">1445</span></td><td class="n">25% <span class="muted">1363</span></td><td class="n">5% <span class="muted">1360</span></td></tr>
+                                <tr><td class="rowhead">1342 퇴직연금 중간맛</td><td class="n">33% <span class="muted">1444</span></td><td class="n">17% <span class="muted">1445</span></td><td class="n">45% <span class="muted">1363</span></td><td class="n">5% <span class="muted">1360</span></td></tr>
+                                <tr><td class="rowhead">1343 퇴직연금 순한맛</td><td class="n">20% <span class="muted">1444</span></td><td class="n">10% <span class="muted">1445</span></td><td class="n">65% <span class="muted">1363</span></td><td class="n">5% <span class="muted">1360</span></td></tr>
+                            </tbody>
+                        </table>
+                        <p class="small" style="margin-top:14px">안전자산(1363): RISE TDF 2030 액티브 50% · KODEX KOFR금리액티브(합성) 25% · TIGER 단기채권액티브 25%</p>
+                    </div>
+                    <div class="reveal d3">
+                        <p class="app-sub">엔진 설정값</p>
+                        <table class="tbl app-tbl">
+                            <thead><tr><th>항목</th><th>엔진 A</th><th>엔진 B</th></tr></thead>
+                            <tbody>
+                                <tr><td class="rowhead">시장 신호</td><td>30일 이동평균 기울기</td><td>120일 이동평균 기울기</td></tr>
+                                <tr><td class="rowhead">공격 조건</td><td colspan="2">SPY·EFA·EEM·AGG 모두 기울기 &gt; 0</td></tr>
+                                <tr><td class="rowhead">종목 순위</td><td>110일 이동평균 기울기</td><td>9개월 이격도</td></tr>
+                                <tr><td class="rowhead">공격 종목</td><td>상위 6 / 후보 38</td><td>상위 6 / 후보 25·26</td></tr>
+                                <tr><td class="rowhead">방어 종목</td><td>5 / 후보 5</td><td>5 / 후보 5</td></tr>
+                                <tr><td class="rowhead">리밸런싱</td><td colspan="2">매월 30일 기준, 다음 영업일 주문</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <p class="source">근거: 전략 설정값 (2026.09.17 조회)</p>
+            </section>
+
+            <!-- ============ A2 부록: 용어 풀이 ============ -->
+            <section class="slide" data-part="부록" aria-label="부록 용어 풀이">
+                <header class="chrome"><span class="wordmark">MOMENTUM <b>ASSET</b></span><span class="chrome-right"><span class="part"></span><span class="pg"></span></span></header>
+                <p class="kicker reveal d1">부록 A2</p>
+                <h2 class="headline reveal d2">용어 풀이</h2>
+                <div class="body reveal d3" style="top:280px;">
+                    <div class="gloss">
+                        <div class="gloss-item"><p class="h3">이동평균선</p><p class="txt">최근 N일 가격의 평균을 날마다 이은 선입니다.</p></div>
+                        <div class="gloss-item"><p class="h3">기울기</p><p class="txt">이동평균이 전날보다 오른 비율입니다. 0보다 크면 상승 추세입니다.</p></div>
+                        <div class="gloss-item"><p class="h3">이격도</p><p class="txt">현재 가격 ÷ 평균 가격입니다. 1보다 크면 평균 위에 있습니다.</p></div>
+                        <div class="gloss-item"><p class="h3">절대·상대 모멘텀</p><p class="txt">시장 자체가 오르는지(절대), 후보끼리 누가 더 강한지(상대)를 봅니다.</p></div>
+                        <div class="gloss-item"><p class="h3">모델포트폴리오(MP)</p><p class="txt">기준일마다 확정하는 종목별 목표 비중표입니다.</p></div>
+                        <div class="gloss-item"><p class="h3">위험점수·위험도</p><p class="txt">자산종류별 1~6점을 비중으로 가중평균한 값입니다.</p></div>
+                        <div class="gloss-item"><p class="h3">전략 조합(POP)</p><p class="txt">여러 전략을 하나의 종목처럼 묶어 섞는 방법입니다.</p></div>
+                        <div class="gloss-item"><p class="h3">그리디 알고리즘</p><p class="txt">매 단계에서 가장 나은 선택을 반복해 답을 찾는 방법입니다.</p></div>
+                    </div>
+                </div>
+            </section>
+
+        </main>
+    </div>
+
+    <!-- ============ 슬라이드 밖 UI ============ -->
+    <div class="deck-progress" id="deckProgress"></div>
+    <div class="deck-controls"><span class="deck-counter" id="deckCounter"></span></div>
+    <div class="edit-hotzone" aria-hidden="true"></div>
+    <button class="edit-toggle" id="editToggle" title="편집 모드 (E)">✏️</button>
+
+    <script>
+        /* ===========================================
+           INLINE EDITOR
+           E 키 또는 왼쪽 위 모서리로 편집 모드를 켭니다.
+           편집 내용은 이 브라우저에만 저장되며, Ctrl+S로 HTML 파일을 내려받습니다.
+           =========================================== */
+        const DECK_ID = 'momentum-recipe-algorithm-review';
+        const DECK_VERSION = '2026-09-17-v1';
+
+        class InlineEditor {
+            constructor(stage) {
+                this.stage = stage;
+                this.isActive = false;
+                this.key = `deck-edits:${DECK_ID}:${DECK_VERSION}`;
+                this.selector = 'h1, h2, h3, p, li, td, th, dt, dd, .chip, .t-chip, .label';
+                this.saveTimer = null;
+                this.restore();
+                this.stage.addEventListener('input', () => {
+                    clearTimeout(this.saveTimer);
+                    this.saveTimer = setTimeout(() => this.save(), 400);
+                });
+            }
+
+            toggleEditMode() {
+                this.isActive = !this.isActive;
+                document.body.classList.toggle('editing', this.isActive);
+                this.stage.querySelectorAll(this.selector).forEach((el) => {
+                    if (this.isActive) el.setAttribute('contenteditable', 'true');
+                    else el.removeAttribute('contenteditable');
+                });
+                document.getElementById('editToggle').classList.toggle('active', this.isActive);
+                if (!this.isActive) this.save();
+            }
+
+            save() {
+                try { localStorage.setItem(this.key, this.stage.innerHTML); } catch (e) { /* 저장소를 쓸 수 없는 환경 */ }
+            }
+
+            restore() {
+                try {
+                    const saved = localStorage.getItem(this.key);
+                    if (saved) this.stage.innerHTML = saved;
+                } catch (e) { /* 저장소를 쓸 수 없는 환경 */ }
+            }
+
+            download() {
+                const wasActive = this.isActive;
+                if (wasActive) this.toggleEditMode();
+                const clone = document.documentElement.cloneNode(true);
+                clone.querySelectorAll('.slide').forEach((s) => s.classList.remove('active', 'visible'));
+                const html = '<!DOCTYPE html>\n' + clone.outerHTML;
+                const blob = new Blob([html], { type: 'text/html' });
+                const a = document.createElement('a');
+                a.href = URL.createObjectURL(blob);
+                a.download = 'index.html';
+                a.click();
+                URL.revokeObjectURL(a.href);
+                if (wasActive) this.toggleEditMode();
+            }
+        }
+
+        /* ===========================================
+           SLIDE PRESENTATION CONTROLLER
+           방향키·Space·PageUp/Down·Home/End, 마우스 휠, 터치 스와이프, #번호 링크를 지원합니다.
+           =========================================== */
+        class SlidePresentation {
+            constructor(editor) {
+                this.editor = editor;
+                this.stage = document.getElementById('deckStage');
+                this.slides = Array.from(this.stage.querySelectorAll('.slide'));
+                this.total = this.slides.length;
+                this.current = 0;
+                this.progress = document.getElementById('deckProgress');
+                this.counter = document.getElementById('deckCounter');
+                this.numberSlides();
+                this.setupStageScale();
+                this.setupKeyboardNav();
+                this.setupWheelNav();
+                this.setupTouchNav();
+                const fromHash = parseInt(location.hash.replace('#', ''), 10);
+                this.goToSlide(Number.isFinite(fromHash) ? fromHash - 1 : 0);
+                window.addEventListener('hashchange', () => {
+                    const n = parseInt(location.hash.replace('#', ''), 10);
+                    if (Number.isFinite(n) && n - 1 !== this.current) this.goToSlide(n - 1);
+                });
+            }
+
+            numberSlides() {
+                const pad = (n) => String(n).padStart(2, '0');
+                this.slides.forEach((slide, i) => {
+                    const pg = slide.querySelector('.pg');
+                    if (pg) pg.textContent = `${pad(i + 1)} / ${pad(this.total)}`;
+                    const part = slide.querySelector('.part');
+                    if (part) part.textContent = slide.dataset.part || '';
+                });
+            }
+
+            setupStageScale() {
+                const scale = () => {
+                    const f = Math.min(window.innerWidth / 1920, window.innerHeight / 1080);
+                    const x = (window.innerWidth - 1920 * f) / 2;
+                    const y = (window.innerHeight - 1080 * f) / 2;
+                    this.stage.style.transform = `translate(${x}px, ${y}px) scale(${f})`;
+                };
+                scale();
+                window.addEventListener('resize', scale);
+            }
+
+            isTyping(e) {
+                return this.editor.isActive || (e.target && e.target.isContentEditable);
+            }
+
+            setupKeyboardNav() {
+                document.addEventListener('keydown', (e) => {
+                    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 's') {
+                        e.preventDefault();
+                        this.editor.download();
+                        return;
+                    }
+                    if (this.isTyping(e)) {
+                        if (e.key === 'Escape') this.editor.toggleEditMode();
+                        return;
+                    }
+                    if (e.key === 'e' || e.key === 'E') { this.editor.toggleEditMode(); return; }
+                    if (['ArrowRight', 'ArrowDown', 'PageDown', ' '].includes(e.key)) { e.preventDefault(); this.next(); }
+                    if (['ArrowLeft', 'ArrowUp', 'PageUp'].includes(e.key)) { e.preventDefault(); this.prev(); }
+                    if (e.key === 'Home') this.goToSlide(0);
+                    if (e.key === 'End') this.goToSlide(this.total - 1);
+                });
+            }
+
+            setupWheelNav() {
+                let locked = false;
+                window.addEventListener('wheel', (e) => {
+                    if (this.editor.isActive || locked || Math.abs(e.deltaY) < 20) return;
+                    locked = true;
+                    e.deltaY > 0 ? this.next() : this.prev();
+                    setTimeout(() => { locked = false; }, 700);
+                }, { passive: true });
+            }
+
+            setupTouchNav() {
+                let startX = 0;
+                let startY = 0;
+                window.addEventListener('touchstart', (e) => { startX = e.touches[0].clientX; startY = e.touches[0].clientY; }, { passive: true });
+                window.addEventListener('touchend', (e) => {
+                    if (this.editor.isActive) return;
+                    const dx = e.changedTouches[0].clientX - startX;
+                    const dy = e.changedTouches[0].clientY - startY;
+                    if (Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy)) dx < 0 ? this.next() : this.prev();
+                }, { passive: true });
+            }
+
+            next() { this.goToSlide(this.current + 1); }
+            prev() { this.goToSlide(this.current - 1); }
+
+            goToSlide(index) {
+                this.current = Math.max(0, Math.min(index, this.total - 1));
+                this.slides.forEach((slide, i) => {
+                    slide.classList.toggle('active', i === this.current);
+                    slide.classList.remove('visible');
+                });
+                const active = this.slides[this.current];
+                requestAnimationFrame(() => requestAnimationFrame(() => active.classList.add('visible')));
+                this.progress.style.width = `${((this.current + 1) / this.total) * 100}%`;
+                this.counter.textContent = `${this.current + 1} / ${this.total}`;
+                try { history.replaceState(null, '', `#${this.current + 1}`); } catch (e) { /* file:// 등 */ }
+            }
+        }
+
+        /* ===========================================
+           BOOT
+           =========================================== */
+        (function boot() {
+            const stage = document.getElementById('deckStage');
+            const editor = new InlineEditor(stage);
+            window.presentation = new SlidePresentation(editor);
+
+            const hotzone = document.querySelector('.edit-hotzone');
+            const editToggle = document.getElementById('editToggle');
+            let hideTimeout = null;
+            editToggle.addEventListener('click', () => editor.toggleEditMode());
+            hotzone.addEventListener('mouseenter', () => { clearTimeout(hideTimeout); editToggle.classList.add('show'); });
+            hotzone.addEventListener('mouseleave', () => { hideTimeout = setTimeout(() => { if (!editor.isActive) editToggle.classList.remove('show'); }, 400); });
+            editToggle.addEventListener('mouseenter', () => clearTimeout(hideTimeout));
+            editToggle.addEventListener('mouseleave', () => { hideTimeout = setTimeout(() => { if (!editor.isActive) editToggle.classList.remove('show'); }, 400); });
+            hotzone.addEventListener('click', () => editor.toggleEditMode());
+        })();
+    </script>
+</body>
+</html>
