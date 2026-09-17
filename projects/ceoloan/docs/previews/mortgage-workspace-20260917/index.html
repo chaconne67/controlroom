@@ -6,11 +6,11 @@
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
   <link rel="stylesheet" href="https://rogeon.kr/static/css/output.css">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-  <link rel="stylesheet" href="style.css?v=20260918">
+  <link rel="stylesheet" href="style.css?v=20260918-content">
 </head>
 <body class="bg-paper text-ink">
   <header class="review-header">
-    <div><b>기존 화면 유지 · 모기지 회사 모달 시안</b><p>2026.09.18 · 회사·금액은 가상 예시입니다. 목록의 회사를 클릭해 확인하세요.</p></div>
+    <div><b>기존 화면 유지 · 모기지 회사 모달 시안</b><p>2026.09.18 실제 데이터 점검 반영 · 회사·금액은 가상 예시 · 현재 적재 판독 8개는 모두 검토 대기입니다.</p></div>
     <a href="#design-notes">기획 내용</a>
   </header>
   <section class="review-layout" aria-label="실제 구현 화면 샘플">
@@ -23,13 +23,14 @@
   </section>
   <section class="review-scenarios" aria-label="시안 상태 선택">
     <b>모기지 모달 확인</b>
-    <button class="btn btn-quiet" data-scenario="hotel">재무 있음 · 공동담보</button>
+    <button class="btn btn-quiet" data-scenario="draft">현재 상태 예시 · 검토 대기</button>
+    <button class="btn btn-quiet" data-scenario="hotel">검토 완료 후 · 공유·공동담보</button>
     <button class="btn btn-quiet" data-scenario="trust">재무 없음 · 신탁</button>
-    <button class="btn btn-quiet" data-scenario="draft">판독 검토 대기</button>
+
     <button class="btn btn-quiet" data-scenario="unit">집합건물</button>
     <button class="btn btn-quiet" data-scenario="empty">부동산 미수집</button>
     <button class="btn btn-quiet" data-scenario="linked">주소만 연결</button>
-    <p>실제 화면에는 표시하지 않는 시안 조작 도구입니다. 기업자금 화면은 기존 방식의 비교용이며, 업무 기능을 새로 설계하지 않습니다.</p>
+    <p>실제 화면에는 표시하지 않는 시안 조작 도구입니다. 검토 완료 표본은 향후 표시를 검토하기 위한 가상 자료입니다. 현재 DB에서 공개 승인된 소유·권리·신탁 자료는 0건입니다.</p>
   </section>
   <section id="design-notes" class="review-notes">
     <h2>기존 목록 → 회사 모달 유지</h2>
@@ -41,6 +42,9 @@
     <h3>구현 메모 · 실제 화면에는 표시하지 않음</h3>
     <p>재사용 기준은 funding/_admin_rows.html, _admin_items.html, _progress_modal.html, _company_panel.html입니다. 운영의 .darkhead-table, .btn, .input, .select 스타일시트를 직접 참조합니다. 기업자금의 기존 include와 표시 방식은 변경하지 않고 모기지에만 두 정보 영역을 적용합니다. TM 상담·진행 내역에 이미 있는 상담 기록·액션 영역도 그대로 둡니다.</p>
     <p>모기지 금융 사실은 같은 회사 정본을 읽습니다. 재무가 없으면 ‘재무 데이터가 없습니다’로 표시하며 부동산 열람을 막지 않습니다. 부동산은 물건별 소유·취득·거래 범위·권리·공동담보·신탁·원문을 표시합니다. 채권최고액과 실제 잔액을 구분하고, 공동담보와 전체 계약금액을 물건별로 더하지 않습니다. 검토 중 수치를 확정해 보여주지 않습니다.</p>
+    <h3>실제 데이터 점검으로 보완한 내용</h3>
+    <p>모기지 목록에 부동산 자료 열 하나만 추가해 연결 물건 수와 검토 상태를 표시합니다. 모달은 여러 소유자와 지분, 전체 계약금액의 적용 범위, 권리별 금액 종류·당사자·상태, 원인일과 접수일, 변경·말소, 신탁 공동 순위, 미수령 목록, 원문 근거 쪽을 구분합니다. 회사 전체의 부동산 가격·채무 합계나 LTV를 만들지 않습니다.</p>
+    <p>현재 조회 권한은 원문 다운로드와 검토 완료된 일부 사실에 한정됩니다. 물건 주소·판독 상태·거래·당사자·이력·근거 쪽을 연결하는 회사별 조회 계약은 구현 단계에서 보완해야 합니다. 이 시안에서 DB·권한은 변경하지 않았습니다.</p>
     <h3>결정 사항</h3>
     <p>주인님 지시로 기존 UI·UX 유지, 별도 상세 페이지 제거, 같은 모달 안의 두 토글, 부동산 기본 펼침을 확정했습니다. 새 대상 회사 메뉴·연락처 확인 TM 분기·새 업무 화면 제안은 철회합니다. 기존 권한·문자 대상 조건·영업 전달 절차를 유지합니다.</p>
     <h3>구현 단계</h3>
@@ -53,6 +57,6 @@
   </dialog>
   <dialog id="source-modal" class="source-modal" aria-labelledby="source-title"></dialog>
   <div id="preview-status" class="preview-status" role="status" aria-live="polite" hidden></div>
-  <script src="app.js?v=20260918"></script>
+  <script src="app.js?v=20260918-content"></script>
 </body>
 </html>

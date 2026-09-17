@@ -1,0 +1,243 @@
+{
+  "date": "2026-09-18",
+  "scope": "synthetic preview only; actual app templates read-only",
+  "base": "714e860",
+  "app_head": "efc8f2d",
+  "checks": [
+    "Existing list row opens correct company modal without page navigation",
+    "Mortgage first open: finance collapsed and property expanded",
+    "Existing three-year finance table and component style; independent expansion",
+    "Both sections can collapse; keyboard toggling works",
+    "Escape returns focus to row; reopen resets intended initial state",
+    "Property switch retains finance toggle and explains shared collateral scope",
+    "Source example closes back to same company and section state",
+    "Missing financials still allow property and trust information",
+    "Unreviewed property has original entry and no confirmed financial summary",
+    "No property data preserves expanded empty section",
+    "Funding keeps existing uncollapsed finance presentation with no property section",
+    "Selection does not open modal; search/selection scoped by business; empty search recovers",
+    "1440/1024/480/390 widths: modal inside viewport, <=85vh; internal scroll and fixed header",
+    "Building-only collateral/land share and address-only relationship are distinguished",
+    "Mortgage adds only one property inventory/status column to the original table",
+    "Multiple owners, individual shares, separate dates, buyer/seller and whole-contract price scope",
+    "Current rights separated by amount type; cancelled right retained only in history",
+    "Page evidence opens the source mock for the selected property and returns to the modal",
+    "Original finance units/order/nine accounts preserved; missing year stays blank; building-only note date distinguished",
+    "Trust roles/common rank/individual limits/extension terms; no unsupported total or loan maturity",
+    "Address-only relation is separate from ownership; pending source has no confirmed facts or money tables",
+    "Funding retains the exact original ten list columns",
+    "No page errors, console errors or failed requests during affected interactions"
+  ],
+  "measurements": [
+    {
+      "viewport": {
+        "width": 1440,
+        "height": 1000,
+        "left": 272,
+        "right": 1168,
+        "top": 75,
+        "bottom": 925,
+        "dialogHeight": 850,
+        "bodyHeight": 785,
+        "bodyScrollHeight": 1684,
+        "bodyOverflow": "auto",
+        "documentWidth": 1440,
+        "headerTop": 75
+      },
+      "bothExpandedScrolled": {
+        "height": 850,
+        "scrollTop": 1472,
+        "scrollHeight": 2257,
+        "clientHeight": 785,
+        "headerTop": 75
+      }
+    },
+    {
+      "viewport": {
+        "width": 1024,
+        "height": 768,
+        "left": 64,
+        "right": 960,
+        "top": 57.60000228881836,
+        "bottom": 710.3999900817871,
+        "dialogHeight": 652.7999877929688,
+        "bodyHeight": 588,
+        "bodyScrollHeight": 1684,
+        "bodyOverflow": "auto",
+        "documentWidth": 1024,
+        "headerTop": 57.60000228881836
+      },
+      "bothExpandedScrolled": {
+        "height": 652.7999877929688,
+        "scrollTop": 1669.5999755859375,
+        "scrollHeight": 2257,
+        "clientHeight": 588,
+        "headerTop": 57.60000228881836
+      }
+    },
+    {
+      "viewport": {
+        "width": 480,
+        "height": 800,
+        "left": 12,
+        "right": 468,
+        "top": 60,
+        "bottom": 740,
+        "dialogHeight": 680,
+        "bodyHeight": 623,
+        "bodyScrollHeight": 1823,
+        "bodyOverflow": "auto",
+        "documentWidth": 480,
+        "headerTop": 60
+      },
+      "bothExpandedScrolled": {
+        "height": 680,
+        "scrollTop": 1832.800048828125,
+        "scrollHeight": 2456,
+        "clientHeight": 623,
+        "headerTop": 60
+      }
+    },
+    {
+      "viewport": {
+        "width": 390,
+        "height": 844,
+        "left": 12,
+        "right": 378.3999938964844,
+        "top": 63.29999923706055,
+        "bottom": 780.700023651123,
+        "dialogHeight": 717.4000244140625,
+        "bodyHeight": 661,
+        "bodyScrollHeight": 1917,
+        "bodyOverflow": "auto",
+        "documentWidth": 390,
+        "headerTop": 63.29999923706055
+      },
+      "bothExpandedScrolled": {
+        "height": 717.4000244140625,
+        "scrollTop": 2064,
+        "scrollHeight": 2725,
+        "clientHeight": 661,
+        "headerTop": 63.29999923706055
+      }
+    }
+  ],
+  "page_errors": [],
+  "observed": {
+    "console_errors": [],
+    "failed_requests": [],
+    "responses": [
+      {
+        "url": "http://127.0.0.1:18794/?revision=20260918-content-verify",
+        "status": 200,
+        "type": "document"
+      },
+      {
+        "url": "https://rogeon.kr/static/css/output.css",
+        "status": 200,
+        "type": "stylesheet"
+      },
+      {
+        "url": "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css",
+        "status": 200,
+        "type": "stylesheet"
+      },
+      {
+        "url": "https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css",
+        "status": 200,
+        "type": "stylesheet"
+      },
+      {
+        "url": "http://127.0.0.1:18794/style.css?v=20260918-content",
+        "status": 200,
+        "type": "stylesheet"
+      },
+      {
+        "url": "http://127.0.0.1:18794/app.js?v=20260918-content",
+        "status": 200,
+        "type": "script"
+      }
+    ],
+    "downloads": []
+  },
+  "review": {
+    "status": "complete",
+    "reviewer": "root",
+    "base": "714e860",
+    "findings": [],
+    "open_contract_questions": [],
+    "scope": "approved preview diff and its direct consumers only; no production implementation review"
+  },
+  "production_changed": false,
+  "db_audit": {
+    "read_only": true,
+    "mortgage_targets": 20519,
+    "companies_with_displayable_financials": 1267,
+    "companies_with_at_least_three_years": 927,
+    "companies_with_borrowing_rows": 965,
+    "linked_companies": 6,
+    "linked_companies_with_financials": 2,
+    "properties": 7,
+    "documents": 7,
+    "extractions_review_required": 8,
+    "published_properties": 0,
+    "current_ownership_rows": 0,
+    "current_rights_rows": 0,
+    "current_trust_rows": 0,
+    "address_links": 6,
+    "annex_links": 1,
+    "verified_relationships": 0,
+    "stored_original_pdfs": 36
+  },
+  "source_review": {
+    "pdf_sha256_checked": 3,
+    "cases": [
+      "A02",
+      "A03",
+      "U06"
+    ],
+    "scope": "selected pages visually checked; no payment/extraction/DB mutation"
+  },
+  "visual_inspection": [
+    "data-list-20260918.png",
+    "data-modal-desktop-20260918.png",
+    "data-modal-mobile-20260918.png",
+    "data-modal-financials-20260918.png",
+    "data-rights-20260918.png",
+    "data-trust-20260918.png",
+    "data-pending-20260918.png"
+  ],
+  "artifacts_sha256": {
+    "app.js": "9bc95c2f78b1716e5b3a89e78e2037be8d82fdfe0d267ec13464b554283af0aa",
+    "index.html": "346189aeec9926d9fc27740116555652f1e7ef4544018c8c5d4a435d710cf517",
+    "style.css": "bcece3f782b2e0c9c05678f070e0e4e29881b9719362d3a74d1a3f44f80d0d27"
+  },
+  "cleanup": {
+    "ok": true,
+    "name": "ceoloan-mortgage-display-20260918",
+    "pid": 34512,
+    "stopped": true,
+    "profile_preserved": "C:\\Users\\chaconne\\.hidden-browser\\profiles\\ceoloan-mortgage-display-20260918",
+    "input_desktop_before": "Default",
+    "input_desktop_after": "Default",
+    "input_desktop_unchanged": true,
+    "foreground_before": {
+      "hwnd": 198464,
+      "pid": 9452
+    },
+    "foreground_after": {
+      "hwnd": 198464,
+      "pid": 9452
+    },
+    "foreground_unchanged": true
+  },
+  "baseline": {
+    "passed": true,
+    "original_list_columns": 10,
+    "row_modal": true,
+    "finance_collapsed_estate_open": true,
+    "internal_scroll": true,
+    "funding_original_modal": true,
+    "evidence": "dedicated hidden Chrome before mutation"
+  }
+}
