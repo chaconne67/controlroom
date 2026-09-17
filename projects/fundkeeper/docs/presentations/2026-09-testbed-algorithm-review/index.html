@@ -313,17 +313,18 @@
         /* ===========================================
            S04 PRINCIPLE
            =========================================== */
-        .pr-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 44px; height: 100%; }
-        .pr-card { background: var(--gray-1); border-radius: 22px; padding: 32px 38px; display: flex; flex-direction: column; }
+        .pr-flow { display: grid; grid-template-columns: 1fr 48px 1fr 48px 1fr; height: 100%; }
+        .pr-arrow { align-self: center; justify-self: center; width: 40px; height: 40px; }
+        .pr-card { min-width: 0; background: var(--gray-1); border-radius: 22px; padding: 30px 34px; display: flex; flex-direction: column; }
+        .pr-head { display: flex; align-items: center; gap: 18px; }
         .pr-card .h3 { font-size: 40px; }
-        .pr-card .q { margin-top: 6px; font-size: 27px; color: var(--gray-6); }
-        .pr-card .illu { margin-top: 18px; height: 170px; background: var(--white); border-radius: 14px; position: relative; }
+        .pr-card .q { margin-top: 18px; font-size: 27px; line-height: 1.45; color: var(--ink-2); }
+        .pr-card .illu { margin-top: 20px; height: 250px; background: var(--white); border-radius: 14px; position: relative; }
         .pr-card .illu svg { width: 100%; height: 100%; max-width: none; max-height: none; }
-        .pr-card .illu .cap { position: absolute; right: 16px; top: 10px; font-size: 18px; color: var(--gray-4); }
-        .pr-card .illu .cap.bottom { top: auto; bottom: 10px; }
-        .pr-rows { margin-top: 22px; display: flex; flex-direction: column; gap: 12px; }
-        .pr-row { display: flex; align-items: center; gap: 16px; font-size: 27px; color: var(--ink-2); }
-        .pr-card .effect { margin-top: auto; padding-top: 18px; border-top: 2px solid rgba(10,10,10,.1); font-size: 26px; font-weight: 600; color: var(--blue-deep); }
+        .pr-card .illu .cap { position: absolute; right: 16px; bottom: 10px; font-size: 18px; color: var(--gray-4); }
+        .pr-card .illu .lbl { font-size: 18px; font-weight: 600; fill: var(--gray-6); }
+        .pr-card .illu .lbl.blue { fill: var(--blue-deep); }
+        .pr-card .effect { margin-top: auto; padding-top: 18px; border-top: 2px solid rgba(10,10,10,.1); font-size: 26px; line-height: 1.4; font-weight: 600; color: var(--blue-deep); }
 
         /* ===========================================
            S05 RULES
@@ -727,48 +728,64 @@
             <section class="slide has-band" data-part="02 바탕 원리" aria-label="바탕 원리">
                 <header class="chrome"><span class="part"></span><span class="pg"></span></header>
                 <h2 class="title reveal d1">바탕 원리</h2>
-                <p class="desc reveal d2">가격은 한번 방향이 잡히면 한동안 그 방향으로 움직이는 경향이 있습니다</p>
+                <p class="desc reveal d2">미래는 아무도 모르기 때문에 확률과 위험 관리로 추세를 활용합니다</p>
                 <div class="body">
-                    <div class="pr-grid">
+                    <div class="pr-flow">
                         <div class="pr-card reveal d2">
-                            <p class="h3">시장 전체의 추세</p>
-                            <p class="q">시장이 오르는 중인가, 내리는 중인가</p>
+                            <div class="pr-head"><span class="step-no">1</span><p class="h3">장기 추세</p></div>
+                            <p class="q">단기 움직임은 알 수 없지만 길게 보면 방향이 이어집니다</p>
                             <div class="illu">
-                                <svg viewBox="0 0 760 150" preserveAspectRatio="none" aria-hidden="true">
-                                    <polyline points="20,120 80,108 130,114 190,92 240,98 300,78 350,84 410,62 460,70 520,50 570,56 630,38 690,44 740,26" fill="none" stroke="#9aa0b1" stroke-width="3"></polyline>
-                                    <path d="M20 122 C 200 104, 420 76, 740 34" fill="none" stroke="#4361ee" stroke-width="7" stroke-linecap="round"></path>
+                                <svg viewBox="0 0 476 250" aria-hidden="true">
+                                    <polyline points="20,201 45,169 70,187 95,147 120,175 145,138 170,121 195,158 220,110 245,132 270,93 295,115 320,73 345,104 370,58 395,78 420,39 456,53" fill="none" stroke="#9aa0b1" stroke-width="3" stroke-linejoin="round"></polyline>
+                                    <path d="M20 195 C 160 161, 300 104, 456 44" fill="none" stroke="#4361ee" stroke-width="7" stroke-linecap="round"></path>
                                 </svg>
-                                <span class="cap bottom">개념도 · 파란 선은 평균 가격</span>
+                                <span class="cap">개념도 · 파란 선은 긴 흐름</span>
                             </div>
-                            <div class="pr-rows">
-                                <div class="pr-row"><span class="chip atk">오르는 중</span>주식형 ETF에 투자</div>
-                                <div class="pr-row"><span class="chip def">내리는 중</span>채권·금 ETF로 피신</div>
-                            </div>
-                            <p class="effect">시장 전체가 떨어질 때 손실을 줄입니다</p>
+                            <p class="effect">시장 전체의 추세와 종목 간 상대 우위를 매달 확인합니다</p>
                         </div>
+                        <svg class="pr-arrow" viewBox="0 0 40 40" aria-hidden="true"><path d="M13 6 L29 20 L13 34" fill="none" stroke="#9aa0b1" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"></path></svg>
                         <div class="pr-card reveal d3">
-                            <p class="h3">종목 간 상대 우위</p>
-                            <p class="q">같은 기간 누가 더 힘 있게 올랐나</p>
+                            <div class="pr-head"><span class="step-no">2</span><p class="h3">위험 관리</p></div>
+                            <p class="q">언제 오를지 맞히기보다 큰 하락을 먼저 피합니다</p>
                             <div class="illu">
-                                <svg viewBox="0 0 760 150" preserveAspectRatio="none" aria-hidden="true">
-                                    <rect x="40" y="30" width="80" height="110" rx="6" fill="#4361ee"></rect>
-                                    <rect x="160" y="52" width="80" height="88" rx="6" fill="#4361ee"></rect>
-                                    <rect x="280" y="72" width="80" height="68" rx="6" fill="#c9d2fb"></rect>
-                                    <rect x="400" y="92" width="80" height="48" rx="6" fill="#dfe2ea"></rect>
-                                    <rect x="520" y="104" width="80" height="36" rx="6" fill="#dfe2ea"></rect>
-                                    <rect x="640" y="118" width="80" height="22" rx="6" fill="#dfe2ea"></rect>
+                                <svg viewBox="0 0 476 250" aria-hidden="true">
+                                    <rect x="226" y="0" width="96" height="250" fill="#eef1fe"></rect>
+                                    <text class="lbl" x="274" y="34" text-anchor="middle">방어 구간</text>
+                                    <polyline points="20,155 200,47 290,201 430,110" fill="none" stroke="#9aa0b1" stroke-width="4" stroke-linejoin="round"></polyline>
+                                    <polyline points="20,164 200,56 230,90 322,90 430,44" fill="none" stroke="#4361ee" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"></polyline>
+                                    <text class="lbl" x="438" y="116">시장</text>
+                                    <text class="lbl blue" x="438" y="50">전략</text>
                                 </svg>
-                                <span class="cap">개념도 · 막대는 오른 정도</span>
+                                <span class="cap">개념도</span>
                             </div>
-                            <div class="pr-rows">
-                                <div class="pr-row"><span class="chip atk">힘이 센 종목</span>골라서 투자</div>
-                                <div class="pr-row"><span class="chip soft">약한 종목</span>담지 않음</div>
+                            <p class="effect">시장 흐름이 나빠지면 채권·금 ETF로 옮겨 손실을 줄입니다</p>
+                        </div>
+                        <svg class="pr-arrow" viewBox="0 0 40 40" aria-hidden="true"><path d="M13 6 L29 20 L13 34" fill="none" stroke="#9aa0b1" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+                        <div class="pr-card reveal d4">
+                            <div class="pr-head"><span class="step-no">3</span><p class="h3">확률 게임</p></div>
+                            <p class="q">매달 내리는 판단은 맞을 때도 있고 틀릴 때도 있습니다</p>
+                            <div class="illu">
+                                <svg viewBox="0 0 476 250" aria-hidden="true">
+                                    <rect x="28" y="40" width="60" height="60" rx="12" fill="#eef1fe"></rect><circle cx="58" cy="70" r="17" fill="none" stroke="#4361ee" stroke-width="7"></circle>
+                                    <rect x="100" y="40" width="60" height="60" rx="12" fill="#eef1fe"></rect><circle cx="130" cy="70" r="17" fill="none" stroke="#4361ee" stroke-width="7"></circle>
+                                    <rect x="172" y="40" width="60" height="60" rx="12" fill="#f4f5f9"></rect><path d="M189 57 L215 83 M215 57 L189 83" stroke="#9aa0b1" stroke-width="7" stroke-linecap="round"></path>
+                                    <rect x="244" y="40" width="60" height="60" rx="12" fill="#eef1fe"></rect><circle cx="274" cy="70" r="17" fill="none" stroke="#4361ee" stroke-width="7"></circle>
+                                    <rect x="316" y="40" width="60" height="60" rx="12" fill="#eef1fe"></rect><circle cx="346" cy="70" r="17" fill="none" stroke="#4361ee" stroke-width="7"></circle>
+                                    <rect x="388" y="40" width="60" height="60" rx="12" fill="#eef1fe"></rect><circle cx="418" cy="70" r="17" fill="none" stroke="#4361ee" stroke-width="7"></circle>
+                                    <rect x="28" y="112" width="60" height="60" rx="12" fill="#f4f5f9"></rect><path d="M45 129 L71 155 M71 129 L45 155" stroke="#9aa0b1" stroke-width="7" stroke-linecap="round"></path>
+                                    <rect x="100" y="112" width="60" height="60" rx="12" fill="#eef1fe"></rect><circle cx="130" cy="142" r="17" fill="none" stroke="#4361ee" stroke-width="7"></circle>
+                                    <rect x="172" y="112" width="60" height="60" rx="12" fill="#eef1fe"></rect><circle cx="202" cy="142" r="17" fill="none" stroke="#4361ee" stroke-width="7"></circle>
+                                    <rect x="244" y="112" width="60" height="60" rx="12" fill="#eef1fe"></rect><circle cx="274" cy="142" r="17" fill="none" stroke="#4361ee" stroke-width="7"></circle>
+                                    <rect x="316" y="112" width="60" height="60" rx="12" fill="#f4f5f9"></rect><path d="M333 129 L359 155 M359 129 L333 155" stroke="#9aa0b1" stroke-width="7" stroke-linecap="round"></path>
+                                    <rect x="388" y="112" width="60" height="60" rx="12" fill="#eef1fe"></rect><circle cx="418" cy="142" r="17" fill="none" stroke="#4361ee" stroke-width="7"></circle>
+                                </svg>
+                                <span class="cap">개념도 · ○ 맞은 달, × 틀린 달</span>
                             </div>
-                            <p class="effect">오르는 시장에서 수익을 키웁니다</p>
+                            <p class="effect">데이터로 확률이 높은 쪽을 골라 같은 규칙을 반복합니다</p>
                         </div>
                     </div>
                 </div>
-                <div class="band reveal d4">두 추세를 함께 보는 이 방식을 듀얼 모멘텀이라고 부릅니다</div>
+                <div class="band reveal d5">틀리는 달이 있어도 큰 손실을 피해 장기적으로 시장보다 안전하게 더 높은 성과를 추구합니다</div>
             </section>
 
             <!-- ============ 5 알고리즘 규칙 네 가지 ============ -->
