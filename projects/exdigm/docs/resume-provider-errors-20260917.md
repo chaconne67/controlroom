@@ -26,6 +26,19 @@
 - FileData·ResumeSourceArtifact·Resume serializer 스냅샷이 검증 전후 전체 동일하며 SHA-256은 `9c083553b7e57abced220b2d0becbb382a4f02fd142e876502424d1513dae276`다. 비공개 근거는 debug `.debug/additional-provider-failures-20260917/diagnosis-result.json`, `read-only-final-check.json`, 대상별 current-extraction/captured-translations JSON에 있다. 디렉터리 0700/전체 파일 0600을 확인했으며 원문·연락처는 문서/GBrain에 기록하지 않았다.
 - 남은 복구는 정확한 추가 두 원본에 대한 별도 운영 재처리다. 요청되면 기존 후보자 매칭 규칙과 공식 저장 경로를 그대로 사용하고, 대상·기존 후보자·연결 데이터 백업 후 실제 DB 저장을 검증한다. 배포만으로 이미 종료된 큐가 다시 열리지는 않는다.
 
+## 조회 중 발생한 별도 신규 실패 — 2026-09-17 14:01 KST
+
+마지막 운영 재조회 중 배포 후 새 FileData `f0aab420-a0a7-43d0-895d-ec2d746ba5e7` 실패가 확인돼 조사 범위를 갱신했다. 13:58 시점의 배포 후 실패 없음은 당시 관측 기록으로 보존하며, 이를 현재도 실패가 없다는 뜻으로 사용하지 않는다.
+
+- 13:59:30.902129 KST 등록된 이메일 유입의 한 페이지 영문 PDF다. 최종 실패는 14:01:24.995998, OperationalError `22772439-b56a-370f-fcce-11c67a7855b7`는 14:01:27.199758 생성됐다. `resume_knowledge_contract_failed`/`knowledge_validation`, 실제 문구는 `ValueError: extracted_content 필수 항목 누락: 학력`이다. 원래 재시도 3회 종료, needs_resume_processing=False, retryable=False, 후보자 연결 없음, Resume 0개다.
+- 현재 a5aa6b02/gemini-3.1-flash-lite에서 공식 문서 판정을 실행했다. 실제 AI는 개인의 전문 요약·역량·기술·경력을 담은 single_resume로 판정했다. 추천 명단 제외와 앞선 번역 400에 해당하는 실패가 아니다.
+- 같은 원문과 PDF 메타데이터로 공식 저장 없는 D8 경로를 실행하면서 출처 지도와 국문 내용만 보관했다. education/source_ids=[] 및 국문 education/body/rows=[]였고 같은 학력 필수 항목 오류가 재현됐다. 필수 학력 검사·날조 방지·운영 저장 조건을 완화하지 않았다.
+- 원본 PDF도 대조했다. 진단 환경의 개인 OAuth 갱신이 invalid_grant로 실패했으므로 그 인증을 반복하거나 바꾸지 않았다. 운영 앱의 기존 서비스 계정 DriveGateway로 해당 원본 한 건의 metadata/get_media 읽기만 실행했다. Django SQL execute/executemany를 모두 차단한 상태로 수행했고 비밀값·운영 인증을 debug에 복사하지 않았다. 임시 원본은 비공개 debug 증거에 옮기고 운영 컨테이너 임시 파일은 제거했다.
+- Drive md5와 기존 업로드 SHA-256이 실제 원본에 일치했다. 원본은 59,507바이트, PDF 한 페이지이며 원본에서 직접 읽은 텍스트와 보관 extractor_text가 모두 4,990자다. BOM/공백을 제외한 전체 문자열도 정확히 같았다. 학력이 없는 원본의 필수 정보 부족이며 텍스트 추출 과정에서 학력 구간을 잃은 사례로 판정하지 않는다. 원본 SHA-256은 `f59d7ffa2cfaee4548292bbe07c8c959232ebb806aa911bed6fec116655d005d`다.
+- FileData·source artifact·Resume 스냅샷이 전후 전체 동일하며 SHA-256은 `18521c9ba833c4e50ed352ce592e93dfa56f9c7d9003c8d85e09e3ea8b54bb5a`다. 해당 원본의 후보자 생성·운영 재처리·큐 재개·오류 성공 처리는 실행하지 않았다.
+- 운영 데이터 복구 관점에서 앞의 PDF 두 건은 현재 수정본으로 지정 재처리가 남았고, 이 새 원본은 학력 정보 보완이 필요하다. 현재 정책상 학력이 없으면 자동 저장하지 않는다. 기술 오류와 필수 정보 부족의 분류·재시도 개선은 별도 수정 범위이며 이번 확인 요청에서 실행하지 않았다.
+- 비공개 증거는 같은 `.debug/additional-provider-failures-20260917/`의 대상별 database-before/source-map/korean-content/summary/pdf-source-check JSON과 original.pdf/native-text.txt다. 전체 디렉터리 0700/파일 0600으로 보관하며 원문·연락처는 기록 문서에 남기지 않는다.
+
 ## 운영 배포·지정 재처리 결과
 
 | FileData | 실제 운영 저장 시각 KST | 기존 후보자 | 새 Resume | 이번 원본 저장 내용·대표 선택 |
