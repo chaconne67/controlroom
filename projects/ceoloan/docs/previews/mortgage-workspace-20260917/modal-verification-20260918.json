@@ -1,0 +1,262 @@
+{
+  "date": "2026-09-18",
+  "scope": "synthetic preview only; actual app templates read-only",
+  "base": "45e64d7",
+  "app_head": "efc8f2d",
+  "checks": [
+    "Existing list row opens correct company modal without page navigation",
+    "Mortgage first open: finance collapsed and property expanded",
+    "Existing three-year finance table and component style; independent expansion",
+    "Both sections can collapse; keyboard toggling works",
+    "Escape returns focus to row; reopen resets intended initial state",
+    "Property switch retains finance toggle and explains shared collateral scope",
+    "Source example closes back to same company and section state",
+    "Missing financials still allow property and trust information",
+    "Unreviewed property has original entry and no confirmed financial summary",
+    "No property data preserves expanded empty section",
+    "Funding keeps existing uncollapsed finance presentation with no property section",
+    "Selection does not open modal; search/selection scoped by business; empty search recovers",
+    "1440/1024/480/390 widths: modal inside viewport, <=85vh; internal scroll and fixed header",
+    "Building-only collateral/land share and address-only relationship are distinguished",
+    "No page errors, console errors or failed requests during affected interactions",
+    "Review fix: address connection does not imply debtor; explicit hotel debtor preserved",
+    "Review link opens company modal with property expanded; legacy detail URL resolves to list"
+  ],
+  "measurements": [
+    {
+      "viewport": {
+        "width": 1440,
+        "height": 1000,
+        "left": 272,
+        "right": 1168,
+        "top": 75,
+        "bottom": 925,
+        "dialogHeight": 850,
+        "bodyHeight": 785,
+        "bodyScrollHeight": 1096,
+        "bodyOverflow": "auto",
+        "documentWidth": 1440,
+        "headerTop": 75
+      },
+      "bothExpandedScrolled": {
+        "height": 850,
+        "scrollTop": 760.7999877929688,
+        "scrollHeight": 1547,
+        "clientHeight": 785,
+        "headerTop": 75
+      }
+    },
+    {
+      "viewport": {
+        "width": 1024,
+        "height": 768,
+        "left": 64,
+        "right": 960,
+        "top": 57.60000228881836,
+        "bottom": 710.3999900817871,
+        "dialogHeight": 652.7999877929688,
+        "bodyHeight": 588,
+        "bodyScrollHeight": 1096,
+        "bodyOverflow": "auto",
+        "documentWidth": 1024,
+        "headerTop": 57.60000228881836
+      },
+      "bothExpandedScrolled": {
+        "height": 652.7999877929688,
+        "scrollTop": 958.4000244140625,
+        "scrollHeight": 1547,
+        "clientHeight": 588,
+        "headerTop": 57.60000228881836
+      }
+    },
+    {
+      "viewport": {
+        "width": 480,
+        "height": 800,
+        "left": 12,
+        "right": 468,
+        "top": 60,
+        "bottom": 740,
+        "dialogHeight": 680,
+        "bodyHeight": 623,
+        "bodyScrollHeight": 1322,
+        "bodyOverflow": "auto",
+        "documentWidth": 480,
+        "headerTop": 60
+      },
+      "bothExpandedScrolled": {
+        "height": 680,
+        "scrollTop": 1209.5999755859375,
+        "scrollHeight": 1832,
+        "clientHeight": 623,
+        "headerTop": 60
+      }
+    },
+    {
+      "viewport": {
+        "width": 390,
+        "height": 844,
+        "left": 12,
+        "right": 378.3999938964844,
+        "top": 63.29999923706055,
+        "bottom": 780.700023651123,
+        "dialogHeight": 717.4000244140625,
+        "bodyHeight": 661,
+        "bodyScrollHeight": 1360,
+        "bodyOverflow": "auto",
+        "documentWidth": 390,
+        "headerTop": 63.29999923706055
+      },
+      "bothExpandedScrolled": {
+        "height": 717.4000244140625,
+        "scrollTop": 1225.5999755859375,
+        "scrollHeight": 1886,
+        "clientHeight": 661,
+        "headerTop": 63.29999923706055
+      }
+    }
+  ],
+  "page_errors": [],
+  "observed": {
+    "console_errors": [],
+    "failed_requests": [],
+    "responses": [
+      {
+        "url": "http://127.0.0.1:18794/?revision=20260918-verify",
+        "status": 200,
+        "type": "document"
+      },
+      {
+        "url": "https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css",
+        "status": 200,
+        "type": "stylesheet"
+      },
+      {
+        "url": "https://rogeon.kr/static/css/output.css",
+        "status": 200,
+        "type": "stylesheet"
+      },
+      {
+        "url": "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css",
+        "status": 200,
+        "type": "stylesheet"
+      },
+      {
+        "url": "http://127.0.0.1:18794/style.css?v=20260918",
+        "status": 200,
+        "type": "stylesheet"
+      },
+      {
+        "url": "http://127.0.0.1:18794/app.js?v=20260918",
+        "status": 200,
+        "type": "script"
+      }
+    ],
+    "downloads": []
+  },
+  "review": {
+    "status": "complete",
+    "reviewer": "root code-review-loop",
+    "base": "45e64d7",
+    "contract": {
+      "source": "User corrections on 2026-09-18 and canonical design document sections 1-7",
+      "purpose": "Preserve existing listing and company modal, add mortgage property with independent finance section",
+      "scope": "Changed preview HTML/CSS/JS and direct planning docs only",
+      "input": "Synthetic company/financial/property facts; explicit selected business and row",
+      "procedure": "Existing row -> modal; initial finance closed/property open; independent toggles and internal scrolling",
+      "output": "No page navigation, no real requests/writes/messages; original property facts and unavailable-state labels",
+      "invariants": "Existing funding presentation, table style, business scope, unknown financial values and ownership distinctions",
+      "excluded": "Production implementation, new business flows, actual authorization/data ingestion",
+      "evidence": "15 browser checks plus focused debtor/link validation and four viewport screenshots/measurements"
+    },
+    "approved_findings_fixed": [
+      "New rights renderer inferred debtor from selected company. It now reads explicit property creditor/debtor facts, with missing facts left unavailable."
+    ],
+    "last_pass": "No approved findings or material contract questions in scoped preview",
+    "findings": []
+  },
+  "production_changed": false,
+  "observed_final": {
+    "console_errors": [],
+    "failed_requests": [],
+    "responses": [
+      {
+        "url": "http://127.0.0.1:18794/?revision=20260918-final",
+        "status": 200,
+        "type": "document"
+      },
+      {
+        "url": "https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css",
+        "status": 200,
+        "type": "stylesheet"
+      },
+      {
+        "url": "https://rogeon.kr/static/css/output.css",
+        "status": 200,
+        "type": "stylesheet"
+      },
+      {
+        "url": "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css",
+        "status": 200,
+        "type": "stylesheet"
+      },
+      {
+        "url": "http://127.0.0.1:18794/style.css?v=20260918",
+        "status": 200,
+        "type": "stylesheet"
+      },
+      {
+        "url": "http://127.0.0.1:18794/app.js?v=20260918",
+        "status": 200,
+        "type": "script"
+      },
+      {
+        "url": "http://127.0.0.1:18794/?revision=20260918",
+        "status": 200,
+        "type": "document"
+      },
+      {
+        "url": "https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css",
+        "status": 200,
+        "type": "stylesheet"
+      },
+      {
+        "url": "https://rogeon.kr/static/css/output.css",
+        "status": 200,
+        "type": "stylesheet"
+      },
+      {
+        "url": "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css",
+        "status": 200,
+        "type": "stylesheet"
+      },
+      {
+        "url": "http://127.0.0.1:18794/style.css?v=20260918",
+        "status": 200,
+        "type": "stylesheet"
+      },
+      {
+        "url": "http://127.0.0.1:18794/app.js?v=20260918",
+        "status": 200,
+        "type": "script"
+      }
+    ],
+    "downloads": []
+  },
+  "cleanup": {
+    "stopped": true,
+    "pid": 132,
+    "profile_preserved": true,
+    "input_desktop_before": "Default",
+    "input_desktop_after": "Default",
+    "foreground_before": {
+      "hwnd": 1837688,
+      "pid": 30904
+    },
+    "foreground_after": {
+      "hwnd": 1837688,
+      "pid": 30904
+    },
+    "scope": "common stop command interval"
+  }
+}
