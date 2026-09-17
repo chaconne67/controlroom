@@ -41,10 +41,10 @@
 
 ## 재개 정보
 
-- 상태: 개발 구현·실제 화면 검증·코드 리뷰 완료. 이번 6개 파일만 개발 저장소의 detached commit `15ba8e3efa656bcbab08b4550b130ff1e5e75120`에 저장했다. 기존 이메일 관련 변경과 환경 연결은 작업 시작 그대로 남아 있다.
-- 다음 행동: 운영 반영이 명시적으로 승인되면 운영 Git 상태와 누적 변경을 다시 확인한다. 이번 커밋의 6개 파일 차이만 검토해 공식 main 경로로 통합하고 재검증한 후 공식 deploy.sh 절차를 따른다. 개발 저장소의 별도 이메일 변경을 임의로 함께 배포하지 않는다.
-- 운영 배포: 미실행. 운영 계정 쓰기: 미실행.
-- 코드 push: 미실행. 작업 문서는 조정실 controlroom에 저장한다. controlroom에는 이번 범위 밖의 미전송 FundKeeper 커밋 `ca8f6a7`과 다른 사용자 변경이 있어 전체 push는 실행하지 않는다.
+- 상태: 개발 구현·실제 화면 검증·코드 리뷰와 사용자 승인 후 운영 배포 완료. 개발 detached commit `15ba8e3efa656bcbab08b4550b130ff1e5e75120`의 6개 파일만 운영 main `998d6e627cea4698e0ccd50424b7e6df17cb996e`에 통합했다. 기존 이메일 관련 변경과 환경 연결은 작업 시작 그대로 남아 있다.
+- 다음 행동: 이 UI 요청의 남은 배포 작업은 없다. 별도 개발 이메일 변경과 새 서버 통합 작업은 각 계획의 승인·검증 경로로 진행한다.
+- 운영 배포: 2026-09-17 17:49:23 KST 완료, 태그 `20260917174751`. 운영 계정 역할 저장: 미실행.
+- 코드 push: GitHub main `998d6e6` 반영 확인. 작업 문서는 조정실 controlroom에 저장하며 이번 범위 밖의 커밋을 임의로 push하지 않는다.
 - 전용 UI 서버 PID `1206544`, 원격 8017, 조정실 SSH tunnel tool session `80298`/port 18817과 전용 Chrome PID `23588`은 모두 종료했다. 이 개발 검증 URL은 종료된 주소다.
 - 합성 사용자·고객사 관계·회사·로그인 세션을 제거했다. 원래 사용자 파일 18개는 SHA-256/심볼릭 링크 대조로 보존을 확인했다.
 - 기준선·개발 테스트 DB는 기존 운영 데이터와 별개인 `test_rndlog_role_ui_20260917.public`이다. 재검증할 때 POSTGRES_DB를 명시하고 운영 DB로 실행하지 않는다.
@@ -81,3 +81,29 @@
 승인된 finding이 없습니다.
 
 잠근 6개 파일과 직접 권한·서비스·템플릿 소비자에서 새 역할 셀 응답, 가입 신청 행 응답, 기존 redirect, 회사 연결 및 관리자 보호가 유지됨을 확인했다. 열린 계약 질문 없음. 운영 배포와 운영 쓰기 검증은 이번 범위 밖이다.
+
+## 운영 배포 승인과 기준선 — 2026-09-17
+
+구현 결과 보고 후 사용자가 `운영 배포`를 명시적으로 요청했다. 위 구현 단계의 운영 제외 범위는 이 승인으로 배포에 한해 확대한다. 실제 운영 계정의 역할 저장·DB 변경은 수행하지 않는다.
+
+- 배포 목표: 검증된 담당자 역할 셀 UI와 HTMX 경로를 `https://rndlog.kr/funding/agents/`에 반영한다.
+- 운영 시작 상태: main/origin/main `67d07991e755ab146e73fbbf35395d2f65699ec9`, clean. 개발 커밋 `15ba8e3efa656bcbab08b4550b130ff1e5e75120`의 부모와 운영 main은 대상 6개 파일에서 차이가 없다. 운영 main의 기존 ACME 전환 준비 코드는 보존한다.
+- 운영 서비스 기준선: `Rndnote_app`, `Rndnote_nginx` 1/1, 이미지 `20260911013358`; 별도 `consolidation-live-endpoint-https` 1/1. DNS A `49.247.207.147`, 공개 HTTPS 200. 신규 통합 호스트 `49.247.192.127`은 변경하지 않는다.
+- 기존 역할/가입/회사 연결 검사 57개 통과. 실제 로그인된 운영 담당자 목록은 3명이며 변경 전 역할 선택창+저장 버튼 표시를 확인했다.
+- 보호 범위: 개발 worktree의 기존 사용자 변경, 운영 계정·회사 연결·DB 구조, 환경 설정·예약 작업, 별도 전환 준비 서비스와 이전 이미지. 운영 `.env.prod` SHA-256 `c3bc99a26702b4f72b6b52599f2f05d0fc1cf58955f8fb8b51b83ead49039d87`, crontab SHA-256 `aa99e530df1496e0a747ec599bc256296e981c3c56a88874806ae86e698873eb`.
+- 최소 구현 게이트: 2단계에서 멈춤. 검증된 6개 파일 커밋만 main에 cherry-pick하고 기존 `deploy.sh --no-git --no-migrate`를 사용한다. 명시적 Git push 성공을 먼저 확인하며 `RUN_DISK_CLEANUP=false`로 기존 복구 이미지를 보존한다. 새 배포 도구·의존성·서비스를 만들지 않는다.
+- 공식 경로: 운영 main에 후보 통합 → 같은 관련 검사 67개/Django/변경 diff 리뷰 → origin/main push 확인 → 공식 deploy.sh의 Tailwind·collectstatic·Docker 이미지 빌드·기존 Swarm 갱신 → 서비스/HTTPS/Git 확인 → 실제 운영 UI 조회와 편집 GET 확인. 운영 POST 저장은 앞서 격리 DB에서 확인한 결과를 사용한다.
+- 진행 상태: 운영 배포와 아래 실제 경로 검증 완료.
+
+## 운영 배포 결과
+
+- 운영 main 통합 후 동일 관련 검사 67개 통과, Django check/Ruff/diff 검사 통과. 6개 파일은 기존 개발 검증 커밋과 동일하며 code-review-loop 재대조에 승인 finding과 열린 계약 질문이 없다.
+- GitHub main push 성공. 운영 HEAD와 origin/main 모두 `998d6e627cea4698e0ccd50424b7e6df17cb996e`, 운영 worktree clean.
+- 공식 실행: `RUN_DISK_CLEANUP=false ./deploy.sh --no-git --no-migrate`. 2026-09-17 17:47:51 시작, 17:49:23 KST 정상 종료. migration drift 없음, Tailwind 빌드/collectstatic/배포 이미지 내부 Django deploy check 통과. DB migration 실행 없음.
+- `Rndnote_app`, `Rndnote_nginx` 모두 `20260917174751` 이미지, `1/1`, update=completed. 기존 `20260911013358` 앱·nginx 복구 이미지 유지. 별도 `consolidation-live-endpoint-https`는 기존 이미지와 1/1 상태 유지.
+- 공개 HTTPS와 실제 CSS `output.05289ec5553b.css` 응답 200. 실제 로그인 상태의 Windows Chrome에서 담당자 3명의 값+수정 아이콘 표시 및 수정 GET 후 선택창+확인 확인. Nginx 로그의 `/accounts/members/<uuid>/role/` GET 200을 직접 대조했다.
+- 편집 GET 전후 이름 셀 3개와 나머지 역할 셀 2개의 HTML, URL이 동일하다. GET/POST 속성 모두 `closest td`/`outerHTML`. 선택값 admin 유지, 선택창 focus, 데스크톱 선택창/확인 높이 28px, Pretendard, 머리글 rgb(45,58,85), 페이지 전체 가로 넘침 없음, 브라우저 error/warn 없음.
+- 실제 운영 POST 저장은 수행하지 않았다. 저장·오류·권한 보호·고객 연결·모바일 390/480px 검증은 위 격리 DB 결과를 사용한다. 운영 DB의 계정 3개 role/is_active/is_staff/is_superuser 지문은 전후 `9aace6081b96caa604fd5b7e17e1124230375a2a83dc76685c0442b825747af1`로 같다.
+- 운영 `.env.prod`와 crontab SHA-256은 기준선과 동일하다. 개발 시작 파일/심볼릭 링크 18개도 protected.json과 대조하여 변경 0개. 새 통합 호스트·DNS·DB 구조·메일 예약 작업은 변경하지 않았다.
+- 숨김 전용 브라우저에는 운영 로그인이 없어 인증 자료를 복사하지 않았다. 이미 로그인된 사용자 RNDLOG 탭에서 조회/편집 GET만 확인하고 원래 `https://rndlog.kr/rndlog/` 화면으로 돌려놓았다. 확인 전후 입력 데스크톱 Default, 전경 HWND 198638/PID 27240 유지. 운영 화면 두 장은 이 작업의 도구 이미지 출력에 보존된다.
+- 이번 검증용 숨김 Chrome PID 3568만 종료하고 사용자 탭과 프로필은 보존했다. GBrain `project/rndlog-member-role-inline-edit`에 기존 개발 기록을 유지하며 운영 승인·배포·검증 결과를 추가했다.
