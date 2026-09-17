@@ -9,6 +9,23 @@
 - 최종 debug는 clean detached HEAD, 운영은 clean main이며 GitHub main·앱/SSE/알림 처리기의 실제 `/app/.source-commit`이 모두 최종 `a5aa6b02`다. 공식 배포 완료는 2026-09-17 13:34:56 KST다.
 - 두 지정 파일은 각각 새 Resume 1개가 saved이고 기존 Candidate에 연결됐다. 성공 시 기존 공식 함수가 실패 사유를 해제했고 처리 큐는 `db_saved`로 종료됐다. 초기 실패 상태와 원문은 복구 가능한 비공개 백업에 보관한다.
 
+## 추가 실패 파일 조회 — 2026-09-17 13:58 KST
+
+주인님의 “추가로 실패한 이력서가 있다 확인해봐” 요청으로 운영 기록과 현재 FileData를 조회했다. 추가 실패는 아래 두 PDF이며 같은 잡코리아 지원 메일의 첨부와 링크 다운로드로 각각 유입됐다. 공식 연락처 정규화 후 유효한 이메일·전화가 모두 일치하므로 같은 지원자다. 이름만으로 동일인을 판단하지 않았다.
+
+| FileData | 최초 확인한 최종 실패 시각 KST | 유입 | 현재 배포본의 실제 AI 추출 | 이전 응답 형식만 적용한 대조 |
+|---|---|---|---|---|
+| `c5610307-98e2-4300-a8a0-9c5de26d3042` | 2026-09-17 13:21:32.656831 | 이메일 첨부 PDF | 33.57초 성공, 경력 5·학력 4 | 경력 번역 121칸, schema 13,200자에서 같은 400 |
+| `6c26ff02-ec48-4535-8e48-2afbb9f00458` | 2026-09-17 13:22:21.748396 | 동일 이메일의 링크 PDF | 29.57초 성공, 경력 5·학력 3 | 경력 번역 133칸, schema 14,488자에서 같은 400 |
+
+- 두 실패 모두 첫 번역 수정 배포 완료인 13:30:06 KST보다 앞선다. 13:58:30 KST 읽기 전용 조회에서 배포 이후의 새 이력서 실패 FileData나 새로 수집된 이력서 관련 OperationalError는 없었다. 장기간 재발 부재로 확대 해석하지 않는다.
+- 실제 extractor text 14,583/14,706자와 6개 원본 PDF 메타데이터 키를 그대로 전달했다. 기존 분류는 둘 다 single_resume이며 비이력서 제외 문제가 아니다. 소스 파일/모델은 clean a5aa6b02/gemini-3.1-flash-lite 그대로다.
+- 공식 `extract_resume_knowledge_from_text → candidate_profile_from_knowledge`의 저장 없는 경로를 `exdigm_debug_ro`/transaction_read_only=on으로 실행했다. 현재 코드의 모든 번역 필드 검사와 신원 검사를 통과했다. 기존 classify_resume_data도 둘 다 NORMAL/AUTO_SAVE/missing_fields=()였다.
+- 같은 경력 번역 prompt와 모델·인자를 보관한 뒤 schema만 이전 d_map_response_schema로 만들어 재호출했다. 둘 다 같은 ClientError 400 INVALID_ARGUMENT였다. 현재 schema는 둘 다 175자이며 번역 121/133칸 모두 비어 있지 않았다. 입력이 늘어나는 번역 응답 형식 문제라는 앞선 원인을 추가 변형에서 직접 확인했다. 과거 3회 호출 각각의 중간 AI 출력까지 소급 확인한 것은 아니다.
+- 추가 두 FileData는 여전히 provider_call_failed/provider_call, 재시도 3회 종료, retryable=False, needs_resume_processing=False, db_saved_at=None, Resume 0개다. 기존 승인된 두 건은 saved 상태를 유지한다. 이번 조회 요청으로 추가 운영 재처리·큐 재개·오류 성공 기록·코드 변경·배포를 실행하지 않았다.
+- FileData·ResumeSourceArtifact·Resume serializer 스냅샷이 검증 전후 전체 동일하며 SHA-256은 `9c083553b7e57abced220b2d0becbb382a4f02fd142e876502424d1513dae276`다. 비공개 근거는 debug `.debug/additional-provider-failures-20260917/diagnosis-result.json`, `read-only-final-check.json`, 대상별 current-extraction/captured-translations JSON에 있다. 디렉터리 0700/전체 파일 0600을 확인했으며 원문·연락처는 문서/GBrain에 기록하지 않았다.
+- 남은 복구는 정확한 추가 두 원본에 대한 별도 운영 재처리다. 요청되면 기존 후보자 매칭 규칙과 공식 저장 경로를 그대로 사용하고, 대상·기존 후보자·연결 데이터 백업 후 실제 DB 저장을 검증한다. 배포만으로 이미 종료된 큐가 다시 열리지는 않는다.
+
 ## 운영 배포·지정 재처리 결과
 
 | FileData | 실제 운영 저장 시각 KST | 기존 후보자 | 새 Resume | 이번 원본 저장 내용·대표 선택 |
