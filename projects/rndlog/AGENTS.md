@@ -12,29 +12,30 @@
 ## 역할
 
 - 이 폴더는 RNDLOG의 중앙 컨트롤타워입니다.
-- 로컬 `companies/`·`resources/`는 DB 자료를 복사한 준비본입니다. 운영 업로드의 저장 정본과 게이트웨이는 아직 DB에 있으므로 로컬 사본으로 정본을 대체하거나 자동 동기화하지 않습니다.
+- 로컬 `companies/`·`resources/`는 DB 자료를 복사한 준비본입니다. 운영 업로드의 저장 정본과 게이트웨이는 main에 있으므로 로컬 사본으로 정본을 대체하거나 자동 동기화하지 않습니다.
 - 로컬 스킬은 `~/controlroom/skills/domains/rndlog`에 연결합니다.
-- 운영서버는 웹서비스 코드와 런타임만 운영하며 고객사 자료나 산출물의 정본으로 사용하지 않습니다.
+- 통합 main에서 웹서비스 코드·런타임과 별도 자료 정본을 관리합니다. 고객사 자료는 앱 코드/미디어와 분리된 아래 workspace 경로에 저장합니다.
 
 ## 정본
+
+2026-09-17 22:33 KST 실제 인계 이후의 운영 주소는 `chaconne@49.247.192.127`입니다. 공개 DNS는 옛 주소를 유지하고 옛 서버는 새 main으로 전달합니다. 최신 운영 상태·복구 경로는 `~/controlroom/docs/production-server-consolidation-20260916.md` 최신 절과 main `/srv/consolidation/infra/README.md`를 먼저 확인합니다. 과거 GBrain 프로젝트 맥락이나 고유 스킬에 남은 옛 서버·Swarm 배포 명령보다 이 현행 주소를 우선합니다. 옛 운영 writer는 정지·읽기 전용이므로 그 서버에서 배포하거나 DB/자료를 쓰지 않습니다.
 
 | 항목 | 값 |
 |---|---|
 | 컨트롤타워 | 현재 조정실의 `~/projects/rndlog` 또는 등록 경로 |
-| 운영 업로드·고객자료 정본(DB, 미전환) | `/home/chaconne/projects/rndlog/companies/<정식 회사명>/` |
-| 공통 제작 자원(DB 원본) | `/home/chaconne/projects/rndlog/resources/` |
+| 운영 업로드·고객자료 정본(main) | `/srv/consolidation/data/files-standby/workspace/companies/<정식 회사명>/` |
+| 공통 제작 자원(main) | `/srv/consolidation/data/files-standby/workspace/resources/` |
+| 자료 게이트웨이 호환 경로(main) | `/home/chaconne/projects/rndlog` → 위 workspace |
 | 로컬 스킬 | `~/controlroom/skills/domains/rndlog` |
-| 운영서버 SSH | `chaconne@49.247.207.147` (`rndlog`) |
-| 운영 코드 | `/home/chaconne/rndlog` |
-| 호환 경로 | `/home/work/rndnote` → 실제 저장소 |
-| GitHub | `git@github.com:chaconne67/rndnote.git` |
-| 기준 브랜치 | `main` |
+| 운영서버 SSH | `chaconne@49.247.192.127` |
+| 운영 코드 | `/srv/consolidation/repos/rndlog` |
+| GitHub / 원격 / 기준 브랜치 | `git@github.com:chaconne67/rndnote.git` / `origin` / `main` |
 | 앱 Python | Docker 이미지 Python 3.13 |
-| 호스트 가상환경 | `/home/chaconne/rndlog/.venv` |
-| 배포 진입점 | `/home/chaconne/rndlog/deploy.sh` |
-| 운영 스택 | `Rndnote` (`Rndnote_app`, `Rndnote_nginx`) |
+| 배포 정의 | `/srv/consolidation/infra/compose.production.rndlog.json` + `compose.activate.rndlog.json`, Compose 프로젝트 `production-rndlog` |
+| 운영 서비스 | `production-rndlog-web-1`, `production-rndlog-nginx-1` |
 | 운영 도메인 | `https://rndlog.kr` |
-| 운영 DB | 중앙 서버 `49.247.45.243`의 `CentralDB_postgres` / `company_main`, SSH 터널 `127.0.0.1:15432` (2026-09-16 실제 운영 확인) |
+| 운영 DB | main `migration-replicas-postgres-1` / `company_main` / 앱망 `172.30.40.10:5432` |
+| 옛 공개 입구 | `49.247.207.147` → main 전달; 옛 `Rndnote` Swarm writer는 정지 |
 
 현재 코드·서버와 이 문서가 다르면 실제 상태를 확인해 코드와 서버에 맞춰 이 문서와 GBrain을
 갱신합니다. `Rndnote`와 `rndnote.git`은 남아 있는 운영 식별자이며 제품 이름은 RNDLOG입니다.
@@ -52,7 +53,7 @@
 
 ## 작업 전 GBrain
 
-GBrain 본체는 DB에 유지합니다. 로컬 카드의 프록시로 다음 공용 문서를 읽습니다. 고객자료 저장 위치는 `project/rndlog-file-upload-storage`를 함께 확인합니다.
+GBrain 본체는 main에 있습니다. 로컬 카드의 기존 DB 주소 호환 CLI로 다음 공용 문서를 읽습니다. 고객자료 저장 위치는 `project/rndlog-file-upload-storage`를 함께 확인합니다.
 
 - `project/rndlog-operating-context`
 - 작업 기능명·화면명·모델명으로 찾은 관련 페이지
@@ -66,8 +67,7 @@ GBrain 본체는 DB에 유지합니다. 로컬 카드의 프록시로 다음 공
 5. 회사 README에 자료 입수·리서치·산출 이력을 기록합니다.
 6. 웹서비스 코드 변경이 필요한 경우에만 별도로 운영서버 Git·테스트·배포 절차를 사용합니다.
 
-`deploy.sh`는 저장소의 모든 변경과 미추적 파일을 한 배포 단위로 커밋할 수 있습니다. 함께
-배포할 수 없는 기존 변경이 하나라도 있으면 배포하지 말고 주인님께 범위를 보고합니다.
+옛 `deploy.sh`의 Swarm 배포·전체 정리 명령은 통합 main의 배포 경로가 아닙니다. 배포를 요청받으면 실제 변경 범위·frozen image·해당 Compose 두 정의와 검증·복구 경로를 먼저 대조하고 해당 제품만 갱신합니다. 다른 제품과 기존 변경은 보존합니다.
 
 ## 고유 스킬
 
@@ -79,13 +79,12 @@ GBrain 본체는 DB에 유지합니다. 로컬 카드의 프록시로 다음 공
 
 ## 검증 기준
 
-- Django 검사: `cd /home/chaconne/rndlog && /home/chaconne/.local/bin/uv run python manage.py check --settings=main.settings.local`
-- 관련 테스트: `/home/chaconne/rndlog/.venv/bin/pytest <대상>`
+- 코드 검증 위치는 main `/srv/consolidation/repos/rndlog`입니다. 호스트 `.venv`는 없으며 기존 Python 3.13 앱 이미지와 운영 DB/대외 효과에서 분리한 테스트 환경으로 Django 검사·관련 테스트를 실행합니다.
 - 템플릿 변경은 Tailwind 빌드와 `collectstatic` 후 실제 화면을 확인합니다.
 - 제품 화면은 `rndlog-design-system` 스킬에 따라 모바일·데스크톱과 상호작용 상태를 확인합니다.
 - 고객사 DOCX는 `rndlog` 스킬의 견적서 원본·파생 샘플 디자인을 적용하고 표 머리글 배경색만 짙은 네이비 또는 회색으로 바꿉니다.
 - DOCX의 본문·표·머리말·꼬리말·패키지 무결성과 샘플 placeholder 잔존 여부를 확인합니다.
-- 운영 확인은 `https://rndlog.kr` 응답과 `Rndnote_app`, `Rndnote_nginx`의 `1/1` 상태를 사용합니다.
+- 운영 확인은 `https://rndlog.kr` 응답과 main `production-rndlog-web-1`, `production-rndlog-nginx-1`의 running 상태를 사용합니다. 원본 이미지에는 web healthcheck가 없습니다.
 - 검증하지 못한 항목을 통과했다고 보고하지 않습니다.
 
 ## 안전 경계
@@ -97,7 +96,7 @@ GBrain 본체는 DB에 유지합니다. 로컬 카드의 프록시로 다음 공
   변경하지 않습니다.
 - 테스트와 관리 명령이 운영 DB·SOLAPI·Google·Telegram에 미치는 영향을 먼저 확인합니다.
 - 원격 저장소의 기존 변경과 미추적 파일을 삭제하거나 덮어쓰지 않습니다.
-- 고객사 자료, 리서치, 보고서 작업본과 산출물을 운영서버에 새로 저장하지 않습니다.
+- 고객사 자료, 리서치, 보고서 작업본과 산출물은 main의 workspace 정본에 저장하고 앱 코드·미디어 폴더에 섞지 않습니다.
 - 기존 HTML/PDF 산출물을 임의로 다른 폴더로 옮기거나 숨기지 않습니다.
 - 자료 누락은 고객 입력란과 보완 목록으로 남기고 조사·과제 설계·문서 초안을 계속 작성합니다. 제안 활동과 예상 결과는 고객 확인 전 실제 수행·측정 사실로 표시하지 않습니다.
 

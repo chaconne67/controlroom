@@ -571,3 +571,86 @@ SSH는 `BatchMode=yes`, `StrictHostKeyChecking=yes`를 사용한다. 새 서버 
 - **미실행 필수 결과:** 오늘 밤 실제 정본·공개 443/private SQL·자료/GBrain·writer/예약/백업/인증서 책임 인계와 300초 실측, actual final backup의 별도 물리 복원. 이 결과까지 확인해야 승인된 통합 실행 완료입니다. 공개 DNS 변경·옛 서버 삭제·vdb 포맷은 별도 지시가 필요합니다.
 
 구체적인 조정실 실행/복구 명령은 이 작업 `outputs/운영서버_통합_야간실행절차_20260917.md`, 서버 설명서는 main `/srv/consolidation/infra/README.md`의 ‘실제 운영 인계 실행과 복구’ 절입니다. 실제 진행 상태의 정본은 이 문서 최신 절이며, 실제 실행 결과에 따라 갱신합니다.
+
+## 16. 2026-09-17 실제 정본 인계·최종 백업 독립 복원 완료
+
+**현재 운영 정본은 새 main `49.247.192.127`입니다.** 실제 전환은 한국 시각 **22:30:17~22:33:10**, 오류 후 NEW 복구와 공개/비공개 입구·정상 예약 책임 재개까지 **172.469초**로 승인된 300초 이내였습니다. 실제 최종 운영 체크포인트도 별도 보관한 암호문에서 독립 물리 복원해 파일 일치와 데이터베이스 실행을 확인했습니다. 공개 DNS는 기존 IP를 유지하며 기존 입구가 새 main으로 전달합니다. 아래는 이전 준비 상태를 대체하는 현행 결과입니다.
+
+### 현재 위치와 단일 쓰기 책임
+
+| 항목 | 실제 운영 위치·역할 |
+|---|---|
+| main SSH / 설정 | `chaconne@49.247.192.127`, `/srv/consolidation/infra` |
+| 제품 코드 | `/srv/consolidation/repos/{ceoloan,rndlog,fundkeeper,ziin}`; 각각 기존 `main/main/master/main` 브랜치와 Git 원격 보존 |
+| PostgreSQL | `migration-replicas-postgres-1`, primary·기본/현재 transaction RO off, system ID `7652763638438633511` |
+| MySQL | `migration-replicas-mysql-1`, read_only/super_read_only `0/0`, UUID `4e7e0be7-b1dc-11f1-9224-566ecede885a` |
+| 제품 runtime | `production-{coconut,rndlog,ceoloan,ziin}-web-1`, `production-gbrain-http-1`; 원본 이미지/인증/역할 보존 |
+| 공개 입구 | main `production-edge-edge-1`의 80/443 + 옛 네 HTTPS 입구의 main 고정 IP 전달 |
+| 자료 | `/srv/consolidation/data/files-standby/{workspace,gbrain-state,ceoloan-registry,coconut-data,rndlog-media,ceoloan-media}` |
+| 공식 RNDLOG 자료 경로 | main `/home/chaconne/projects/rndlog` → 선택한 `data/files-standby/workspace` |
+| GBrain | main 본체; 기존 DB SSH CLI·3131·자료 forced command가 새 main으로 전달 |
+| 옛 운영 데이터 | 네 Source의 원래 파일·DB persistent self-bind RO, 원래 앱/SQL writer·대상 cron/timer 중지; 원래 SQL service는 데이터 mount 없는 private proxy |
+
+`standby`라는 디렉터리·DB 컨테이너 이름은 기존 연결 보존을 위한 이름이며 현재 쓰기 정본 역할은 실제 native 상태와 `data/production-authority.json`으로 판정합니다. marker SHA-256은 `3084e58c675afe1db2df7c7b22b3b77338335908e2d4a73ca8c520a2e5462302`입니다. 정본 선택 뒤에는 OLD snapshot의 쓰기나 옛 배포를 재개하지 않습니다.
+
+### 별도 저녁 배포 보존과 처음 오류의 처리
+
+- 22:14 fresh preflight에서 Source CEO Loan의 20시대 별도 배포가 발견돼 전환을 시작하지 않았습니다. 소스는 `efc8f2ddff789084543a6ea7d47f089de8b0ab1d`, 실제 app/nginx는 `a5ceae7`/`7d976f5`였으며 기존 3개 registry 환경값·readonly transport key mount 변화만 확인해 보존했습니다. RNDLOG `998d6e6` 배포 역시 유지했습니다.
+- Source `/mnt/ceoloan/registry`의 1,697개 등기/구조 자료를 여섯 번째 파일 scope로 최종 sync·hash·RO fence·cold backup/restore에 연결했습니다. 원래 좁은 SSH download 계약과 키를 유지하고 Main 선택 뒤 공식 자료만 전달하도록 했습니다. 기존 paid IROS/LLM 작업을 새 시험으로 실행하지 않았습니다.
+- 첫 actual `cutover-result.json`은 **success=false**를 그대로 보관했습니다. 실제 오류는 **`A main product runtime is not healthy`**였습니다. CEO Loan 원본 healthcheck는 30초 뒤 처음 실행하고 timeout 10초인데 controller는 20초만 기다려 첫 probe 전에 거부했습니다. 실제 첫 probe는 22:32:33.472에 시작하고 exit 0이었습니다.
+- 그때 이미 독립 백업 수신 뒤 durable NEW marker가 존재했으므로 자동 복구는 **main_new**에서 진행했습니다. OLD를 다시 열지 않고 전체 재개를 172.469초에 마쳤습니다. 정상 전환 결과와 처음 호출 성공 여부를 구분합니다.
+- 기존 `verify_new`의 healthy 기준을 보존하면서 대기만 40초로 맞췄습니다. network=none/no ports native startup 변형은 20초에 starting, 30.365초에 healthy였고 40초 전에 통과했습니다. 실제 main `verify`와 네 Source `verify-new`도 통과했습니다. 이미 정상인 실제 앱을 이 수정 때문에 다시 시작하지 않았습니다.
+
+### 실제 공개/비공개 경로 확인
+
+- 14개 HTTPS 이름을 옛 IP와 새 main IP에 각각 강제 지정한 **총 28개 실제 TLS 요청**에서 CA/호스트명·HTTP 상태·redirect 계약이 일치했습니다. DNS를 먼저 바꾸어 검증을 대신하지 않았습니다.
+- 옛 RNDLOG 전달과 직접 main으로 온 요청은 조정실의 실제 외부 방문자 IP를 유지했습니다. 임의로 넣은 `X-Forwarded-For` 주소는 방문자 IP로 신뢰하지 않았으며 unique request와 두 edge 로그를 대조했습니다.
+- 기존 유효 RNDLOG/CEO Loan staff session으로 `/admin/` HTTPS 200을 확인했습니다. Coconut에는 재사용할 실제 유효 staff session이 없어 실제 Coconut staff 로그인 보존 검증은 미확인입니다. FULL 격리의 세 로그인 증거·이전에 허용된 Coconut 내부 AI 1회 응답 성공은 별도 증거입니다. 추가 AI 생성 시험은 없습니다.
+- Source의 원래 private PG/MySQL 접속은 위 chosen DB identity·쓰기 가능 상태로 이어집니다. GBrain HTTP 200, 공용 운영 프로토콜 hash `5aeebdd90863c5d9b89135b8ac12ad6af94fa8d0f4d215a64a45a7331a14d741` 보존, 공식 RNDLOG 자료 forward health를 확인했습니다.
+- 최신 CEO Loan 앱의 공식 `registry.storage.verified_file`로 원래 등기 자료를 받아 크기/내용 해시를 확인했습니다. 기존 Source 주소를 사용하는 앱의 제한된 download identity도 새 정본으로 전달합니다. Source 원본 파일의 권한·다른 authorized_keys 줄과 개인/비관련 서비스는 보존합니다.
+
+### 정상 예약·백업·기억 정리 책임
+
+- main의 원래 제품 업무 11개 + 03:40 회사 DB 백업 + 중앙 인증서 갱신, **13개 native timer가 enabled/active**입니다. 옛 실행 주체의 대상 cron/timer는 비활성이고 반복 파일 sync와 옛 DB 복제 터널은 disabled입니다.
+- Kakao Persistent timer의 원래 마지막 실행 stamp를 옮겨 즉시 중복 실행을 막았으며 다음 원래 일정은 9월 21일입니다. 원본에 없던 `update_gdrive.py`나 `.env` 업로드를 추가하지 않았습니다.
+- Windows `GBrain-Controlroom-Memory-Distill`은 enabled/Ready, 첫 **2026-09-18 03:30 KST**입니다. 기존 모델/프롬프트/판단 파이프라인을 보존하고 **조정실의 새 대화 기록만** 매일 읽으며 옛 서버 대화·ledger·결과는 보관합니다. 이 예약을 내용 생성 시험으로 수동 실행하지 않았습니다. 비밀값은 기존 main private 파일에서 SSH로 프로세스 메모리에만 읽습니다.
+- 통합 외 `rn.studio`, `office.exdigm.com` 계보를 소유한 옛 DB general Certbot timer와 개인 Hermes/Portainer 자료·비관련 host maintenance는 유지합니다. 고객 발송·금융 주문·유료 배치의 수동 시험은 없습니다. 정상 예약의 예정된 실행과 대외 효과를 시험 실행 성공으로 혼동하지 않습니다.
+- 이 작업의 22시 자동 재개 **heartbeat 22는 PAUSED**로 바꿔 중복 전환을 막았습니다.
+
+### 실제 최종 checkpoint와 독립 물리 복원
+
+정본 선택 전 Source final clean PG LSN **`12/C95E7770`**, MySQL **`binlog.000115:32317893`**·Source UUID를 확인했습니다. final cold delta는 별도 옛 DB 디스크에 **427,308,218 bytes**로 독립 수신됐고 SHA-256은 **`3be398d63a0107bf3b2362f5d25747bc0b5e8e5f21ed1549c7d919a7a5646b94`**입니다. Source receipt 시각은 **2026-09-17 13:31:59.997314 UTC**이며 이를 확인한 뒤에만 main marker를 썼습니다.
+
+- Source offsite 원본의 크기/해시 재검증 → 기존 private keyring 복호화 → 전용 offline Root에 base/supplement/actual live delta 추출 → native `--read-batch` → cold tree 대조 → 독립 이미지 PG/MySQL 시작을 수행했습니다. 조정실에 백업 내용·비밀값 파일을 만들지 않았습니다.
+- 기본 스트림 **513.7초**, basis supplement 0.6초, actual delta 49.2초, native apply **43.955초**, DB boot **4.404초**였습니다. 중단 후 수행한 이 복구 시험 시간은 172.469초 운영 전환 시간과 다릅니다.
+- **전체 data 일반 파일 14,503개**, cold tree SHA-256 `8e94789d3ccc8c842f5b7535d4ab04e42b42228f07e884238690b5408d2a99fd`; **자료 4,015개**, SHA-256 `543d6317d89d3942b41aa4a29186d55a373ce729bc2a748ef2707a15959c2abf`가 전환 당시 snapshot과 일치했습니다. 경로·내용·symlink·UID/GID/mode를 함께 검사했습니다.
+- 별도 engine의 복원 image와 물리 DB로 **network=none/no public ports**에서 PG primary/최종 WAL 이상 **`12/C95E78C8`**, actual cold 네 auth table 수 **RNDLOG 3 / CEO Loan 20 / ZiiN 0 / FundKeeper 2**, native DB identities, MySQL 실제 Root TCP 인증과 **mysql/sys 포함 1,818개 table/view**를 확인했습니다. 실제 운영 파일/DB는 복원 대상으로 사용하지 않았습니다.
+- 완료 후 두 cold 컨테이너와 exact PID/argv의 소유 containerd/dockerd만 종료했습니다. 실제 운영 앱/DB **7개 컨테이너의 시작 시각은 유지**했습니다. 독립 복원 자료·결과·암호문·receipt는 보관합니다.
+
+| 실제 복구 묶음 | 역할 |
+|---|---|
+| `checkpoint-base-20260917T073034Z-9d57214d.tar.gz.gpg` | 검증된 immutable 물리 기준본 |
+| `checkpoint-base-20260917T081601Z-458be6dc.tar.gz.gpg` | 60,434-byte basis supplement; 기존 기준본 원본 보존 |
+| `checkpoint-delta-20260917T133104Z-5e12fac6.tar.gz.gpg` | 이번 실제 final cold 변경분; 이전 FULL delta로 대체하지 않음 |
+| `runtime-images-20260917T063001Z.tar.gpg` + `runtime-mysql-amd64-20260917T072200Z.tar.gpg` | 기존 11 frozen runtime과 필요한 native MySQL config blob |
+| `checkpoint-base-20260917T090856Z-10b8dd09.tar.gz.gpg` | 최신 RNDLOG 두 runtime companion, 독립 load/ID/RootFS/native 시작 통과 |
+| `checkpoint-base-20260917T132559Z-208d6d89.tar.gz.gpg` | 최신 CEO Loan 두 runtime companion, 678,510,268 bytes, SHA `385ec74801481a367aeb211319497768b0e21df33e1639704620deb800f6903d`, 독립 load/ID/RootFS/native 시작 통과 |
+
+보관 위치는 옛 DB `/mnt/consolidation-20260916/offsite`, 복구 keyring은 `/mnt/consolidation-20260916/recovery-keyring`입니다. GPG integrity와 SHA 확인이며 서명 백업이라고 표현하지 않습니다. archive 안의 과거 infra snapshot보다 최신 main infra Git과 보관된 Source private 기준선을 사용합니다. 마지막 startup 대기 수정은 checkpoint 생성 뒤이므로 최신 infra **`8d68cb2`**와 결과 설명 **`341999d`**를 함께 보존합니다. 비밀값을 Git/문서/GBrain/로그에 넣지 않습니다.
+
+
+최신 infra Git `341999d`도 `checkpoint-base-20260917T135534Z-797d1dfd.tar.gz.gpg`로 독립 보관했습니다. 132,856 bytes, SHA-256 `0400d7b53e92398d89c2813d2aacf9a1bfceb3adf2bba75c410735aa7d719b01`이며 Source 원본의 크기/해시·GPG 복호화·Git bundle 검증/fetch/HEAD 일치로 40초 대기 수정과 실제 결과 README 복원을 확인했습니다. 데이터 checkpoint 이후 수정한 설정도 복구 묶음에 포함되며 원래 cold 데이터는 다시 복사하거나 잠그지 않았습니다.
+
+22:55 원래 일정의 CEO Loan/RNDLOG 전달 작업은 새 main에서 각각 22:55:01~03에 실행돼 native Result=success/exit 0으로 끝났습니다. 수동 시험 실행은 없었고 실제 발송 대상 수·고객 수령까지 확인한 증거로 확대하지 않습니다.
+
+### 운영 안내 반영과 남은 별도 작업
+
+- 조정실 관리 원본 `gbrain-cards/windows-control.md`와 네 프로젝트 AGENTS.md의 실제 주소·코드·자료·DB/Compose 상태 확인 위치를 main으로 갱신했습니다. 제품 규칙·개발 에이전트의 조정실 경계와 Git 브랜치/원격은 유지했습니다. 각 설치된 AGENTS.md 및 전역 GBrain 카드는 관리 원본과 같은 파일·같은 내용임을 확인했습니다.
+- CEO Loan/RNDLOG의 `CLAUDE.md` import, FundKeeper의 기존 same-file 연결 및 Git symlink mode, ZiiN의 별도 CLAUDE 파일 없음 상태를 보존했습니다. 처음 검증에서 모든 CLAUDE가 같은 import라고 가정한 assertion은 실제 설치 구조와 맞지 않아 기각하고 실제 각 구조와 같은 기준으로 확인했습니다. installer를 불필요하게 다시 실행하지 않았습니다.
+- 키트의 기존 검사 `check-skill-deps.py`는 통과했습니다. FundKeeper/testbed 도메인 결합의 기존 warning은 제품 고유 구성이며 이번 주소 갱신과 관계없이 유지합니다. 다른 진행 중 조정실 작업의 커밋/스테이징은 함께 포함하지 않습니다.
+- 옛 `.venv`·Swarm·전체 stack/prune 기반 deploy.sh를 새 main에서 그대로 실행하지 않습니다. 다음 개발은 새 저장소에서 SSH로 수행하고 명시적 배포 요청 시 해당 제품의 두 Compose 정의·frozen image·독립 검증/복구 범위를 대조합니다. 공통 스킬의 정책이나 다른 프로젝트 기능을 바꾸지 않습니다.
+- 공용 GBrain의 이 계획과 `project/windows-control-tower-operating-context`는 기존 원문/제목/태그를 보존해 현행 인계 결과를 앞에 기록합니다. legacy reference type 프로젝트 페이지는 capture의 현행 base schema로 덮거나 임의 retype하지 않으며 새 현행 안내를 먼저 읽게 합니다. 이 작업은 갱신 카드·프로토콜·현행 기록을 읽었고, 다른 실행 중 세션의 열람 여부는 별도로 확인하지 않았습니다.
+- **별도 승인 대기:** 공개 DNS 최종 연결, 옛 서버 해지/삭제, 미사용 vdb 포맷. 현재 서비스는 옛 공개 주소 전달에 의존하므로 서버를 먼저 삭제하면 안 됩니다. Exdigm 자체 앱/서버는 이전하지 않았습니다.
+- **주기 관찰의 한계:** 내일 새벽 기억 정리/백업·인증서 갱신과 다음 정상 배치의 실제 대외 결과는 예정된 실행 시 별도로 확인해야 합니다. 준비와 책임 인계·독립 복원 증거를 그 미래 실행 결과로 대신하지 않습니다. 실제 Coconut staff session의 보존 검증도 미확인으로 남깁니다.
+
+원래 첫 오류·NEW 복구·172.469초 기록은 조정실 `work/live-handoff-20260917/cutover-result.json`, native 최종 복원 proof는 main `work/checkpoint-live-physical-restore-20260917/result-*.json`에 있습니다. 사용자 결과는 이 작업 `outputs/운영서버_통합_실행결과_20260917.md`와 JSON, 현행 복구 설명은 갱신된 야간 절차와 main README입니다.

@@ -18,22 +18,21 @@
 
 ## 정본
 
+2026-09-17 22:33 KST 실제 인계 이후의 운영 주소는 `chaconne@49.247.192.127`입니다. 공개 DNS는 옛 주소를 유지하고 옛 서버는 새 main으로 전달합니다. 최신 운영 상태·복구 경로는 `~/controlroom/docs/production-server-consolidation-20260916.md` 최신 절과 main `/srv/consolidation/infra/README.md`를 먼저 확인합니다. 과거 GBrain 프로젝트 맥락이나 고유 스킬에 남은 옛 서버·Swarm 배포 명령보다 이 현행 주소를 우선합니다. 옛 운영 writer는 정지·읽기 전용이므로 그 서버에서 배포하거나 DB/자료를 쓰지 않습니다.
+
 | 항목 | 값 |
 |---|---|
-| SSH | `chaconne@49.247.205.170` |
-| 호스트명 | `ceoloan` |
-| 운영 루트 | `/home/chaconne/ceoloan` |
-| 실제 저장소 | `/home/chaconne/ceoloan/repo` |
-| GitHub | `git@github.com:chaconne67/ceoloan.git` |
-| Git 원격 이름 | `ceoloan` |
-| 기준 브랜치 | `main` |
+| SSH | `chaconne@49.247.192.127` |
+| 실제 저장소 | `/srv/consolidation/repos/ceoloan` |
+| 통합 런타임·설정 | `/srv/consolidation/infra` |
+| GitHub / 원격 / 기준 브랜치 | `git@github.com:chaconne67/ceoloan.git` / `ceoloan` / `main` |
 | 앱 Python | Docker 이미지 Python 3.13 |
-| 호스트 가상환경 | `/home/chaconne/ceoloan/repo/.venv` |
-| 배포 진입점 | `/home/chaconne/ceoloan/repo/deploy.sh` |
-| 운영 방식 | Docker Compose 프로젝트 `ceoloan` |
-| 운영 서비스 | `ceoloan-web`, `ceoloan-nginx` |
+| 배포 정의 | `compose.production.ceoloan.json` + `compose.activate.ceoloan.json`, Compose 프로젝트 `production-ceoloan` |
+| 운영 서비스 | `production-ceoloan-web-1`, `production-ceoloan-nginx-1` |
 | 운영 도메인 | `https://rogeon.kr` |
-| 운영 DB | 중앙 서버 `49.247.45.243`의 `CentralDB_postgres` / `company_main`, SSH 터널 `127.0.0.1:15432` (2026-09-16 실제 운영 확인) |
+| 운영 DB | main `migration-replicas-postgres-1` / `company_main` / 앱망 `172.30.40.10:5432` |
+| 미디어·등기 정본 | `/srv/consolidation/data/files-standby/ceoloan-media`, `/srv/consolidation/data/files-standby/ceoloan-registry` |
+| 옛 공개 입구 | `49.247.205.170` → main 전달; 옛 `/home/chaconne/ceoloan/repo/deploy.sh` 실행 금지 |
 
 현재 코드·서버와 이 문서가 다르면 실제 상태를 확인해 이 문서와 GBrain을 갱신합니다.
 
@@ -48,7 +47,7 @@
 
 ## 작업 전 GBrain
 
-GBrain 본체는 DB에 있으며 로컬 카드의 승인된 SSH 프록시를 사용합니다. 다음 순서로 확인합니다.
+GBrain 본체는 main에 있으며 로컬 카드의 기존 DB 주소 호환 CLI를 통해 전달받습니다. 다음 순서로 확인합니다.
 
 1. 전역 카드의 공용 조회 명령으로 `project/ceoloan-operating-context`를 읽습니다.
 2. 같은 카드의 공용 검색 명령으로 `ceoloan <작업 기능·화면·모델·오류>`를 검색합니다.
@@ -62,7 +61,7 @@ GBrain은 과거 맥락이고 현재 코드와 서버가 최종 기준입니다.
 2. 기존 변경과 미추적 파일을 확인하고 그대로 보존합니다.
 3. 요청과 관련된 원격 코드·설정·호출 경로를 읽습니다.
 4. SSH를 통해 원격 저장소의 요청 범위만 수정합니다.
-5. 원격 가상환경에서 영향 범위에 맞는 검증을 실행합니다.
+5. 새 main의 앱 이미지·독립 검증 환경에서 영향 범위에 맞는 검증을 실행합니다. 호스트 가상환경은 준비되지 않았으므로 옛 `.venv` 경로를 사용하지 않습니다.
 6. 전체 diff와 검증 결과를 확인하고 요청 범위만 커밋합니다.
 7. `ceoloan` 원격의 `main`에 push해 서버 밖에도 결과를 보존합니다.
 8. 배포는 주인님이 명시적으로 요청한 경우에만 실행합니다.
@@ -86,13 +85,12 @@ GBrain은 과거 맥락이고 현재 코드와 서버가 최종 기준입니다.
 
 ## 검증 기준
 
-- Django 검사: `cd /home/chaconne/ceoloan/repo && uv run python manage.py check --settings=main.settings.local`
-- 관련 테스트: `cd /home/chaconne/ceoloan/repo && uv run pytest -q <대상>`
+- 코드 검증 위치는 main `/srv/consolidation/repos/ceoloan`입니다. 호스트 `.venv`는 없으며 현재 앱의 Python 3.13 이미지와 해당 변경의 독립 테스트 환경을 사용합니다. 운영 DB/대외 효과와 분리된 검증 경로를 확인한 뒤 Django 검사·관련 pytest만 실행합니다.
 - 원격 화면 검증의 공통 절차는 공용 `web-automation` 스킬의 「Remote development UI verification」을 따릅니다.
 - CEO Loan의 서버·테스트·CSS 설정과 디자인 기준은
   [.agents/skills/ceoloan-design-system/SKILL.md](.agents/skills/ceoloan-design-system/SKILL.md)의
   「실행 위치」와 「프로젝트 검증 설정」을 사용합니다.
-- 운영 확인은 `https://rogeon.kr`의 HTTP 200과 `ceoloan-web`의 healthy 상태를 사용합니다.
+- 운영 확인은 `https://rogeon.kr`의 HTTP 200과 main `production-ceoloan-web-1`의 healthy 상태를 사용합니다.
 - 검증하지 못한 항목을 통과했다고 보고하지 않습니다.
 
 ## 안전 경계

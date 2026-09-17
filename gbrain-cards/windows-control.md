@@ -1,8 +1,8 @@
 # 조정실 컨트롤타워
 
 - 현재 장비는 전체 프로젝트의 조정실이다. Windows·macOS·Linux 데스크톱과 노트북에서 같은 역할을 사용하며, `windows-control`은 기존 설치와 연결되는 호환 등록명이다. venture는 여러 프로젝트 중 하나이며 조정실에서 실행하는 로컬 프로젝트다.
-- 원격 프로젝트는 선택한 조정실 장비에서 조정하고 기존 서버의 코드·Git·검증·배포 경로를 SSH로 사용한다. DB 서버는 DB·GBrain 본체와 ZiiN 운영·개발 저장소를 계속 유지한다.
-- 2026-09-16 운영서버 통합 준비 대상은 새 서버 `chaconne@49.247.192.127`이다. 실제 인계 전에는 기존 운영 주소·DNS·GBrain CLI를 유지한다. 현재 상태와 검증·재개 정보는 `~/controlroom/docs/production-server-consolidation-20260916.md`를 먼저 확인하며 준비용 복원본을 운영 정본으로 사용하지 않는다.
+- 원격 프로젝트는 선택한 조정실 장비에서 조정한다. 2026-09-17 22:33 KST 이후 Coconut/FundKeeper·RNDLOG·CEO Loan·ZiiN 코드와 운영 DB·자료·GBrain 본체는 main `chaconne@49.247.192.127`의 `/srv/consolidation`에 있다. Exdigm 앱은 기존 전용 서버에 유지한다.
+- 실제 운영 인계는 2026-09-17 22:30~22:33 KST, 전체 172.469초에 복구 절차까지 끝났다. 공개 DNS와 기존 GBrain CLI 주소는 옛 접속 주소를 유지하며 main으로 전달한다. 현행 코드·자료·실행 책임과 검증·복구 정보는 `~/controlroom/docs/production-server-consolidation-20260916.md` 최신 절과 프로젝트 AGENTS.md를 우선한다. 옛 서버 writer는 정지·읽기 전용이며 재개하거나 그곳에 배포하지 않는다. DNS 최종 변경·옛 서버 삭제·vdb 포맷은 별도 지시가 필요하다.
 - 개발 에이전트와 계획·판단·작업 지시는 조정실에서만 실행한다. 서버에는 SSH로 코드 수정·빌드·테스트·배치 명령을 실행하며 개발 에이전트를 새로 실행하거나 설치하지 않는다. 제품 기능의 기존 AI·LLM 실행은 보존한다.
 - 기획·리서치·작업 계획의 파일 원본은 `~/controlroom/projects`의 통합 controlroom Git에서 관리하고 각 프로젝트 `docs`로 연결한다. `~`는 Windows의 `USERPROFILE`, macOS·Linux의 `HOME`이며 등록된 프로젝트 경로를 우선한다. 코드·테스트가 읽는 자료와 코드와 함께 바뀌는 기술 계약은 서버 코드 저장소에 둔다. 공통 지침·스킬과 프로젝트 기획의 원본은 현재 조정실의 controlroom 저장소다.
 - 비밀값은 실제 사용·복구에 필요한 양쪽에서 관리할 수 있다. 값의 교체 기준을 하나로 두고 필요한 실행 환경에만 공급하며 문서·Git·GBrain·로그에 값을 넣지 않는다.
@@ -20,7 +20,7 @@
 
 ## 공용 GBrain 실행
 
-DB의 기존 메인 CLI를 현재 조정실에서 SSH로 호출한다. PowerShell·Git Bash·macOS/Linux 셸에서 아래 SSH 명령을 사용한다.
+기존 DB 주소의 호환 CLI가 main의 공용 GBrain으로 전달된다. CLI 주소·공용 default 계약은 유지한다. PowerShell·Git Bash·macOS/Linux 셸에서 아래 SSH 명령을 사용한다.
 
 ```text
 ssh chaconne@49.247.45.243 '/home/chaconne/.gbrain/bin/gbrain_with_google_env.sh get agent/gbrain-operating-protocol --source default'
