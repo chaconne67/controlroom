@@ -1,0 +1,46 @@
+{
+  "checks": [
+    "accordion opening preserves current page",
+    "property selection and shared collateral retains one amount",
+    "unreviewed amounts hidden; missing annex visible; original still reachable",
+    "coequal trust beneficiaries and separate trust period",
+    "building-only scope and land share separated",
+    "SMS schedule -> simulated send -> TM note -> scoped sales handoff -> outcome",
+    "corporate campaigns/calls/sales unchanged by mortgage activity",
+    "empty search state and filter reset",
+    "1024px list/detail no document overflow",
+    "480px list/detail no document overflow",
+    "390px list/detail no document overflow",
+    "reset restores original synthetic states"
+  ],
+  "findings": [
+    "corporate detail initial company-info tab has no selected state"
+  ],
+  "observed": {
+    "console_errors": [],
+    "failed_requests": [],
+    "responses": [
+      {
+        "url": "http://127.0.0.1:18794/",
+        "status": 200,
+        "type": "document"
+      },
+      {
+        "url": "https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css",
+        "status": 200,
+        "type": "stylesheet"
+      },
+      {
+        "url": "http://127.0.0.1:18794/style.css",
+        "status": 200,
+        "type": "stylesheet"
+      },
+      {
+        "url": "http://127.0.0.1:18794/app.js",
+        "status": 200,
+        "type": "script"
+      }
+    ],
+    "downloads": []
+  }
+}

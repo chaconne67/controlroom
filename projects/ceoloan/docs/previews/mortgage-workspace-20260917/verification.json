@@ -1,0 +1,157 @@
+{
+  "checks": [
+    "accordion opening preserves current page",
+    "corporate detail starts with company-info tab selected",
+    "property selection and shared collateral retains one amount",
+    "unreviewed amounts hidden; missing annex visible; original still reachable",
+    "coequal trust beneficiaries and separate trust period",
+    "building-only scope and land share separated",
+    "SMS schedule -> simulated send -> TM note -> scoped sales handoff -> outcome",
+    "corporate campaigns/calls/sales unchanged by mortgage activity",
+    "empty search state and filter reset",
+    "1024px list/detail no document overflow",
+    "480px list/detail no document overflow",
+    "390px list/detail no document overflow",
+    "reset restores original synthetic states",
+    "uncontacted company cannot silently switch to another TM target; Escape restores dialog",
+    "invalid form shows actionable error; TM draft preserved across channel navigation",
+    "excluded target removed from TM, disabled for SMS and handoff in this workflow",
+    "loading and failed list states can recover",
+    "mobile embedded preview retains selected company and trust tab; no nested review chrome",
+    "keyboard tab switching; cancelled history retained; source dialog labeled synthetic",
+    "mobile menu opens and closes by keyboard"
+  ],
+  "findings": [],
+  "observed": {
+    "console_errors": [],
+    "failed_requests": [],
+    "responses": [
+      {
+        "url": "http://127.0.0.1:18794/",
+        "status": 200,
+        "type": "document"
+      },
+      {
+        "url": "https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css",
+        "status": 200,
+        "type": "stylesheet"
+      },
+      {
+        "url": "http://127.0.0.1:18794/style.css",
+        "status": 200,
+        "type": "stylesheet"
+      },
+      {
+        "url": "http://127.0.0.1:18794/app.js",
+        "status": 200,
+        "type": "script"
+      }
+    ],
+    "downloads": []
+  },
+  "interaction_review": {
+    "base": "7b6f782994c844fa990a30bb1130317e788694bd",
+    "scope": "synthetic HTML/CSS/JS and planning docs only",
+    "approved_findings_fixed": [
+      "corporate initial tab selection",
+      "company-specific TM button no longer switches silently to another company",
+      "excluded target blocked from continued workflow",
+      "embedded mobile preview preserves document context"
+    ],
+    "remaining_findings": 0,
+    "production_modified": false,
+    "tested_widths": [
+      1440,
+      1024,
+      480,
+      390
+    ]
+  },
+  "observed_additional": {
+    "console_errors": [],
+    "failed_requests": [],
+    "responses": [
+      {
+        "url": "http://127.0.0.1:18794/",
+        "status": 200,
+        "type": "document"
+      },
+      {
+        "url": "https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css",
+        "status": 200,
+        "type": "stylesheet"
+      },
+      {
+        "url": "http://127.0.0.1:18794/style.css",
+        "status": 200,
+        "type": "stylesheet"
+      },
+      {
+        "url": "http://127.0.0.1:18794/app.js",
+        "status": 200,
+        "type": "script"
+      },
+      {
+        "url": "http://127.0.0.1:18794/index.html?embedded=1",
+        "status": 200,
+        "type": "document"
+      },
+      {
+        "url": "https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css",
+        "status": 200,
+        "type": "stylesheet"
+      },
+      {
+        "url": "http://127.0.0.1:18794/style.css",
+        "status": 200,
+        "type": "stylesheet"
+      },
+      {
+        "url": "http://127.0.0.1:18794/app.js",
+        "status": 200,
+        "type": "script"
+      },
+      {
+        "url": "http://127.0.0.1:18794/",
+        "status": 200,
+        "type": "document"
+      },
+      {
+        "url": "https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css",
+        "status": 200,
+        "type": "stylesheet"
+      },
+      {
+        "url": "http://127.0.0.1:18794/style.css",
+        "status": 200,
+        "type": "stylesheet"
+      },
+      {
+        "url": "http://127.0.0.1:18794/app.js",
+        "status": 200,
+        "type": "script"
+      },
+      {
+        "url": "http://127.0.0.1:18794/",
+        "status": 200,
+        "type": "document"
+      },
+      {
+        "url": "https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css",
+        "status": 200,
+        "type": "stylesheet"
+      },
+      {
+        "url": "http://127.0.0.1:18794/style.css",
+        "status": 200,
+        "type": "stylesheet"
+      },
+      {
+        "url": "http://127.0.0.1:18794/app.js",
+        "status": 200,
+        "type": "script"
+      }
+    ],
+    "downloads": []
+  }
+}

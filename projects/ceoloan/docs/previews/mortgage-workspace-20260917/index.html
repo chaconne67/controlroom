@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>기업자금 · 모기지 업무 화면 시안 | CEO Loan</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <a class="skip" href="#screen">본문 바로가기</a>
+  <header class="review-bar">
+    <div><strong>기업자금 · 모기지 업무 화면 시안</strong><span>2026.09.17 · 모든 회사·금액·진행 상태는 가상 예시입니다. 실제 발송·저장은 없습니다.</span></div>
+    <div class="review-actions"><a href="#design-notes">화면 기획 보기</a><button data-act="reset">시안 초기화</button></div>
+  </header>
+  <section class="prototype" aria-label="실제 구현 화면 샘플">
+    <aside class="sidebar" id="sidebar"><div class="brand"><b>ROGEON<span>●</span></b><small>기업 금융 업무</small></div><nav id="nav" aria-label="업무 메뉴"></nav><div class="nav-footer"><button data-act="manage"><span class="nav-icon">⚙</span> 관리</button><div class="profile"><span class="avatar">관</span><div>관리자<small>업무 화면 시안</small></div></div></div></aside>
+    <div class="workspace">
+      <div class="mobile-bar"><button data-act="mobile-nav" aria-controls="sidebar" aria-expanded="false" aria-label="업무 메뉴 열기">☰</button><b id="mobile-channel">모기지</b><span>ROGEON</span></div>
+      <main id="screen" tabindex="-1"></main>
+    </div>
+  </section>
+  <section class="scenario-bar" aria-label="시안 상태 선택"><div><b>상태 둘러보기</b><span>실제 화면에는 표시하지 않는 시안 조작 도구</span></div><div class="scenario-buttons"><button data-act="scenario" data-value="portfolio">복수 물건·공동담보</button><button data-act="scenario" data-value="draft">판독 검토 대기</button><button data-act="scenario" data-value="trust">공동 순위 신탁</button><button data-act="scenario" data-value="unit">건물만 담보</button><button data-act="scenario" data-value="empty">등기 미수집</button><button data-act="scenario" data-value="loading">불러오는 중</button><button data-act="scenario" data-value="error">오류·재시도</button><button data-act="mobile-preview">모바일 폭 보기</button></div></section>
+  <section class="notes" id="design-notes">
+    <p class="eyebrow">화면 기획 · 실제 화면에는 표시하지 않음</p>
+    <h2>회사는 공통으로 읽고, 업무는 두 갈래로 이어갑니다.</h2>
+    <p>기업자금과 모기지는 각각 대상 회사 → 문자 발송 → TM 상담 → 영업으로 이어집니다. 회사가 양쪽 대상이어도 담당자·선택 목록·예약·통화·녹음·할 일·영업 건은 서로 섞이지 않습니다. 같은 회사의 재무·연락처·부동산 원문은 공통 정본을 참조합니다.</p>
+    <div class="note-grid"><div><h3>1. 메뉴 구성</h3><p>상단의 기업자금 / 모기지 버튼은 하위 메뉴만 펼칩니다. 메뉴를 펼치는 것만으로 현재 화면을 바꾸지 않습니다. 하위 메뉴 선택 시 업무가 바뀌며, 마지막 화면·검색 조건·작성 중 기록은 업무별로 기억합니다.</p><p>두 메뉴 모두 오늘 할 일, 대상 회사, 문자 발송, TM 상담, 통화 녹음, TM 진행 내역, 영업 현황을 둡니다. 계정·가입 승인·발신 설정은 하단 공통 관리에 둡니다. 담당자 배정은 관리 화면 안에서 업무를 선택합니다.</p></div><div><h3>2. 부동산 탐색</h3><p>목록은 회사 한 줄, 상세는 물건 한 개를 기준으로 봅니다. 회사 상세의 부동산 탭에서 토지·건물·호실을 고르고 요약, 권리·담보, 변동 이력, 원문을 봅니다. 신탁이 있는 물건에만 신탁 탭을 추가합니다.</p><p>등기 자료 보유와 회사 소유 확인을 별개로 표시합니다. 주소로 연결된 부동산을 곧바로 보유 부동산으로 부르지 않습니다. 말소·공유지분·건물만 담보·미수령 목록을 내용 가까이 표시합니다.</p></div><div><h3>3. 금액을 읽는 기준</h3><p>매매금액은 어느 물건 묶음의 가격인지, 채권최고액은 어느 담보 묶음의 금액인지 함께 보여줍니다. 공동담보 36억원이 두 등기에 반복돼도 72억원으로 더하지 않습니다. 신탁 우선수익 한도는 근저당 최고액과 별도로 표시합니다.</p><p>대출 잔액·금리·만기는 은행 자료 등 별도 근거가 있을 때만 표시합니다. 등기만 있는 상태는 ‘확인 자료 없음’입니다. 대출 가능액·LTV·상환일을 임의로 계산하지 않습니다.</p></div><div><h3>4. 자료 상태와 영업 상태</h3><p>등기 미수집, 검토 대기, 확인 완료는 자료 상태입니다. 미접촉, 상담 중, 영업 전달, 진행·성사·무산은 업무 상태입니다. 검토 대기 자료는 원문을 볼 수 있지만 숫자 요약과 분석 집계에는 포함하지 않습니다.</p><p>현재 운영의 판독 8개는 모두 검토 대기입니다. 이 시안의 ‘확인 완료’는 향후 원문 검토를 통과했을 때의 합성 상태입니다. 회사 전화만 있는 경우의 연락처 확인 TM, 영업자의 원문 접근 권한은 아래 결정 사항을 따릅니다.</p></div></div>
+    <h3>모바일에서의 사용</h3><p>390·480px에서는 상단 메뉴 버튼으로 동일한 아코디언을 엽니다. 회사 표는 같은 정보를 담은 세로 행으로, 부동산 선택은 상세 위쪽 목록으로 바뀝니다. 긴 원문은 별도 대화상자에서 스크롤하며, 통화 입력과 저장 버튼을 숨기지 않습니다. 위 ‘모바일 폭 보기’에서 변경된 화면을 바로 확인할 수 있습니다.</p>
+    <h3>구현 메모</h3><p>시안용 CSS는 운영의 paper / ink / accent / line 및 WDS 색 값을 사용합니다. 구현 때에는 기존 .btn / .input / .select / .darkhead-table과 nav_sidebar, funding/_layout, HTMX의 #main-content 교체를 재사용합니다. 시안은 독립 HTML이며 운영 코드의 새 CSS 체계가 아닙니다. 주 행동에는 기존 TM 화면처럼 ink 배경을 사용하고, 녹색은 선택 표시로 사용합니다.</p>
+    <div class="table-wrap"><table class="spec-table"><thead><tr><th>영역</th><th>구현 계약</th><th>화면에서 지킬 기준</th></tr></thead><tbody><tr><td>업무 식별</td><td>기업자금은 기존 funding 대상, 모기지는 MortgageTarget 기준. URL과 모든 조회·쓰기·비동기 작업에 업무 범위를 결합.</td><td>같은 회사라도 문자·TM·영업 상태와 담당자가 독립.</td></tr><tr><td>원문 및 구조화 사실</td><td>company는 회사 정본, real_estate는 등기 사실·문서·근거, ceoloan은 업무 기록.</td><td>회사/물건/등기/판독 버전을 구분. 확정된 최신 관측만 요약.</td></tr><tr><td>문자</td><td>확인된 수신 연락처·수신거부·중복·실제 발송 결과를 기존 발송 계약에서 검사.</td><td>회사 일반전화가 있다고 발송 가능으로 판단하지 않음. 타 업무 최근 연락은 필요한 최소 정보만 표시.</td></tr><tr><td>영업 전달</td><td>해당 업무 회사, 담당 영업자, 상담 요약, 대상 물건, 참조한 문서 버전과 확인 상태를 연결.</td><td>검토 중 자료를 전달해도 검토 상태 유지. 금액·소유 사실 자동 확정 금지.</td></tr><tr><td>권한</td><td>관리자 전체 / TM 배정 회사 / 영업자 자신에게 전달된 업무만. 서버에서 범위 검사.</td><td>메뉴 숨김만으로 권한을 대신하지 않음. 원문은 현재 ADMIN·배정 TM 정책 유지.</td></tr></tbody></table></div>
+    <h3>결정한 방향과 남은 선택</h3><p><b>요청으로 확정:</b> 기업자금·모기지 아코디언, 별도 대상·문자·TM·영업, 같은 업무 순서, 모기지 부동산 상세. <b>시안 제안:</b> 양쪽 ‘대상 회사’ 진입점, 공통 관리 안 업무별 배정, 모기지의 ‘연락처 확인’ TM 분기. 이 분기는 문자 → TM 순서의 예외이므로 구현 전 확정할 항목입니다. 영업자의 등기 원문 권한 확대는 이 시안으로 허용하지 않으며, 필요하면 전달된 회사·물건 범위로 별도 설계합니다.</p>
+    <h3>구현 단계</h3><ol><li>현 기업자금 메뉴를 아코디언으로 묶고 기존 URL·상태·권한을 보존합니다.</li><li>모기지 대상 회사와 회사·부동산 조회를 연결합니다. 판독 미확정 상태부터 실제 자료로 검증합니다.</li><li>문자·TM·녹음·할 일·영업을 업무별로 분리하고, 중복 연락·권한·진행 상태를 확인합니다.</li><li>모바일·키보드·부분 화면 이동·오류/재시도와 실제 업무 분리를 검증한 뒤 배포 여부를 결정합니다.</li></ol>
+    <h3>검증 기준</h3><p>메뉴 열기와 화면 이동 구분 · 채널별 검색/선택/초안 분리 · 회사와 물건 개수 구분 · 주소 연관과 소유권 구분 · 공동담보 중복 합산 없음 · 미확인 값을 0으로 표시하지 않음 · 원문과 구조화 버전 연결 · 마스킹/배정 권한 · 작은 화면 넘침 없음 · 폼 라벨/키보드/오류 복구 · 실제 문자/DB 호출 없는 시안.</p>
+    <p class="doc-link"><a href="../../mortgage-workspace-design-20260917.md">전체 화면 기획 및 재개 정보 ↗</a></p>
+  </section>
+  <dialog id="modal" aria-labelledby="modal-title"><div id="modal-content"></div></dialog>
+  <div id="toast" role="status" aria-live="polite"></div>
+  <script src="app.js"></script>
+</body></html>
