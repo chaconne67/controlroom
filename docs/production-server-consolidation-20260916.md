@@ -8,7 +8,7 @@
 제외: Exdigm 앱·운영서버·도메인 이전. 공용 DB를 쓰는 Exdigm 소비자의 기존 접속·업무 계약도 보호한다.
 
 
-> 최신 상태: 2026-09-17 01:36 KST 사용자 요청으로 작업 중지. 아래 12절의 다음 세션 인계를 먼저 읽는다. 운영 정본·DNS 미인계이며 격리 MySQL 복원은 중지된 부분 상태다.
+> 최신 상태: 2026-09-17 전체 인계·중단·복구 리허설과 별도 서버 cold 복원 결과는 14절을 먼저 읽는다. 준비 검증은 완료했으나 실제 운영 정본·DNS는 미인계다. 12~13절은 이전 시점의 기록으로 보존한다.
 
 ## 1. 사용자 결정과 완료 의미
 
@@ -20,6 +20,8 @@
 - 주인님은 최종 인계를 위한 **야간 전체 접속 중단을 최대 5분**까지 허용했다. 준비 중 서비스는 계속 유지한다. 중단 시작부터 전체 서비스 재개까지 300초 안에 끝나는 전환·중단·복귀 절차를 리허설한 뒤 실제 인계에 진입한다. 이 승인은 DNS 변경이나 옛 서버 삭제 승인이 아니다.
 - 개발 에이전트·지침·계획·판단은 controlroom에 둔다. 확인된 제품 AI 런타임만 운영 호스트로 옮기며 비밀값은 서버 간 보안 전송으로만 다룬다.
 - 2026-09-17 추가 결정: Coconut 02:10 작업은 정상 캐시 생성만 이전한다. 기존 서버에도 없는 `update_gdrive.py` 단계는 별도 과제로 남긴다. `.env`를 Drive에 복사하는 `upload_to_gdrive.py`로 자동 대체하지 않는다.
+- 2026-09-17 추가 결정: 야간 인계는 **한국 시각 22시 이후 아무 때나** 실행할 수 있다. 최대 300초와 사전 전체 리허설 조건은 그대로 적용한다. 구 rndnote `49.247.46.171`은 주인님이 삭제 완료와 RNDLOG로의 이전을 확인했으므로 운영 대상·잔여 writer 조사에서 제외한다.
+- 2026-09-17 추가 결정: 기존 ChatGPT 구독 계정을 사용하는 Coconut의 짧은 내부 AI 응답 **1회** 시험을 허용했다. 다른 유료 배치·고객 발송·금융 주문 시험 제외 조건은 유지한다.
 
 최소 구현 게이트: 2단계에서 멈춤 — 운영 이미지·Nginx·Certbot·Docker와 기존 제품 배포/자료 게이트웨이 구성을 재사용한다.
 근거: 공유 실측의 Compose/Swarm·이미지·마운트·배포 스크립트·예약 작업. 신규 호스트에는 Docker와 Compose가 이미 설치됐다. 별도 관리 플랫폼·Kubernetes·HA를 만들지 않는다.
@@ -35,7 +37,7 @@
 | Coconut 49.247.38.186 | Swarm 앱·Nginx, root cron 9개, claude-max-proxy user service 127.0.0.1:3456 | 제품 AI 의존성과 /openclaw 정상 기준. 설정 대상 18789에는 조회 당시 listener 없음 |
 | RNDLOG 49.247.207.147 | Swarm 앱·Nginx, media 약 268MiB, .credential, funding 계열 cron 3개·hermes-gateway 활성 | 실행 주체별 쓰기/발송 경계·AI 런타임 사용 계약 |
 | CEO Loan 49.247.205.170 | Compose 앱·Nginx, media 약 181MiB, funding 계열 cron 3개. 옛 로컬 DB 컨테이너 중지 | 배치/발송 범위. 중지 DB를 시작하거나 삭제하지 않음 |
-| 구 rndnote 49.247.46.171 | SSH 시간 초과 | 잔여 서비스·데이터·계약 상태. 퇴역을 추정하지 않음 |
+| 구 rndnote 49.247.46.171 | 주인님이 삭제 완료·RNDLOG로 이전 확인. 운영 대상에서 제외 | 클라우드 삭제 기록은 별도 조회하지 않음. 현재 RNDLOG의 실제 앱·DB·자료·cron 경로는 13절에서 확인 |
 
 | 제품 | 원본 소스 HEAD | 먼저 재현할 실제 실행 버전·주의점 |
 |---|---|---|
@@ -280,7 +282,7 @@ DB/파일 복제를 유지한 것은 대기본 최신성을 보존하기 위한 
 | RNDLOG | `rndlog` / 49.247.207.147 |
 | CEO Loan | `ceoloan` / 49.247.205.170 |
 | 신규 | `chaconne@49.247.192.127` |
-| 구 rndnote | 49.247.46.171, SSH timeout. 잔여 역할 확인 안 됨 |
+| 구 rndnote | 49.247.46.171. 2026-09-17 주인님이 삭제 완료와 RNDLOG 이전 확인. 운영 대상에서 제외. 13절 참조 |
 | 제외된 Exdigm | 49.247.202.197. 주 앱은 자체 exdigm_db를 사용함을 읽기 전용 확인 |
 
 SSH는 `BatchMode=yes`, `StrictHostKeyChecking=yes`를 사용한다. 새 서버 Docker는 `sudo -n docker`가 필요하다.
@@ -413,3 +415,120 @@ SSH는 `BatchMode=yes`, `StrictHostKeyChecking=yes`를 사용한다. 새 서버 
 8. 준비가 모두 검증된 뒤 승인된 야간 인계에 들어간다. **공개 DNS는 그 뒤 마지막 단계로 남긴다.**
 
 이 기록은 작업 중지 인계다. 통합 완료·전체 복구 통과·DNS만 남음으로 해석하지 않는다.
+
+## 13. 2026-09-17 재개 후 확인·준비 결과
+
+이 절은 12절의 중지 당시 기록을 갱신한다. 운영 DB·파일의 정본, 공개 DNS, 기존 공개 업무 입구와 조정실 GBrain 접속은 여전히 기존 서버에 있다. 승인된 실제 인계 시간은 한국 시각 22시 이후이며, 전체 300초 리허설과 새 쓰기 보존 복구가 통과해야 실행한다.
+
+### 삭제된 rndnote와 현재 RNDLOG
+
+- 구 `49.247.46.171`의 삭제와 이전 완료는 주인님 확인에 따른 사실이다. SSH 시간 초과만으로 삭제를 확인한 것은 아니며 클라우드 관리 기록은 조회하지 않았다. 이 서버를 미확인 운영 writer로 남기지 않는다.
+- `49.247.207.147`의 실제 Swarm `Rndnote_app`은 `main.settings.deploy`와 Gunicorn으로 실행 중이다. 실제 앱의 SQL 연결은 `company_main` / `rndnote`이며 미디어 볼륨에는 253개 파일이 있다.
+- `/home/work/rndnote`는 `/home/chaconne/rndlog`로 연결된다. 현재 저장소 HEAD는 `67d07991e755ab146e73fbbf35395d2f65699ec9`이며 clean이다. 이전 계획의 소스 HEAD와 달라졌으므로 신규 서버의 고정된 운영 이미지를 최신 소스로 바꾸지 않는다.
+- RNDLOG와 옛 rndnote·aishift의 www 포함 6개 A 레코드는 모두 `49.247.207.147`이다. RNDLOG 고객 회사 자료는 설정대로 공용 DB `49.247.45.243`의 SSH 자료 게이트웨이를 사용한다. 이는 삭제된 서버에 의존하는 경로가 아니다.
+- RNDLOG의 CEO 동기화·문자 발송·문자 전달 조회 cron 3개가 원래 시각에 등록돼 있다. 현재 실행 코드·설정에서 삭제된 IP를 찾지 못했다. 고객 문자나 메일은 시험 발송하지 않았다.
+
+### 다른 서버에서의 암호화 백업 복원
+
+- 고정된 준비 백업 `recovery-20260916T160058Z.tar.gpg`의 SHA-256과 성공한 PG 복원을 보존한 상태에서 MySQL 전체 import를 재개했다. 실제 인증된 TCP `SELECT 1`로 시작 준비를 확인하여 임시 시작 프로세스의 잘못된 성공 판정을 제거했다.
+- 이미지에 없는 `mysqlcheck` 실행 파일 대신 설치된 기본 `mysql` 클라이언트의 동일한 `CHECK TABLE` 명령을 사용한다. import 완료 기록을 검사하는 재개 진입점을 공식 복구 스크립트에 통합하여 성공한 import를 다시 실행하지 않았다.
+- 최종 결과 `/mnt/consolidation-20260916/offsite/restore-results-20260917T045611Z.json`: MySQL 테이블·뷰 1,818개 검사 모두 성공, 실제 앱 계정으로 fundkeeper·price 테이블 조회 성공. PG company_main 103개 사용자 테이블과 GBrain 이벤트 소유자·NOSUPERUSER 상태를 확인했다. 시험 컨테이너 두 개는 종료했고 복구 데이터는 보존했다.
+- 복구 스크립트의 현재 저장 커밋은 main infra `c133267`이다. 이번 결과는 2026-09-16 준비 백업의 데이터 복원 검증이며 최종 인계 시점의 DB/파일 일관 백업 또는 전체 서비스 300초 리허설을 뜻하지 않는다.
+
+### 옛 HTTPS 입구의 새 서버 전달 준비
+
+- 네 옛 서버에서 별도 loopback `39443` 시험 컨테이너를 사용하고 새 서버의 제한된 임시 `29443` 입구로 전달했다. 실제 옛 공개 `443`은 바꾸지 않았다. 최종 설정은 새 고정 IP `443`으로 전달한다.
+- 14개 도메인의 경로·쿼리 28건에서 원본과 응답 상태·주소 이동·CA/SNI 검증·HTTP 버전이 일치했다. 4개 제품의 요청 크기 경계 8건과 각 전달 구간의 실제 방문자 IP 보존·위조 IP 거절을 확인했다. 인증된 모든 업무 업로드나 실제 WebSocket/SSE 기능 검증으로 확대 해석하지 않는다.
+- 옛 입구가 여러 인증서 이름을 하나의 고정 IP로 전달할 때 TLS 세션 재사용 때문에 이름 불일치가 발생했다. 동일 시험에서 16건 중 7건 실패를 재현했고 공통 옛 전달 설정 한 곳에서 세션 재사용을 끈 뒤 16건 모두 통과했다. 잘못된 SNI는 실제로 거절됐다. 새 내부 입구의 기존 동적 전달 설정에는 불필요한 동일 패치를 남기지 않았다.
+- Coconut의 기존 Nginx 시작 wrapper는 옛 앱 응답을 기다리므로 최종 전달 컨테이너는 검증한 직접 Nginx 시작 명령을 사용해야 한다. 기존 앱의 재시작·기능 배포는 수행하지 않았다.
+
+### DB와 GBrain 준비 설정
+
+- 새 MySQL 대기본·승격 정의에서 원본 `innodb_lock_wait_timeout=15`, `wait_timeout=600`, `interactive_timeout=600`, `innodb_print_all_deadlocks=ON`을 보존했다. 실제 전후 조회와 앱 SQL 접속, 복제 IO/SQL 정상·읽기 전용 유지, 다른 앱 시작 시각 보존을 확인했다. 원본 이벤트는 0개이며 이벤트 스케줄러는 준비 상태 OFF, 실제 인계 정의에서는 원본처럼 ON이다.
+- 새 호스트 CLI는 기존 컨테이너의 Bun·Google 환경 로딩을 재사용하는 `/srv/consolidation/infra/gbrain-host`로 연결된다. 공식 공용 프로토콜 get 성공과 원본/새 조회 결과 SHA-256 `13e52b1fe824c71c2cfc1ed1dd9325ce0561b0668dbe0ce164b336adc3a71a7e` 일치를 확인했다.
+- 전환 대기 GBrain의 내부 HTTP health는 200이다. 준비 상태는 내부망과 읽기 전용으로 유지한다. 실제 인계 정의의 private `127.0.0.1:3131`과 별도 외부 API 망을 임시로 사용하여 새 HTTP health, 옛 DB의 별도 SSH 전달 포트, 기존 Google 인증으로 모델 목록 조회 200을 확인했다. 내용 생성·유료 시험을 하지 않았으며 시험 후 원래 내부망·읽기 전용으로 복귀했다.
+- 옛 DB의 별도 `gbrain-forward` → 전용 제한 SSH 키 → 새 `gbrain-ssh-gateway` → `gbrain-host` → 기존 컨테이너 CLI 경로에서 같은 프로토콜 조회 결과를 확인했다. 임의 셸 명령은 거절된다. 원래 CLI 심볼릭 링크·기존 HTTP 3131·조정실 카드는 유지했고 새 전달 systemd 단위는 준비·검사만 했다.
+
+### 격리 데이터·앱 전환과 새 쓰기 보존 복구
+
+- 원본 운영을 멈추지 않고 새 서버의 실제 읽기 전용 대기본만 25.7초 중지하여 두 쌍의 별도 DB/파일 복제본을 만들었다. 경로는 `/srv/consolidation/work/handoff-rehearsal-20260917`이며 이 데이터는 운영 정본이 아니다. 복사 후 실제 대기본 PG 복구 상태·MySQL 읽기 전용/복제 정상과 다른 컨테이너 시작 시각 보존을 확인했다.
+- 격리 OLD 쌍은 쓰기 가능, NEW 쌍은 PG 스트리밍 복제·MySQL IO/SQL 복제와 읽기 전용으로 준비했다. 실제 운영 이미지의 앱을 OLD 복제본에 연결하고 외부 연결은 내부망으로 차단했다.
+- Coconut·RNDLOG·CEO Loan은 실제 HTTPS CSRF 로그인과 세션을 시험했다. ZiiN 운영 버전의 URL 설정에는 로그인 화면이 없으므로 기존 `/`·`/health/`와 DB의 시험 기록을 검증했다. 없는 로그인 기능을 추가하거나 성공으로 보고하지 않는다.
+- RNDLOG의 공식 `store_customer_upload`와 `open_asset_download`를 사용하여 실제 SSH 자료 게이트웨이에 시험 파일을 저장하고 DB 정보·크기·SHA-256·수신 내용을 확인했다. 시험용 계정과 고객사·파일은 격리 복제본에만 존재한다.
+- `rehearse-handoff.py abort-before-promotion`: 쓰기 앱 중지·거래 배수·최종 WAL/binlog 적용·2,320개 일반 파일과 소유자/권한 대조 뒤 OLD 정본으로 재개 **13.558초**, NEW는 읽기 전용 대기 상태 유지.
+- `rehearse-handoff.py promote`: 같은 최종 장벽 뒤 OLD 두 컨테이너를 중지하고 재시작 정책 없음·데이터 읽기 전용 마운트로 다시 만들었다. PG native promote와 MySQL 승격 설정을 적용하고 NEW 앱·기존 세션·공식 파일 다운로드 검증까지 **30.120초**.
+- `rehearse-handoff.py recover-new`: NEW에 새 파일과 DB 정보를 추가한 뒤 NEW DB·앱을 중지/재시작하여 새 기록·기존 파일·기존 세션 보존을 확인 **13.994초**. 옛 snapshot을 다시 쓰기 정본으로 열지 않았다.
+- 시험 후 `cleanup`으로 앱을 준비 원래 설정에 복귀하고 자료 게이트웨이 symlink를 `/srv/consolidation/data/rndlog-workspace`로 복원했다. 격리 DB 4개는 모두 중지했고 자료·결과는 보존했다. 실제 `production-authority.json`은 없으며 실제 복제 대기본은 계속 읽기 전용이다.
+- 위 시간은 **격리 DB/앱 구간**이다. 실제 옛 공개 전달·비공개 DB 접속·cron/GBrain 운영 책임 인계를 묶은 전체 300초 리허설로 보고하지 않는다. 결과는 main infra `validation-handoff-native-results.json`을 따른다.
+
+### 예약 작업과 원본 일일 백업 보존
+
+- 원본 Coconut 4개 제품 작업에는 실행 제한 시간이 없다. 새 준비 단위의 임의 31/61/3/6분 제한을 제거하여 원본처럼 `TimeoutStartSec=infinity`로 보존했다. 11개 제품 timer는 모두 비활성이고 정본 인계 표시가 있어야 작업을 실행할 수 있다.
+- 옛 DB의 실제 일일 백업은 chaconne cron **03:40 KST**의 `/home/chaconne/bin/backup-ceo-loan-db.sh`다. 이 파일을 그대로 재사용하고 새 PG 컨테이너 선택과 전용 백업 폴더만 환경으로 지정한다. 보존 기간 14일, 완료 파일의 native 목록 검사와 완료 후 rename, 기존 cron처럼 재부팅 뒤 누락 작업 자동 실행 없음·시간 제한 없음으로 준비했다.
+- 새 읽기 전용 대기본에서 원본 스크립트로 `/srv/consolidation/work/daily-backup-rehearsal-20260917/company_main_20260917143352.dump`를 생성했다. **570,841,838 bytes**, 50.9초, `pg_restore --list` 성공. 빈 시험 폴더에서 실행하여 기존 백업 이력을 삭제하지 않았다. 새 timer는 비활성이고 옛 cron은 유지 중이다.
+
+### 인증서의 중앙 갱신과 옛 입구 전달
+
+- 기존 rsync와 Nginx 재읽기 기능을 재사용하는 `distribute-certificates.py`·`certificate-receiver.py`를 준비했다. 전용 키는 새 고정 IP에서 인증서 archive/live 쓰기, 고정된 Nginx 검사·재읽기와 원본 인증서 복구만 허용하며 임의 명령은 실제 거절됐다. 기존 SSH 키 내용·소유자·권한을 보존했다.
+- 원래 인증서 archive를 덮어쓰지 않고 같은 내용이면 기존 번호를 재사용하거나 새 번호로 추가한다. 원본의 private 복구 묶음을 옛 서버에 보존하고 새 archive 해시를 확인한 뒤 live 연결을 바꾼다. 실패하면 원본 live 연결을 복구한다.
+- 네 옛 실제 TLS 입구에서 중앙 인증서 선택, 기존 archive/디렉터리 권한 보존, Nginx 검사·재읽기와 컨테이너 시작 시각 보존을 확인했다. 실제 14개 도메인의 CA·호스트명·응답·DNS가 유지되고 중앙 인증서 leaf가 일치한다. 유효기간은 2026-12-15다.
+- 중앙 갱신 스크립트에 전달 단계를 연결하고 systemd 단위에 실제 정본 표시 조건을 추가했다. 새 timer는 비활성이다. 실제 인계에서 옛 갱신 실행 주체를 비활성화해야 갱신 책임도 완료다.
+
+### 기존 Coconut 제품 AI 런타임의 연결과 1회 응답 검증
+
+- Coconut 제품 AI의 원본 운영 이미지와 새 동일 이미지 모두 `/usr/local/bin/codex --version`에서 `/usr/bin/env: node: No such file or directory`·종료 127을 확인했다. 이미지에는 launcher만 있다. 원본 Coconut 앱과 이미지는 보존하고, 옛 DB 서버에 이미 설치된 Codex CLI 0.153.4의 정적 Linux 실행 파일과 동봉 자원 6개를 재사용했다. 약 335MB를 서버 간 전송했고 수신 해시·정적 실행 파일·기존 실행 옵션 지원을 확인했다.
+- 새 Coconut에 `/srv/consolidation/data/product-codex-0.153.4`를 읽기 전용으로 연결하고 `CODEX_BIN=/opt/product-codex/bin/codex`를 지정했다. 원본 이미지 `sha256:f5501c4e097aac61aaec79235a29cb04d9445f51b6e0e731218c3680a2e189cf`, 모델 `gpt-5.5`, 기존 ChatGPT 인증과 API 키 없음은 보존했다. 별도 앱 소스 변경·이미지 재빌드·종속성 다운로드는 없다. main infra 저장 커밋은 `6d15106`이다.
+- 주인님이 허용한 1회 시험에서 실제 제품 함수 `support.views._generate_with_codex_cli`를 호출했다. 고객 정보 없이 전달한 연결 확인 요청에 **13.735초**, 정상 종료, “내부 AI 연결이 정상적으로 확인되었습니다.”라는 실제 응답을 받았다. 추가 생성 호출은 하지 않았다.
+- 시험 중 새 Coconut의 외부 연결만 임시로 열었다가 원래 내부 준비망으로 복귀했다. 인증·데이터와 제품 실행 파일의 읽기 전용 연결, 원본 이미지, 다른 컨테이너의 시작 시각을 보존했다. 시험 후 14개 도메인의 새 비공개 TLS 응답 기준선이 모두 일치했고 실제 PG 대기본·MySQL 읽기 전용 상태와 운영 정본 표시 없음도 유지됐다. 결과는 `validation-coconut-ai-one-response.json`이다. 장기 인증 갱신이나 실제 고객 상담 전체 기능을 별도로 검증한 결과로 확대하지 않는다.
+
+### 남은 실행 조건
+
+- 남은 필수 작업은 infra 전체 리뷰·설명서, 모든 운영 writer 잠금·진행 작업 배수, 비공개 DB/공개 HTTPS/GBrain/자료/예약 작업/백업/인증서의 실제 책임 인계를 묶은 300초 리허설과 최종 일관 복구 묶음이다. 통과 뒤 한국 시각 22시 이후 기존 승인으로 실제 인계한다. 공개 DNS 변경은 여전히 마지막 별도 단계다.
+
+## 14. 2026-09-17 전체 격리 리허설·복원·조정실 기억 정리
+
+이 절은 13절 이후 직접 실행한 결과다. **실제 운영 정본과 공개 DNS는 아직 기존 서버에 있다.** 한국 시각 22시 이후 실제 인계는 승인됐으며, 운영 writer의 진행 상태와 실제 전달·잠금 명령을 마지막으로 대조한 뒤 실행한다. 공개 DNS 변경, 서버 삭제, vdb 포맷은 현재 범위 밖이다.
+
+### 조정실 기억 정리의 승인된 대상
+
+- 주인님 결정은 ‘조정실의 새 대화 기록만 매일 정리하고 옛 서버 기록은 보관’이다. 원본 기억 판단 모델·프롬프트·보고서/ledger 처리는 기존 `memory_distill.py`를 재사용한다.
+- Windows용 `gbrain/bin/memory_distill_controlroom.py`는 현행 Codex JSONL의 `response_item/message/user/input_text`를 읽는다. 같은 파일의 event 복사본은 중복 입력으로 삼지 않으며 옛 server 기록을 가져오지 않는다. 현행·legacy·날짜·역할·중복 event 입력과 실제 현재 기록 38개를 확인했다.
+- 생성 자격은 이미 새 서버에 있는 `provider.env`를 SSH로 프로세스 메모리에만 읽는다. 키는 Windows 파일·Git·로그에 저장하지 않는다. OpenRouter 키의 read-only 확인은 HTTP 200이며 내용 생성 호출은 0회다. 이것은 모델 생성·계정 잔액·향후 인증 갱신을 검증했다는 뜻이 아니다.
+- native Windows task `GBrain-Controlroom-Memory-Distill`은 매일 03:30, **첫 시각 2026-09-18 03:30 KST**, pythonw·숨김·동시 실행 IgnoreNew·실행 제한 없음으로 준비했다. **현재 비활성·실행 안 됨**이다. 실제 인계 때 원본 03:30 user timer를 먼저 중지한 뒤 켠다. 별도 native task가 내부 확인 기록을 남기는 시험만 했고 기억 생성 작업을 시험 실행하지 않았다.
+
+### 전체 격리 경로를 한 시계로 측정한 결과
+
+기존 공개 운영을 바꾸지 않고 네 옛 서버에 별도 이름/label의 Source HTTPS 전달·private DB 전달·native cron 확인 작업을 만들었다. DB/파일은 FULL 복제본이며, main 13개 native scheduler 사본과 Windows memory task 사본은 고객/금융/유료 명령 대신 내부 확인 기록만 쓴다.
+
+| 경우 | Source 중지부터 최종 Source 확인까지 | 실제 확인 |
+|---|---:|---|
+| cold 잠금 뒤 체크포인트 확인 거부·승격 전 취소 | 58.376초 | OLD DB/앱/Source 입구/old cron 복귀, NEW 복제와 읽기 전용 유지 |
+| 최종 delta 수신 뒤 NEW 정본 선택 직후 의도적 중단 | 121.733초 | OLD는 잠금 유지, partial promotion을 NEW에서 재개, DB/파일 새 쓰기 보존, NEW 실행 책임 |
+| NEW 추가 기록 뒤 DB/앱 재시작 | 59.852초 | 기존 세션·자료·추가 기록 보존, OLD reopen 없음 |
+| GBrain CLI·자료 forward 확인까지 포함한 NEW 재시작 | 63.604초 | Source private PG/MySQL·GBrain HTTP/CLI·자료 forward health 포함 |
+| NEW DB/앱이 실제 중지된 상태에서 복구 진입 | 79.216초 | 먼저 NEW native 시작·앱 재개 후 검증, OLD 데이터/실행 주체 유지 잠금 |
+
+- 14개 HTTPS 이름의 CA·호스트명·응답과 3개 관리자 로그인 세션, 방문자 IP·query 보존, Source private PG/MySQL writable single source, GBrain HTTP 200과 forwarded CLI 공용 문서 동일, 자료 전달 health 및 공식 RNDLOG 업로드/다운로드·DB 정보/크기/SHA-256을 확인했다. ZiiN에는 원본 로그인 route가 없어 기존 홈/health와 DB 기록을 검증했다.
+- OLD 시험 폴더는 self bind read-only로 잠가 **root 쓰기도 EROFS**였고, NEW 전환 뒤 old cron의 확인 기록은 증가하지 않았다. NEW marker 전에는 13개 native service가 모두 차단됐고 marker 후에는 모두 실행됐다. Windows 확인 task 역시 유료 호출 없이 실행됐다. 원래 업무 명령의 대외 효과 검증으로 확대 해석하지 않는다.
+- Source original container 시작 시각과 untagged cron bytes를 보존했고, Source 외부 IP만 허용하는 trial ingress는 Windows PC에서 HTTP 403이었다. 실제 old Swarm published endpoints와 운영 writer 인계는 아직 별도 실행 대상이다.
+- 발견한 복구 순서 오류는 core 공식 진입점에 통합했다. cold 잠금 뒤 중지된 MySQL에 STOP REPLICA를 재실행하지 않으며, NEW marker 뒤 application profile OLD와 NEW 엔진 중지 상태 모두 먼저 NEW를 준비한다. Source controller 예외 복구는 확인한 isolated authority만 사용한다. GNU timeout으로 checkpoint 하위 작업 그룹의 시간 제한을 적용한다.
+
+### 별도 장애 영역의 cold base·delta와 실제 복원
+
+- 큰 기준본은 중단 시간 밖에서 만들었다. Source 수신과 독립 SHA-256 확인까지 **4,332,741,604 bytes**, 155.827초였다. FULL clone의 준비 데이터이며 실제 최종 운영 정본 백업으로 부르지 않는다.
+- 최종 cold WAL/binlog/자료 장벽 뒤 native rsync `--only-write-batch`로 원래 기준본을 바꾸지 않고 delta를 만들었다. **1,880,470 bytes**, 34.391초, 별도 Source가 크기/SHA-256을 확인한 뒤 NEW 선택을 진행했다.
+- 별도 Source에 보관한 암호문을 다시 SHA-256 확인·GPG 복호화하여 새 복원 Root에 추출했다. 큰 기준본 스트림은 조정실에 내용 파일을 저장하지 않고 557.5초가 걸렸다. 이 복원 시간은 준비 RTO 관측이며 300초 전환 시간과 다르다.
+- tar 제외 규칙이 데이터 cache까지 빼고 socket을 보관하지 않아 처음의 basis 대조는 실패했다. 누락 10개 이외에는 bytes/UID/GID/mode가 모두 동일했다. 기준본과 원래 receipt를 보존하고 누락 cache와 socket 메타정보만 **60,434-byte 암호화 supplement**로 별도 수신했다. 이후의 producer는 infra cache만 제외하고 socket 메타정보를 manifest에 담는다. Socket은 live 프로세스가 아니라 rsync 기준본에 있던 inert filesystem entry로 복원한다.
+- base + basis supplement + delta를 native `--read-batch`로 적용한 뒤 **DB/자료 전체 10,136개 일반 파일 및 자료 2,320개**, 경로·bytes·symlink·UID/GID/mode 해시가 최종 cold snapshot과 일치했다. 전체 data SHA-256 `98af64d72ebe7f04a7ad144ab9ba7c102aba74ac42d3fc8362860e1a239e1a96`, 자료 SHA-256 `f6b21b8088ce92b43faf1d23bdf2a6f71d88c828e649531f2393bef1b5b14cd0`이다.
+- 빈 별도 Docker/containerd에 offsite runtime 묶음을 복원했다. 첫 image archive만으로는 MySQL config blob이 빠져 native 실행이 실패했다. Source 실제 engine에서 동일 amd64 MySQL을 내보낸 companion을 함께 로드한 뒤 **11개 frozen image/RootFS 일치와 11개 native 시작**, PG16.14·MySQL8.4.8·Certbot5.8 실제 버전을 확인했다. 초기 archive 단독을 완전한 복구 묶음으로 쓰지 않는다. Digest alias가 로드되지 않는 경우 manifest의 frozen ID 대응을 쓴다.
+- 복원한 독립 image와 물리 데이터로 PG/MySQL을 **network=none·공개 port 없음**으로 시작했다. 최종 WAL 이상, 4개 제품의 DB fixture, 실제 MySQL Root TCP 인증, **mysql/sys 포함 1,818개 table/view**를 확인했다. 업무 schema만 세면 1,679개이며 이전 1,818 검사의 범위와 구분한다. 기존 논리 복원에서 실행한 전체 CHECK TABLE 성공도 별도로 보존한다.
+- 이 시험의 필요한 묶음은 Source offsite의 `checkpoint-base-20260917T073034Z-9d57214d.tar.gz.gpg`, `checkpoint-base-20260917T081601Z-458be6dc.tar.gz.gpg`(basis supplement), `checkpoint-delta-20260917T080010Z-d4a2e30c.tar.gz.gpg`, `runtime-images-20260917T063001Z.tar.gpg`, `runtime-mysql-amd64-20260917T072200Z.tar.gpg` 및 기존 private recovery keyring이다. Runtime archive의 옛 infra snapshot을 최신 운영 설정 대신 쓰지 않는다.
+
+### 원래 준비 상태 복귀와 남은 실제 실행
+
+- 시험용 Source service/cron·SSH process/key, main trial ingress·native units, Windows 확인 task를 범위별로 제거했다. 실제 기억 정리 task는 비활성으로 남겼다. 데이터·암호문·receipt·결과는 보관한다.
+- FULL core `cleanup`으로 5개 앱을 normal 준비 프로필과 gateway `/srv/consolidation/data/rndlog-workspace`로 돌렸다. FULL/BASIC clone은 모두 중지했고 별도 cold Docker/containerd도 본인 PID/argv를 확인한 뒤 종료했다. main 실제 daemon을 정지하지 않았다.
+- 실제 PG recovery=true, MySQL read_only/super_read_only=1/1, IO/SQL=Yes, lag=0/error 없음과 file-sync timer active, real `production-authority.json` 없음을 확인했다. vdb·DNS·원본 운영 서비스/cron은 바꾸지 않았다.
+- old DB의 general Certbot timer는 통합 대상 외 `rn.studio`, `office.exdigm.com` 계보도 소유한다. 이 timer는 유지하고 ZiiN 전용 갱신만 인계한다. 다른 세 Source의 대상 계보/갱신 주체와 중앙 7개 계보는 원래 계획대로 책임을 하나로 옮긴다.
+- infra 준비 변경 71개는 `9d665c2`, 제품 Codex 연결은 `6d15106`, 파일 입력을 읽는 GBrain 전달은 `11199d9`에 리뷰·저장됐다. FULL checkpoint/whole/restore 후속 변경 10개는 직접 리뷰와 실제 실행 검증 후 main infra `1366b9a`에 저장했다. Windows adapter와 조정실 문서는 controlroom에서 범위별로 저장한다.
+- 남은 일은 실제 Source service endpoint/원본 파일 경로/모든 운영 writer의 진행·외부 효과 상태를 고정한 실행 절차, 최종 실제 WAL/binlog·파일 장벽과 복구 묶음, 한국 시각 22시 이후 실제 단일 정본·자료/CLI/HTTP/예약/백업/인증서 책임 인계다. 시험 scheduler의 내부 기록을 실제 고객 발송 성공으로 취급하지 않는다. DNS 최종 변경과 서버 삭제는 별도 지시가 있어야 한다.
