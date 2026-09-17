@@ -532,3 +532,42 @@ SSH는 `BatchMode=yes`, `StrictHostKeyChecking=yes`를 사용한다. 새 서버 
 - old DB의 general Certbot timer는 통합 대상 외 `rn.studio`, `office.exdigm.com` 계보도 소유한다. 이 timer는 유지하고 ZiiN 전용 갱신만 인계한다. 다른 세 Source의 대상 계보/갱신 주체와 중앙 7개 계보는 원래 계획대로 책임을 하나로 옮긴다.
 - infra 준비 변경 71개는 `9d665c2`, 제품 Codex 연결은 `6d15106`, 파일 입력을 읽는 GBrain 전달은 `11199d9`에 리뷰·저장됐다. FULL checkpoint/whole/restore 후속 변경 10개는 직접 리뷰와 실제 실행 검증 후 main infra `1366b9a`에 저장했다. Windows adapter와 조정실 문서는 controlroom에서 범위별로 저장한다.
 - 남은 일은 실제 Source service endpoint/원본 파일 경로/모든 운영 writer의 진행·외부 효과 상태를 고정한 실행 절차, 최종 실제 WAL/binlog·파일 장벽과 복구 묶음, 한국 시각 22시 이후 실제 단일 정본·자료/CLI/HTTP/예약/백업/인증서 책임 인계다. 시험 scheduler의 내부 기록을 실제 고객 발송 성공으로 취급하지 않는다. DNS 최종 변경과 서버 삭제는 별도 지시가 있어야 한다.
+
+## 15. 2026-09-17 실제 인계 준비 완료·22:14 같은 작업 재개
+
+**현재 실제 운영 정본은 기존 서버입니다.** 이번 준비 실행과 전체 격리 리허설을 통과했고 실제 인계 코드는 main infra `9d20f9d`에 직접 리뷰·저장했습니다. 주인님이 승인하신 오늘 22시 이후 조건에 따라 **2026-09-17 22:14 KST**에 이 작업을 한 번 재개하도록 Codex heartbeat `22`를 등록했습니다. 재개 때 원본 배포와 진행 업무를 다시 확인한 뒤 실행하며, 예약 등록을 실제 정본 인계 완료로 보고하지 않습니다.
+
+### 별도 RNDLOG 운영 배포 보존과 복구 묶음 갱신
+
+- 준비 도중 RNDLOG 원본에 별도 `20260917174751`, Git `998d6e6` 배포가 관측됐습니다. 앱/NG 이미지와 stack label만 바뀐 것을 원본 baseline과 대조했고 마이그레이션/DB 모델 변경은 없습니다. 기존 배포 전 private 기준선도 보관했습니다. 새 main 저장소·앱에 같은 배포를 반영하고 새로운 두 frozen image를 사용합니다.
+- 앱 이미지 `sha256:bc0509a18718a42ada71b51f950175b6a67e5db77142ab2b3a9cbe18eb279d3c`, NG 이미지 `sha256:b5f4b12d5ec4be363230ae354eacf026c568fd48c9224948b252e4683ea3e9d4`입니다. 원본에서 받은 native OCI stream **633,897,984 bytes**, SHA-256 `504a9d1a012eba38eb3428936d3530b33990e948e4fd27701da1674763f51218`를 확인했습니다.
+- 추가 encrypted runtime 묶음 `checkpoint-base-20260917T090856Z-10b8dd09.tar.gz.gpg`를 별도 Source offsite에 독립 수신했습니다. **631,407,643 bytes**, SHA-256 `5b6c8b037b68b7054c991dbdf4364e144dde55fc299a55635d53ac164bdd64ce`입니다. offsite 원본의 크기/해시 검증 → private keyring 복호화 → OCI 스트림 → 별도 engine load에서 두 ID/RootFS와 native 시작을 확인했습니다. main original 컨테이너 시작 시각은 유지했습니다.
+- FULL 격리 NEW에 같은 최신 RNDLOG를 반영해 기존 세 인증 세션·공식 자료 입구·DB/파일 추가 쓰기 보존 복구를 확인했습니다. 시험 후 normal main 앱·자료 경로로 되돌리고 FULL/BASIC와 별도 engine은 중지했습니다. 옛 RND 이미지와 기존 runtime/MySQL companion 및 기존 암호문은 보존합니다.
+
+### 실제 원본 명령의 준비 검증
+
+- 네 원본에서 소유 시험 폴더로 native self-bind RO/systemd mount를 확인했습니다. root 쓰기도 EROFS였고 잠금 전 열린 writable FD는 별도 fixture로 재현해 cold proof에서 거부했습니다. 시험 마운트와 단위는 해제·제거했습니다. 실제 운영 데이터는 이 준비 시험에서 잠그지 않았습니다.
+- actual main의 `restore-passive`는 **2.225초**에 DB를 restart=no/RO의 영구 cold로 고정하고 native proof를 만들었습니다. `resume-passive-sync`는 **3.477초**에 원본 기반 복제·normal read-only 앱·파일 동기화를 재개했습니다. 원본 공개 서비스/SQL/cron을 정지하지 않았습니다.
+- 원래 Source overlay/private SQL service 계약을 별도 시험 service에서 사용하여 PG/MySQL proxy update **9.574/11.406초**, native identity 조회와 원래 published mode를 확인했습니다. main readonly 세션의 `ALTER SYSTEM ...=off`도 별도 offline PG에서 native 성공하여 승격 전 OLD 설정 복원을 막는다는 가설을 기각했습니다.
+- 원래 Kakao Persistent timer의 마지막 9월 14일 실행 stamp를 별도 시험 timer에 복사하여 즉시 중복 실행 없음·다음 9월 21일 실행을 확인했습니다. actual timer는 인계 후 이 stamp를 반영하여 활성화합니다.
+- Source local의 14개 CA HTTPS 이름과 별도 전달, 실제 공개 14개 TLS/status/redirect 기준선을 확인했습니다. 현재 실제 기존 관리자 세션으로 RNDLOG/CEO Loan의 `/admin/` HTTPS **200**도 확인했습니다. Coconut에는 현재 재사용할 유효 staff session이 없으므로 실제 세션 보존 증거를 주장하지 않습니다. FULL의 세 로그인 증거와 허용된 Coconut AI 1회 응답은 별도로 유지합니다.
+- Source 고포트의 조정실 외부 접속은 timeout으로 원인 미확인입니다. local 고포트 성공을 actual 표준 443 인계 성공으로 대신하지 않습니다. 실제 443은 밤 실행의 필수 검증입니다. Source endpoint/시험 private service와 main 임시 edge를 소유 label로 제거했고, RNDLOG 임시 UFW 한 규칙도 제거 후 원래 OpenSSH/80/443/v6 규칙을 확인했습니다.
+- main PG recovery=true/streaming, MySQL RO/SRO=1/1·IO/SQL=Yes·lag=0/error 없음, 파일 동기화 활성·normal 다섯 runtime과 정본 표시 없음, 새 timer 13개 disabled를 확인했습니다. Windows 기억 task 역시 disabled·첫 9월 18일 03:30입니다. main 별도 containerd/dockerd의 기록된 PID는 모두 종료 상태입니다.
+
+### 실제 인계의 공식 경로와 실패 복구
+
+- 조정실 `work/live-handoff-controlroom.py` → 네 Source `live-handoff-source.py` → main `live-handoff-main.py`가 기존 SQL/Swarm/Compose/systemd/파일 reader/backup helper를 사용합니다. quiesce 직전 원본 기준선을 다시 검사하며 알려진 진행 업무·writable FD가 있으면 시작하지 않습니다.
+- 한 시계로 모든 운영 writer/대상 예약 작업 중지 → 파일 영구 RO → SQL 배수·원본 clean shutdown·DB 영구 RO → 최종 replication/파일 hash → actual main cold → immutable basis의 최종 live batch 암호화·별도 수신 확인 → main 정본 표시 → native 승격/RW·runtime/공용 입구·Source 전달 → 실제 공개/private/CLI/자료/OLD 잠금 검증 → timer/Windows task 책임 재개 순서입니다.
+- 모든 정본 선택 전 명령은 전체 중단 시작 후 **180초의 남은 예산**에 제한됩니다. 독립 백업 수신이 그 안에 완료되지 않으면 **OLD 복구 120초**를 남기며 새 정본 표시를 쓰지 않습니다. hot live timing preview에서 관측한 rsync rc24는 백업 성공으로 취급하지 않습니다. 실제 최종 cold는 native rc0/정확한 hash/receipt가 필수입니다.
+- 정본 표시 전 실패는 main passive/cold 확인 → main cold 고정 → Source 원래 writer 재개 → main 복제/파일 동기화 재개입니다. 정본 표시 후 실패는 NEW만 복구하며 새 DB/파일 쓰기를 유지합니다. UNKNOWN이면 OLD reopen을 거부합니다. 에러·복구 성공·전체 소요 시간은 각각 보존합니다.
+- 실제 공개 14개 응답/CA/redirect, 기존 유효 세션, Source native PG/MySQL RW와 chosen identity, GBrain 공용 문서 hash·HTTP·공식 자료 health, Source OLD writer와 예약 중지·RO/reboot mount, main runtime을 확인합니다. 마지막에 원래 Kakao stamp를 반영하고 정상 timer **13개**와 Windows task를 켭니다. 실제 고객/금융/유료 업무 명령의 시험 실행은 없습니다.
+- Windows daily task는 새 조정실 대화만 기존 모델/프롬프트로 매일 정리하며 옛 서버 대화/ledger/결과는 보관합니다. provider 키는 기존 main private 파일에서 SSH로 프로세스 메모리에만 읽습니다. 통합 외 `rn.studio`/`office.exdigm.com`를 소유한 옛 DB general Certbot timer와 비관련 작업·개인 Hermes/Portainer 자료는 보존합니다.
+
+### 저장과 남은 검증
+
+- `code-review-loop`는 주 에이전트가 수행했고 최종 승인 finding과 열린 material contract question이 없습니다. 수정 범위는 main native controller/Source controller/Windows 보관본, 기존 checkpoint/restore helper의 Live 분기·공용 hash, RND 두 확인된 이미지와 설명서 **8파일**입니다. py_compile·Compose config·diff 검사는 통과했고 main infra **`9d20f9d`**에 저장했습니다. 다른 validation JSON은 stage하지 않고 보존했습니다.
+- 실제 final offsite base+supplement+이번 Live delta의 물리 복원을 전용 `checkpoint-live-physical-restore-20260917/root`와 기존 독립 Docker에 수행합니다. `restore-handoff-checkpoint.py --scope live`는 actual marker/receipt/cold hash가 맞아야 하며 최종 tree/자료 hash와 count, native read-batch, PG clean checkpoint 이상·actual cold 인증 테이블 수·MySQL table/view 수·DB identities를 확인합니다. 실제 운영 DB/파일에는 쓰지 않습니다. 이전 FULL delta를 actual final delta 대신 사용하지 않습니다.
+- 같은 작업의 자동 재개 `22`는 오늘 **22:14 KST**, 한 번 실행입니다. 실제 인계 또는 구체적인 차단을 보고한 뒤 paused로 두어 중복 전환을 막습니다. Codex 앱과 조정실이 그 시각에 실행 가능한 상태여야 합니다. 중단됐으면 같은 작업에서 공식 `preflight` → `cutover` 입구로 재개합니다.
+- **미실행 필수 결과:** 오늘 밤 실제 정본·공개 443/private SQL·자료/GBrain·writer/예약/백업/인증서 책임 인계와 300초 실측, actual final backup의 별도 물리 복원. 이 결과까지 확인해야 승인된 통합 실행 완료입니다. 공개 DNS 변경·옛 서버 삭제·vdb 포맷은 별도 지시가 필요합니다.
+
+구체적인 조정실 실행/복구 명령은 이 작업 `outputs/운영서버_통합_야간실행절차_20260917.md`, 서버 설명서는 main `/srv/consolidation/infra/README.md`의 ‘실제 운영 인계 실행과 복구’ 절입니다. 실제 진행 상태의 정본은 이 문서 최신 절이며, 실제 실행 결과에 따라 갱신합니다.
