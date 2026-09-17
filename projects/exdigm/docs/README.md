@@ -8,11 +8,11 @@
 
 ## 진행 중 작업
 
-- [학력 미기재 이력서 — 생성·저장 허용 및 중요 표시 운영 반영 완료, 추가 원본 재처리 별도](resume-optional-education-20260917.md)
+- [학력 선택 정책 — 운영 반영·실패 개인 이력서 4건 재처리·실제 저장 및 중요 표시 확인 완료](resume-optional-education-20260917.md)
 
 - [이력서 번역 요청 오류 2건 — 수정·운영 배포·지정 원본 재처리 및 저장 확인 완료](resume-provider-errors-20260917.md)
 
-- [이력서 BOM 처리 수정 — 운영 배포 완료, 중단 파일 재처리 대기](resume-bom-fix-20260916.md)
+- [이력서 BOM 처리 수정 — 운영 배포·중단 파일 재처리·실제 저장 완료](resume-bom-fix-20260916.md)
 
 - [Hermes MCP 조회 개선 — 직원 6명 운영 반영·기록 보존 완료, 시간대·인증값 후속은 별도](hermes-mcp-read-improvement-20260916.md)
 

@@ -45,6 +45,33 @@
 
 ## 재개 범위
 
+### 2026-09-17 추가 운영 재처리 승인과 기준선
+
+주인님이 “실패한 이력서 재처리해”라고 지시했다. 현재 대화에서 다룬 미복구 개인 이력서 4건인 b3240e24-4cfd-45ca-89da-ca41d97f630e, c5610307-98e2-4300-a8a0-9c5de26d3042, 6c26ff02-ec48-4535-8e48-2afbb9f00458, f0aab420-a0a7-43d0-895d-ec2d746ba5e7을 운영 재처리한다. 이미 복구된 aadcafd0/f371c4d3와 비이력서 추천 명단 3892ff70, 대화 밖의 다른 종료 건은 제외한다.
+
+- 새 기준선: 운영 clean main·debug clean detached 모두 4df3adb6663df138ac4a07c2813095ae0f43576a다. 공식 read-only에서 대상 4건은 single_resume/included, Resume 0건·후보자 미연결·미저장·종료 큐·processing false를 확인했다.
+- 실제 AI 결과를 기존 strict identify_candidate로 조회했다. c5610307/6c26ff02는 같은 기존 후보자 90276193-0b8a-44a4-9d8c-39b3ded15b35에 이메일로 매칭된다. b3240e24/f0aab420은 기존 매칭이 없다. 이름만으로 병합하지 않는다.
+- 보호: 원문·ResumeSourceArtifact 전체 행·파일 ID/이름/MIME/크기/폴더/Drive 기준시각·기존 수동 필드·기존 성공 두 건·추천 명단·대상 밖 종료 행, 코드와 실행 중인 다른 작업을 보존한다. 후보자 현재 원본은 기존 날짜/선택 정책에 맡긴다.
+- 최소 구현 게이트: 2단계에서 멈춤. 코드 지도와 실제 runners.py의 load_succeeded_rows/text_to_pipeline_result/save_pipeline_to_db, realtime_txt_to_db.Command, 기존 private production-reprocess-workspace, scripts/render_secret_env.py와 run_workers.sh drain을 확인해 재사용한다. 일회성 백업은 Django serializers를 사용한다. 새 제품 코드·함수·의존성·권한은 만들지 않는다.
+- 공식 경로: 정확한 4건만 담은 private manifest의 원문/추출기 원문·metadata → 배포된 운영 checkout의 기존 realtime 명령 → 문서 판정/D8/후보자 변환/정책/공통 저장. force는 지정한 종료 원본 선택만 재개하며 문서·필수 정보·신원·저장 검사는 유지한다.
+- 검증: 원본·대상 후보자·직접 연결 행과 수동 값의 복구 가능한 백업 및 해시를 확인한다. 기존 배포 잠금과 공식 DB 추출 잠금을 사용하며, 자동 updater를 drain하고 진행 작업 종료 후 실행한다. 실제 FileData structured/db_saved, Resume saved 및 후보자 연결, 실패 해제·큐 종료, f0aab420 학력 0/중요 표시를 read-only로 확인한다. 마지막에 본 작업이 걸었던 drain만 해제한다.
+
+### 추가 운영 재처리 결과 — 2026-09-17 15:07 KST
+
+- 공식 실행 `failed-resume-reprocess-20260917-approved-four`, DataExtractionExecution `ad2d1079-2f1f-4eaf-b71a-e20a0eb0c078`는 15:05:02~15:07:25 KST, succeeded/processed_count 4/failed_count 0, 실제 결과 성공 4·실패 0·누락 0으로 끝났다. 실제 AI를 새로 호출했으며 cold workspace의 정확한 manifest 4개, force, workers 1, limit 4를 사용했다. force는 필수 정보·문서·신원·저장 검사 우회가 아니다.
+- 원본·대상 후보자·직접 연결 행·원래 오류의 복구 가능한 직렬화 백업 52행을 보관했다. SHA `4b66d1e909dcc7a9d5de121be08fe326aaf45298080cfa660d7d53f3dfcc20e3`를 확인했고, 실행 직전 read-only 재조회에서 52행 전체와 정확한 대상 manifest를 확인했다.
+- b3240e24: 새 후보자 `53b83148-bbce-4a48-bb88-fc03d73789ff`, Resume `8342633b-597d-408d-b344-6aaa28ed7e87`, 경력 6/학력 2, 운영 저장 완료.
+- c5610307: 기존 후보자 `90276193-0b8a-44a4-9d8c-39b3ded15b35`, Resume `90064ac6-0ed1-43e6-bb06-f67a146cacd9`, 경력 5/학력 4, 운영 저장 완료.
+- 6c26ff02: 같은 기존 후보자, Resume `30eb3e29-9687-453a-9eb8-f0a0c90566f7`, 경력 5/학력 3, 운영 저장 완료. 기존 공식 기준에 따라 현재 후보자는 이 Resume/FileData를 선택했고 두 원본의 구조화 JSON은 각각 남았다.
+- f0aab420: 새 후보자 `32955bdb-b009-485b-82e6-25cd519c8de8`, Resume `28337f22-59f2-4c3a-8376-4f7c8a8a15be`, 경력 2/학력 0, 운영 저장 완료. 후보자 DB 학력 관계도 0건이며 `MISSING_EDUCATION` RED/중요 표시를 확인했다. 원문에 없는 학력은 만들지 않았다.
+- 공식 read-only에서 4건 모두 FileData structured·db_saved_at·실패 사유 해제·db_saved 종료 큐, Resume saved·후보자 연결·현재 Resume/FileData 일관성을 확인했다. 대상 원문·파일 ID/이름/MIME/크기/폴더/Drive 시각·유입 경로와 ResumeSourceArtifact 전체 행을 보존했다.
+- 제외한 8건의 FileData/Resume/SourceArtifact 전체 직렬화 행은 전후 동일했다. SHA `2af1039a3946943050730ab3d5c94a43d94b01e86555641bd71a8fd4dbf4d906`. 기존 매칭 후보자의 manual provenance 필드는 0개였고 값 비교는 유지했다. 이미 복구된 두 파일과 비이력서 추천 명단은 재실행하지 않았다.
+- 실제 저장 확인 뒤 기존 `record_processing_result`로 관련 OperationalError 3건에 성공 결과를 각각 1회 추가했다. 6c26ff02에는 별도 오류 행이 없어 같은 이메일의 c5610307 결과에 두 파일 복구를 함께 기록했다. 원래 발생 시각·오류 메시지·본문·traceback·context는 전후 동일하며 처리 상태/이력/updated_at만 변경됐다.
+- 초기 SSH 셸 전달 마지막 빈줄에 Windows CR 문자가 붙어 부모 전달 스크립트만 exit 1이었다. 공식 realtime 모듈과 DB 실행 및 실제 저장은 성공했다. trap으로 본 작업의 drain이 해제됐으며 후속 전달은 CR을 정규화해 exit 0으로 실행했다. 저장된 4건을 반복 처리하지 않았다.
+- 자동 updater는 정상 active/drain off로 재개됐고 작업자·지원 프로세스 11개 active, 서비스 5개 1/1, HTTPS200을 확인했다. 운영 clean main과 배포 코드 4df3adb6는 유지했다. 이번 재처리는 코드·권한·모델·배포를 바꾸지 않았다.
+
+본 승인 범위의 4건 운영 복구와 보호 검증은 완료했다. 종료 큐를 일괄 재개하거나 이 대화 밖의 실패 건으로 확대하지 않는다. 비공개 백업·manifest·원문·실제 로그·production-verification·오류 결과·closing-readonly 검증은 `/home/chaconne/exdigm-debug/.debug/failed-resume-reprocess-20260917/`(0700/0600)에 보관한다. 아래는 새 재처리 승인 전의 기록이다.
+
 정책 변경과 운영 배포는 완료했다. 이전에 지정된 정확한 두 파일 재처리는 앞선 작업에서 이미 끝났으며 반복하지 않는다. 이번에 추가 발견된 학력 없는 원본의 운영 재처리는 별도 범위다. 주인님이 위 FileData 한 건의 운영 재처리를 지시하면 원본·대상·연결 행의 복구 가능한 백업과 기준선 비교를 마친 뒤 배포된 커밋의 기존 공식 재처리 경로로 실행하고 Candidate/Resume 저장·중요 표시·원문 및 metadata 보존을 읽기 전용으로 확인한다. 다른 종료 원본으로 확대하지 않는다.
 
 비공개 검증 원문·AI 결과·테스트 로그·뷰 HTML·배포 로그는 서버 `/home/chaconne/exdigm-debug/.debug/optional-education-20260917/`에 보관하며 Git·GBrain에 개인 원문과 비밀값을 넣지 않는다. 현재 정책의 공용 정본은 `project/exdigm-extraction-pipeline`, 배포 정본은 `project/exdigm-deploy-workflow`다.
