@@ -49,7 +49,7 @@ Drive 파일 확인
 
 - 웹 요청은 현재 배포된 `Exdigm_exdigm_app` 서비스가 처리한다.
 - 중앙 에이전트는 SSH로 `/home/chaconne/exdigm-debug`를 수정·검증한다. `/home/chaconne/exdigm`은 배포와 운영 작업자의 clean 실행 원본이다.
-- 운영 DB 진단은 `scripts/debug_workspace.sh shell-readonly`, 쓰기 검증은 `scripts/debug_workspace.sh create`로 만든 일회성 DB를 사용한다.
+- 운영 DB 진단은 `scripts/debug_workspace.sh shell-readonly`, 저장 검증은 `scripts/debug_workspace.sh test`의 개발 전용 테스트 DB를 사용한다.
 - 대량 저장·백필·repair는 운영 데이터 변경이다. 주인님의 명시적 승인 후 운영 체크아웃의 검증된 커밋에서만 실행한다.
 - 원격 worker는 대량 파일 산출물 생성기다. 운영 DB 읽기·쓰기·후보자 매칭·현재 프로필 갱신은 활성 운영 서버 책임이다.
 - Gemini Batch는 외부 비동기 LLM 작업이지 원격 worker 처리가 아니다.
@@ -72,11 +72,12 @@ Drive 파일 확인
 - 이름이 있다.
 - 검증 가능한 이메일 또는 전화번호가 있다.
 - 내용 있는 경력 1개 이상이 있다.
-- 내용 있는 학력 1개 이상이 있다.
+
+학력은 이력서 생성·접수·후보자 DB 저장의 필수조건이 아니다. 원문에 없으면 빈 배열로 보존하고, 저장된 후보자에는 기존 검토 사항에서 `중요 — 학력 정보 없음`을 표시한다. 현재 DB 학력 정보를 보완하면 누락 표시를 해제한다. 학력을 추정해 만들거나 학력 누락을 위조·위험 판정으로 바꾸지 않는다.
 
 연락처만 없으면 후보자를 만들지 않고 `needs_resume_processing=False`/`missing_contact`로 닫는다. Mailplug 유입이면 직원에게 1회 알림을 보내고, 수정된 파일은 새 Drive/웹 업로드로 다시 유입되어야 한다.
 
-이름, 경력, 학력이 없거나 여러 필수 정보가 없으면 후보자를 만들지 않고 `needs_resume_processing=False`와 구체적인 `resume_processing_reason`으로 닫는다.
+이름 또는 경력이 없거나 여러 필수 정보가 없으면 후보자를 만들지 않고 `needs_resume_processing=False`와 구체적인 `resume_processing_reason`으로 닫는다. 학력과 연락처가 함께 없는 경우는 연락처 누락 정책을 따른다.
 
 커리어 태그와 검색 분류축은 DB 저장 전 완성 JSON에 포함되어야 한다. 후보자 저장 뒤에 별도 장식처럼 붙이면 안 된다.
 
@@ -149,7 +150,7 @@ Provider 503/429/timeout/empty response는 `needs_resume_processing=True`로 재
 
 ```bash
 uv run --locked python -m tools.code_knowledge code_query --query "데이터 추출"
-uv run pytest -q data_extraction/tests.py tests/test_realtime_file_status_source.py tests/test_update_candidates_results.py
+scripts/debug_workspace.sh test -q data_extraction/tests.py tests/test_realtime_file_status_source.py tests/test_update_candidates_results.py tests/test_optional_resume_education.py
 ```
 
 상황에 맞는 더 좁은 테스트가 코드 지도에 나오면 그 테스트를 우선 실행한다.
