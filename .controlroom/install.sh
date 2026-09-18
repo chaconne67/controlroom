@@ -26,7 +26,6 @@ while [ "$#" -gt 0 ]; do
     --workspace)
       [ "$#" -ge 2 ] || die 'Expected a workspace root.'
       core_args+=(--workspace "$2"); shift 2 ;;
-    --main-server) core_args+=(--main-server); shift ;;
     *) break ;;
   esac
 done
@@ -285,7 +284,7 @@ case "${1:-}" in
     else die 'Usage: install.sh --new <role> [--dry-run]'; fi ;;
   --register-agent) [ "$#" -eq 2 ] || die 'Expected one role'; register_agent_central "$2" ;;
   --gbrain) [ "$#" -eq 2 ] || die 'Expected one role'; core install "$2" ;;
-  --project) die 'Projects are physical folders under ~/projects. Use kitpull to update them.' ;;
+  --project) die 'Projects are physical folders under ~/controlroom. Use kitpull to update them.' ;;
   -h|--help) core install --help ;;
   '') core install ;;
   --*) die "Unknown option: $1" ;;

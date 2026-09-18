@@ -3,7 +3,7 @@
 - 현재 장비는 전체 프로젝트의 조정실이다. Windows·macOS·Linux 데스크톱과 노트북에서 같은 역할을 사용하며, `windows-control`은 기존 설치와 연결되는 호환 등록명이다. venture는 여러 프로젝트 중 하나이며 조정실에서 실행하는 로컬 프로젝트다.
 - 원격 프로젝트는 선택한 조정실 장비에서 조정한다. 2026-09-17 22:33 KST 이후 Coconut/FundKeeper·RNDLOG·CEO Loan·ZiiN 코드는 main `chaconne@49.247.192.127`의 `/home/chaconne/projects/<프로젝트>`에 있으며, 운영 DB·자료·GBrain 본체와 공통 Compose/복구 설정은 `/srv/consolidation`에 있다. Exdigm 앱은 기존 전용 서버에 유지한다.
 - 실제 운영 인계는 2026-09-17 22:30~22:33 KST, 전체 172.469초에 복구 절차까지 끝났다. 2026-09-18 00:35 KST 가비아 권한 DNS 3곳과 Google/Cloudflare 각각에서 공개 DNS 14개 이름 모두 main을 가리킴을 확인했다. 2026-09-18 옛 공개 입구·GBrain CLI·SQL·자료·인증서 전달을 중지했고 현행 연결은 main을 직접 사용한다. 현행 코드·자료·실행 책임과 검증·복구 정보는 현재 조정실 루트의 `.controlroom/docs/production-server-consolidation-20260916.md` 최신 절과 프로젝트 AGENTS.md를 우선한다. 옛 서버 writer는 정지·읽기 전용이며 재개하거나 그곳에 배포하지 않는다. 주인님의 가비아 DNS 수정은 완료됐다. 실제 저장공간·일일 전체 DB 복원 결과는 통합 문서20절, 정상 예약·인증서 전달의 당시 결과는21절, 기억8개 저장·Coconut 캐시 마감과백업3일 보관은22절, 옛 서버 잔여 정리·Hermes 세 사용자·Codex 구독 인증·조정실 독립 복구 보관은23절을 따른다. 옛 서버는 정지 보관 상태이며 삭제/해지는 별도 지시로 처리한다. 추가 vdb 저장 배치는 2026-09-18 후속 지시에 따라 통합 문서20절에서 적용했다.
-- 사용자가 대화하는 조정실은 로컬 데스크탑이다. main(`49.247.192.127`)에는 PC가 꺼져 있을 때도 승인된 자동 수정 작업을 수행하는 서버 조정실을 둔다. 두 조정실은 같은 controlroom Git의 지침·스킬·계획과 공용 GBrain을 사용한다. `--main-server` 설치는 기존 `~/projects/<프로젝트>` 코드 저장소에 지침·스킬만 추가하고, 공통 원본 Git과 모든 프로젝트 조정실은 `~/controlroom`에 둔다. Exdigm처럼 main에 코드가 없는 프로젝트도 지침·문서·스킬을 설치한다. 기존 코드와 Git·문서·원본 스킬은 보존한다. 이 옵션을 아직 실행하지 않았다면 현재 폴더를 설치 완료 상태로 간주하지 않는다.
+- 사용자가 대화하는 조정실은 로컬 데스크탑이다. main(`49.247.192.127`)에는 PC가 꺼져 있을 때도 승인된 자동 수정 작업을 수행하는 서버 조정실을 둔다. 두 조정실은 같은 controlroom Git의 지침·스킬·계획과 공용 GBrain을 사용한다. PC·노트북·메인서버 모두 같은 설치 경로로 `~/controlroom`에 공통 원본과 모든 프로젝트 조정실을 둔다. Exdigm처럼 main에 코드가 없는 프로젝트도 지침·문서·스킬을 설치한다. 운영 저장소의 코드·Git·문서·지침·스킬은 해당 제품의 작업 절차로 관리하며, Controlroom 설치·동기화 대상에서 제외한다.
 - Exdigm은 main의 Codex에서도 SSH로 전용 서버의 debug worktree를 수정·검증하고 기존 공식 경로로 배포한다. main의 다른 제품도 프로젝트별 개발·검증·배포 경계를 유지한다. 서버 조정실 설치는 운영 데이터 변경·배포·예약 실행의 포괄 승인이 아니다. Exdigm 등 다른 제품 서버에는 개발 에이전트를 추가 설치하지 않으며 제품 기능의 기존 AI·LLM 실행은 보존한다.
 - 기획·리서치·작업 계획의 공유 원본은 Controlroom Git의 `<프로젝트>/docs`다. 모든 OS의 PC·노트북·main 서버 원본 루트는 `~/controlroom`이며 공통 도구는 그 안의 `.controlroom`이다. main의 기존 제품 `docs`는 제품 저장소 소유이며 공유 기획 원본으로 교체하지 않는다. `~`는 Windows의 `USERPROFILE`, macOS·Linux의 `HOME`이다. 코드·테스트가 읽는 자료와 코드와 함께 바뀌는 기술 계약은 서버 코드 저장소에 둔다.
 - 비밀값은 실제 사용·복구에 필요한 양쪽에서 관리할 수 있다. 값의 교체 기준을 하나로 두고 필요한 실행 환경에만 공급하며 문서·Git·GBrain·로그에 값을 넣지 않는다.
@@ -12,7 +12,7 @@
 
 ## 프로젝트 진입 구조
 
-- 조정실: 모든 OS에서 `~/controlroom/<프로젝트>`를 사용한다. Windows의 `~`는 `%USERPROFILE%`이다. main 서버 모드는 별도 기존 코드 루트 `~/projects` 또는 저장된 `--workspace` 경로에도 에이전트 지침·스킬만 추가한다.
+- 조정실: 모든 OS에서 `~/controlroom/<프로젝트>`를 사용한다. Windows의 `~`는 `%USERPROFILE%`이다. 에이전트 작업은 조정실 프로젝트에서 지침·스킬·재개 문서를 읽고 시작한다. 실제 코드 위치와 접속·검증·배포 방법은 해당 프로젝트 지침을 따른다.
 - main: `/home/chaconne/projects/fundkeeper`, `rndlog`, `ceoloan`, `ziin`. 각 폴더가 실제 코드·`.git`을 가진 독립 저장소이며 여기에서 SSH로 수정·검증·커밋·기존 GitHub 원격 푸시를 수행한다. FundKeeper의 기존 `master`와 CEO Loan의 기존 원격 이름 `ceoloan`을 유지한다.
 - PC·노트북의 접속은 `ssh chaconne@49.247.192.127` 후 `/home/chaconne/projects/<프로젝트>`로 이동한다. 이미 main의 해당 코드 폴더에서 실행 중이면 현재 서버 셸을 사용한다. 프로젝트 AGENTS.md의 실제 저장소·원격·브랜치·검증·Compose 정의를 따른다.
 - RNDLOG 프로젝트 루트는 실제 코드 저장소다. 회사별 제출·연구자료는 main `/srv/consolidation/data/files-standby/workspace/{companies,resources}`에 있고 자료 접속 코드는 프로젝트 `deploy/workspace_storage_gateway.py`다. 프로젝트 루트를 자료에 연결하는 symlink는 사용하지 않는다.

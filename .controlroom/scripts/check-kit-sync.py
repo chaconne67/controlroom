@@ -123,7 +123,7 @@ class KitFixture:
         run('git', 'init', '--initial-branch=main', self.seed)
         self._configure(self.seed)
         toolkit = self.seed / '.controlroom'
-        for relative in ['install.ps1', 'install.sh', 'scripts/controlroom.py', 'shell/kit-aliases.sh', 'templates/main-server-project.md']:
+        for relative in ['install.ps1', 'install.sh', 'scripts/controlroom.py', 'shell/kit-aliases.sh']:
             destination = toolkit / relative
             destination.parent.mkdir(parents=True, exist_ok=True)
             shutil.copy2(ROOT / relative, destination)
@@ -203,7 +203,7 @@ class KitFixture:
             self.cleanups.enter_context(preserve_windows_installer_path(home))
         return home
 
-    def install(self, home, agent='windows-control', standalone=False, bash=False, workspace=None, main_server=False):
+    def install(self, home, agent='windows-control', standalone=False, bash=False, workspace=None):
         installer = self.seed / '.controlroom' / ('install.ps1' if os.name == 'nt' and not bash else 'install.sh')
         if standalone:
             destination = home / installer.name
@@ -211,12 +211,8 @@ class KitFixture:
             installer = destination
         if os.name == 'nt' and not bash:
             options = ['-Workspace', workspace] if workspace else []
-            if main_server:
-                options += ['-MainServer']
             return run('powershell.exe', '-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', installer, '-Agent', agent, *options, env=self.env(home))
         options = ['--workspace', workspace] if workspace else []
-        if main_server:
-            options += ['--main-server']
         return run(BASH, '--noprofile', '--norc', installer, *options, agent, env=self.env(home))
 
     def clone(self, agent='main', spaces=False):
@@ -397,9 +393,12 @@ class EntryPointDocumentationTests(unittest.TestCase):
             self.assertNotIn('gh auth', text)
             self.assertNotIn('curl ', text)
             self.assertNotIn('Invoke-RestMethod', text)
+            self.assertNotIn('--main-server', text)
             for action in ('pull', 'push', 'verify', 'restore'):
                 self.assertNotIn('controlroom ' + action, text)
         self.assertEqual((ROOT / 'manifests/windows-control-projects.tsv').read_text().count('venture\tcode\tventure'), 1)
+        help_text = run(sys.executable, ROOT / 'scripts/controlroom.py', '--help').stdout
+        self.assertNotIn('--main-server', help_text)
 
 
 @unittest.skipUnless(os.name == 'nt', 'Native PowerShell installer contract')
@@ -551,7 +550,7 @@ class PosixControlRoomInstallerTests(unittest.TestCase):
         env = fixture.env(home)
         env['PATH'] = os.pathsep.join(env['PATH'].split(os.pathsep)[1:])
         readme = (ROOT.parent / 'README.md').read_text(encoding='utf-8')
-        command = next(line for line in readme.splitlines() if line.startswith('d=') and '--main-server' not in line)
+        command = next(line for line in readme.splitlines() if line.startswith('d='))
         self.assertIn(command, (ROOT / 'docs/onboarding-new-server.md').read_text(encoding='utf-8'))
         command += ' && test "$(type -t kitpull)" = function && kitpull --verify && kitpush --help'
         command = 'gh() { echo "gh must not run" >&2; return 99; }; ' + command
@@ -570,7 +569,7 @@ class PosixControlRoomInstallerTests(unittest.TestCase):
         (decoy / 'scripts').mkdir(parents=True)
         (decoy / 'scripts/controlroom.py').write_text('raise SystemExit("Old local core must not run")\n')
         script = (fixture.seed / '.controlroom/install.sh').read_text(encoding='utf-8')
-        run(BASH, '--noprofile', '--norc', '-c', script, '--', '--main-server',
+        run(BASH, '--noprofile', '--norc', '-c', script, '--',
             cwd=decoy, env=fixture.env(home))
         self.assertTrue((home / 'controlroom/.git').is_dir())
         self.assertFalse((home / 'projects/.git').exists())

@@ -1,6 +1,6 @@
 # 스킬 관리
 
-원본과 배치 목록을 하나씩 유지합니다. PC·노트북의 공통 원본은 `~/controlroom/.controlroom/skills/<이름>`, 도메인 원본은 `~/controlroom/<프로젝트>/skills/<이름>`의 실제 폴더입니다. `--main-server`도 같은 `~/controlroom`을 공유 원본으로 사용합니다. 기존 제품 저장소의 `skills`도 프로젝트 배치에 사용하며, 같은 이름이면 제품 저장소 원본을 우선합니다. `SKILL.md`와 직접 참조하는 scripts/references/agents 파일을 함께 관리합니다. 공유 manifest 안에서는 이름이 유일해야 합니다.
+원본과 배치 목록을 하나씩 유지합니다. PC·노트북·메인서버의 공통 원본은 `~/controlroom/.controlroom/skills/<이름>`, 도메인 원본은 `~/controlroom/<프로젝트>/skills/<이름>`의 실제 폴더입니다. 프로젝트 스킬은 같은 조정실 프로젝트의 `.agents/skills`, `.claude/skills`에 배치합니다. `SKILL.md`와 직접 참조하는 scripts/references/agents 파일을 함께 관리합니다. 공유 manifest 안에서는 이름이 유일해야 합니다.
 
 `.controlroom/manifests/skills.json`의 `sources`는 원본 위치, `profiles`는 전역·프로젝트 배치 목록, `depends_on`은 의존 관계입니다. 전역에는 공통 스킬만 배치하며 프로젝트 스킬의 의존 스킬은 전역 또는 같은 프로젝트에 있어야 합니다. FundKeeper는 TestBed의 원본을 배치 목록으로 사용합니다.
 
@@ -15,7 +15,7 @@ kitpush "변경 이유"
 
 push는 원본을 저장·전송하고 앱이 읽는 사본을 갱신합니다. 다른 장비에서는 `kitpull`이 백업 후 최신 원본·사본을 함께 갱신합니다. `.agents/skills`, `.claude/skills`, Hermes의 설치기 관리 항목은 실제 복사본이며 연결 폴더가 아닙니다. 시스템 스킬·플러그인·개인 스킬은 별도 소유로 유지합니다. 다른 Hermes가 이미 가진 동명 스킬은 가져오지 않습니다.
 
-main 서버 모드의 push 대상도 Venture 코드가 포함된 `~/controlroom`의 단일 Git입니다. 제품 저장소의 코드·원본 스킬·기존 지침 본문은 해당 제품의 Git 절차로 관리하며, Controlroom이 자동으로 수집하거나 전송하지 않습니다. 프로젝트 지침은 기존 본문을 유지하고 Controlroom 표시 구역만 갱신합니다.
+모든 장비의 push 대상은 Venture 코드가 포함된 `~/controlroom`의 단일 Git입니다. 별도 제품 저장소의 코드·스킬·지침은 해당 제품의 Git 절차로 관리합니다. 이전 설치가 제품 저장소에 배치한 지침·스킬도 그 위치에 보존하며, Controlroom의 설치·동기화가 갱신하거나 제거하지 않습니다.
 
 ## 배치 추가·제거
 

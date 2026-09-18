@@ -383,7 +383,7 @@ class WorkspaceSyncTests(unittest.TestCase):
         self.command(home, 'kitpull --verify')
 
 
-class MainServerTests(unittest.TestCase):
+class ExistingCodeTests(unittest.TestCase):
     def setUp(self):
         self.fixture = checks.KitFixture()
         self.addCleanup(self.fixture.close)
@@ -419,21 +419,24 @@ class MainServerTests(unittest.TestCase):
         # The existing operating repositories keep their unreachable product remotes.
         return home
 
-    def protected(self, home):
+    def protected(self, home, project_root=None):
+        project_root = project_root or home / 'projects'
         paths = {}
-        for item in (home / 'projects').rglob('*'):
-            relative = item.relative_to(home / 'projects')
-            if len(relative.parts) > 1 and relative.parts[1] in ('AGENTS.md', 'CLAUDE.md', '.agents', '.claude'):
-                continue
-            if item.is_file():
+        for item in project_root.rglob('*'):
+            relative = item.relative_to(project_root)
+            if item.is_symlink():
+                paths[relative.as_posix()] = ('link', os.readlink(item))
+            elif item.is_file():
                 paths[relative.as_posix()] = item.read_bytes()
+            elif item.is_dir():
+                paths[relative.as_posix()] = ('directory',)
         return paths
 
-    def test_main_server_install_pull_verify_push_preserve_product_repositories(self):
+    def test_default_install_pull_verify_push_preserve_entire_product_repositories(self):
         home = self.server()
         before = self.protected(home)
         original = (home / 'projects/rndlog/AGENTS.md').read_bytes()
-        self.fixture.install(home, standalone=True, main_server=True)
+        self.fixture.install(home, standalone=True)
         source = home / 'controlroom'
         self.fixture._configure(source)
         self.assertTrue((source / '.git').is_dir())
@@ -447,9 +450,9 @@ class MainServerTests(unittest.TestCase):
         self.assertFalse((source / 'exdigm/docs').is_symlink())
         self.assertEqual(self.protected(home), before)
         self.assertEqual((home / 'controlroom/keep.txt').read_bytes(), b'legacy work\n')
-        self.assertTrue((home / 'projects/rndlog/AGENTS.md').read_bytes().startswith(original))
-        self.assertEqual((home / 'projects/rndlog/.agents/skills/rndlog-example/SKILL.md').read_bytes(), b'project skill\n')
-        self.assertEqual((home / 'projects/venture/.claude/skills/local-skill/SKILL.md').read_bytes(), b'local project skill\n')
+        self.assertEqual((home / 'projects/rndlog/AGENTS.md').read_bytes(), original)
+        self.assertFalse((home / 'projects/rndlog/.agents/skills/rndlog-example').exists())
+        self.assertFalse((home / 'projects/venture/.claude').exists())
         self.fixture.kit(home, 'kitpull --verify')
 
         # A profile/source removed upstream is pruned only from managed placements.
@@ -463,40 +466,40 @@ class MainServerTests(unittest.TestCase):
         self.fixture.commit_seed('remove centrally managed project skill', True)
         self.fixture.kit(home, 'kitpull')
         self.fixture.kit(home, 'kitpull --verify')
-        self.assertFalse((home / 'projects/rndlog/.agents/skills/rndlog-example').exists())
+        self.assertFalse((source / 'rndlog/.agents/skills/rndlog-example').exists())
         self.assertEqual((home / 'projects/rndlog/.agents/skills/user-skill/SKILL.md').read_bytes(), b'user-owned skill\n')
-        self.assertEqual((home / 'projects/rndlog/AGENTS.md').read_bytes().count(b'<!-- controlroom:main-server:begin -->'), 1)
+        self.assertEqual((home / 'projects/rndlog/AGENTS.md').read_bytes(), original)
         (source / '.controlroom/common.txt').write_bytes(b'agent tool change\n')
-        self.fixture.kit(home, 'kitpush "main agent assets"')
+        self.fixture.kit(home, 'kitpush "shared agent assets"')
         self.assertEqual(self.protected(home), before)
-        self.assertTrue((home / 'projects/rndlog/AGENTS.md').read_bytes().startswith(original))
+        self.assertEqual((home / 'projects/rndlog/AGENTS.md').read_bytes(), original)
         self.assertEqual(run('git', '--git-dir', self.fixture.remote, 'show', 'main:.controlroom/common.txt').stdout, 'agent tool change\n')
 
-    def test_main_server_failure_restores_instructions_and_leaves_code_untouched(self):
+    def test_install_failure_restores_controlroom_and_preserves_product_repositories(self):
         home = self.server()
         before = self.protected(home)
         instructions = {path: path.read_bytes() for path in (home / 'projects').glob('*/AGENTS.md')}
         instructions.update({path: path.read_bytes() for path in (home / 'projects').glob('*/CLAUDE.md')})
-        spec = importlib.util.spec_from_file_location('main_server_core', ROOT / 'scripts/controlroom.py')
+        spec = importlib.util.spec_from_file_location('controlroom_core', ROOT / 'scripts/controlroom.py')
         core = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(core)
         write = Path.write_bytes
         def failure(path, content):
-            if path == home / 'projects/rndlog/CLAUDE.md':
-                raise OSError('Synthetic failure writing a managed project instruction')
+            if path == home / '.local/bin/kitpush':
+                raise OSError('Synthetic failure writing the Controlroom command')
             return write(path, content)
         with patch.dict(os.environ, self.fixture.env(home)), patch.object(sys, 'argv',
-                ['controlroom', '--home', str(home), '--main-server', 'install', '--source', str(self.fixture.seed)]), patch.object(Path, 'write_bytes', failure):
+                ['controlroom', '--home', str(home), 'install', '--source', str(self.fixture.seed)]), patch.object(Path, 'write_bytes', failure):
             self.assertEqual(core.main(), 1)
         self.assertEqual(self.protected(home), before)
         for path, content in instructions.items():
             self.assertEqual(path.read_bytes(), content)
         self.assertFalse((home / 'projects/rndlog/.agents/skills/rndlog-example').exists())
         self.assertEqual((home / 'projects/rndlog/.agents/skills/user-skill/SKILL.md').read_bytes(), b'user-owned skill\n')
+        self.assertEqual((home / 'controlroom/keep.txt').read_bytes(), b'legacy work\n')
 
-    def test_custom_project_root_local_skills_and_saved_install_mode(self):
+    def test_legacy_launcher_retires_mode_and_preserves_custom_product_root(self):
         home = self.server()
-        before = self.protected(home)
         project_root = home / 'operating projects'
         (home / 'projects').rename(project_root)
         local = project_root / 'rndlog/skills/rndlog-example/SKILL.md'
@@ -504,20 +507,57 @@ class MainServerTests(unittest.TestCase):
         local.write_bytes(b'project-owned override\n')
         if os.name != 'nt':
             (project_root / 'venture/.agents/skills/local-skill').symlink_to('../../skills/local-skill', target_is_directory=True)
-        self.fixture.install(home, standalone=True, workspace=project_root, main_server=True)
+        self.fixture.install(home, standalone=True)
         source = home / 'controlroom'
-        # Re-enter the installed core without mode/root flags, as an existing install does.
-        run(sys.executable, source / '.controlroom/scripts/controlroom.py', 'install', env=self.fixture.env(home))
+        run('git', 'config', 'controlroom.mainServerRoot', str(project_root), cwd=source)
+        profiles = json.loads(run('git', 'config', 'controlroom.installedProfiles', cwd=source).stdout)
+        profiles['server_projects'] = {'rndlog': ['rndlog-example']}
+        run('git', 'config', 'controlroom.installedProfiles', json.dumps(profiles), cwd=source)
+        for filename in ('AGENTS.md', 'CLAUDE.md'):
+            target = project_root / 'rndlog' / filename
+            target.write_bytes(target.read_bytes() + b'\n<!-- controlroom:main-server:begin -->\nprevious reference\n<!-- controlroom:main-server:end -->\n')
+        for tool in ('.agents', '.claude'):
+            target = project_root / 'rndlog' / tool / 'skills/rndlog-example/SKILL.md'
+            target.parent.mkdir(parents=True, exist_ok=True)
+            target.write_bytes(b'previously installed skill with local changes\n')
+        before = self.protected(home, project_root)
+        launcher = home / '.local/bin' / ('kitpull.cmd' if os.name == 'nt' else 'kitpull')
+        text = launcher.read_text()
+        old_workspace = str(source) if os.name == 'nt' else source.as_posix()
+        old_product_root = str(project_root) if os.name == 'nt' else project_root.as_posix()
+        launcher.write_text(text.replace(f'--workspace "{old_workspace}"', f'--main-server --workspace "{old_product_root}"'))
+        self.fixture.kit(home, 'kitpull')
         self.fixture.kit(home, 'kitpull --verify')
         self.assertFalse((home / 'projects').exists())
         self.assertEqual(local.read_bytes(), b'project-owned override\n')
-        for tool in ('.agents', '.claude'):
-            target = project_root / 'rndlog' / tool / 'skills/rndlog-example/SKILL.md'
-            self.assertEqual(target.read_bytes(), local.read_bytes())
-        self.assertEqual((project_root / 'venture/skills/local-skill/SKILL.md').read_bytes(), b'local project skill\n')
-        self.assertFalse((project_root / 'venture/.agents/skills/local-skill').is_symlink())
-        for relative, content in before.items():
-            self.assertEqual((project_root / relative).read_bytes(), content)
+        self.assertEqual(self.protected(home, project_root), before)
+        self.assertNotIn('--main-server', launcher.read_text())
+        self.assertEqual(run('git', 'config', '--get', 'controlroom.mainServerRoot', cwd=source, check=False).returncode, 1)
+        profiles = json.loads(run('git', 'config', 'controlroom.installedProfiles', cwd=source).stdout)
+        self.assertNotIn('server_projects', profiles)
+        self.assertEqual((source / 'rndlog/.agents/skills/rndlog-example/SKILL.md').read_bytes(), b'project skill\n')
+        self.fixture.kit(home, 'kitpull')
+        self.assertEqual(self.protected(home, project_root), before)
+
+    def test_saved_legacy_mode_does_not_require_old_product_root(self):
+        home, source = self.fixture.clone()
+        missing = home / 'unavailable operating root'
+        run('git', 'config', 'controlroom.mainServerRoot', str(missing), cwd=source)
+        run(sys.executable, source / '.controlroom/scripts/controlroom.py', 'install', env=self.fixture.env(home))
+        self.fixture.kit(home, 'kitpull --verify')
+        self.assertFalse(missing.exists())
+        self.assertEqual(run('git', 'config', '--get', 'controlroom.mainServerRoot', cwd=source, check=False).returncode, 1)
+
+    def test_new_installer_ignores_saved_mode_without_touching_product_root(self):
+        home = self.server()
+        self.fixture.install(home)
+        source = home / 'controlroom'
+        run('git', 'config', 'controlroom.mainServerRoot', str(home / 'projects'), cwd=source)
+        before = self.protected(home)
+        self.fixture.install(home, standalone=True)
+        self.fixture.kit(home, 'kitpull')
+        self.assertEqual(self.protected(home), before)
+        self.assertEqual(run('git', 'config', '--get', 'controlroom.mainServerRoot', cwd=source, check=False).returncode, 1)
 
 
 if __name__ == '__main__':
