@@ -445,7 +445,59 @@ def shell_content(path, marker, line):
     return content.rstrip('\n') + '\n\n' + block + '\n'
 
 
-def apply(source, home, agent, products, preserve_config=None, legacy_cleanup=True, refresh_only=False, worktrees=(), workspace=None):
+def main_server_instruction(path, block):
+    """Replace only our marked section; retain the project's original bytes."""
+    content = path.read_bytes() if exists(path) else b''
+    begin = b'<!-- controlroom:main-server:begin -->'
+    end = b'<!-- controlroom:main-server:end -->'
+    if content.count(begin) != content.count(end) or content.count(begin) > 1:
+        raise RuntimeError(f'Ambiguous managed instruction section: {path}')
+    if begin in content:
+        start, finish = content.index(begin), content.index(end) + len(end)
+        if finish < start:
+            raise RuntimeError(f'Invalid managed instruction section: {path}')
+        return content[:start] + block.rstrip(b'\n') + content[finish:]
+    return content + (b'\n\n' if content else b'') + block
+
+
+def main_server_assets(source, workspace, project_root, previous):
+    """Plan agent-only writes against existing repositories, never their Git/code."""
+    data = manifest(source)
+    template = (source / TOOLKIT / 'templates/main-server-project.md').read_text(encoding='utf-8')
+    candidates = project_names(source, data) | {name for name, _ in repositories(source)} | set(previous)
+    copies, instructions, profiles = [], {}, {}
+    for name in sorted(candidates):
+        project = project_root / name
+        if not (project / '.git').exists():
+            continue
+        actual = Path(git(project, 'rev-parse', '--show-toplevel').stdout.strip())
+        if actual.resolve() != project.resolve() or linked(project):
+            raise RuntimeError(f'Expected a physical project repository: {project}')
+        skills = {skill: source / data['sources'][skill] for skill in data['profiles']['projects'].get(name, [])}
+        # Project-owned sources take precedence over centrally supplied names.
+        for skill in sorted((project / 'skills').glob('*/SKILL.md')):
+            skills[skill.parent.name] = skill.parent
+        profiles[name] = sorted(skills)
+        for skill_name, skill_source in skills.items():
+            for tool in ('.agents', '.claude'):
+                copies.append((skill_source, project / tool / 'skills' / skill_name))
+        for skill_name in set(previous.get(name, [])) - set(skills):
+            for tool in ('.agents', '.claude'):
+                copies.append((None, project / tool / 'skills' / skill_name))
+        for filename in ('AGENTS.md', 'CLAUDE.md'):
+            references = []
+            instruction = filename if (source / name / filename).is_file() else 'AGENTS.md'
+            if (source / name / instruction).is_file():
+                references.append(f'프로젝트 공통 운영 지침은 `{workspace / name / instruction}`에서 읽습니다.')
+            if (source / name / 'docs').is_dir():
+                references.append(f'공유 기획·재개 정보의 원본은 `{workspace / name / "docs"}`입니다.')
+            block = template.format(project=project, references=' '.join(references)).encode('utf-8')
+            target = project / filename
+            instructions[target] = main_server_instruction(target, block)
+    return copies, instructions, profiles
+
+
+def apply(source, home, agent, products, preserve_config=None, legacy_cleanup=True, refresh_only=False, worktrees=(), workspace=None, project_root=None):
     workspace = workspace or home / 'projects'
     if source.resolve() == workspace.resolve() or not (source / '.git').is_dir():
         raise RuntimeError('Installation requires an independent prepared Git clone')
@@ -515,14 +567,21 @@ def apply(source, home, agent, products, preserve_config=None, legacy_cleanup=Tr
             copies.append((None, homes[tool] / 'skills' / name))
     for name in set(previous_profiles.get('hermes', [])) - set(hermes_owned):
         copies.append((None, homes['hermes'] / 'skills' / name))
-    for project, names in data['profiles']['projects'].items():
-        for name in names:
-            for tool in ('.agents', '.claude'):
-                copies.append((source / data['sources'][name], workspace / project / tool / 'skills' / name))
-    for project, names in previous_profiles.get('projects', {}).items():
-        for name in set(names) - set(data['profiles']['projects'].get(project, [])):
-            for tool in ('.agents', '.claude'):
-                copies.append((None, workspace / project / tool / 'skills' / name))
+    project_files = {}
+    installed_projects = data['profiles']['projects']
+    if project_root is not None:
+        project_copies, project_files, installed_projects = main_server_assets(source, workspace, project_root, previous_profiles.get('projects', {}))
+        copies.extend(project_copies)
+        legacy_cleanup = False
+    else:
+        for project, names in data['profiles']['projects'].items():
+            for name in names:
+                for tool in ('.agents', '.claude'):
+                    copies.append((source / data['sources'][name], workspace / project / tool / 'skills' / name))
+        for project, names in previous_profiles.get('projects', {}).items():
+            for name in set(names) - set(data['profiles']['projects'].get(project, [])):
+                for tool in ('.agents', '.claude'):
+                    copies.append((None, workspace / project / tool / 'skills' / name))
     legacy = [home / 'controlroom', home / 'kmh-agent-kit', workspace / '_control-docs'] if legacy_cleanup else []
     # Remove old managed skill placements without touching system/plugin/user assets.
     for folder in [homes['codex'] / 'skills', *(homes[tool] / 'skills' for tool in ('agents', 'claude', 'hermes')), *(workspace / project / tool / 'skills' for project in data['profiles']['projects'] for tool in ('.codex', '.agents', '.claude'))]:
@@ -532,13 +591,15 @@ def apply(source, home, agent, products, preserve_config=None, legacy_cleanup=Tr
                     copies.append((None, entry))
     command_dir = home / '.local/bin'
     command_names = ('controlroom', 'kitpull', 'kitpush')
-    files = {command_dir / (name + '.cmd' if os.name == 'nt' else name): '' for name in command_names}
+    files = dict(project_files)
+    command_workspace = project_root if project_root is not None else workspace
+    mode_arg = '--main-server ' if project_root is not None else ''
     for name in command_names:
         action = 'pull ' if name == 'kitpull' else 'push ' if name == 'kitpush' else ''
         script = workspace / TOOLKIT / 'scripts/controlroom.py'
         if os.name == 'nt':
-            files[command_dir / (name + '.cmd')] = f'@"{sys.executable}" -X utf8 "{script}" --home "{home}" --workspace "{workspace}" {action}%*\r\n'
-        files[command_dir / name] = f'#!/usr/bin/env bash\nexec "{Path(sys.executable).as_posix()}" -X utf8 "{script.as_posix()}" --home "{home.as_posix()}" --workspace "{workspace.as_posix()}" {action}"$@"\n'
+            files[command_dir / (name + '.cmd')] = f'@"{sys.executable}" -X utf8 "{script}" --home "{home}" {mode_arg}--workspace "{command_workspace}" {action}%*\r\n'
+        files[command_dir / name] = f'#!/usr/bin/env bash\nexec "{Path(sys.executable).as_posix()}" -X utf8 "{script.as_posix()}" --home "{home.as_posix()}" {mode_arg}--workspace "{command_workspace.as_posix()}" {action}"$@"\n'
     proxy_roles = {agent} if agent not in CENTRAL else set()
     if command_dir.is_dir():
         for entry in command_dir.glob('gbrain-*'):
@@ -559,7 +620,16 @@ def apply(source, home, agent, products, preserve_config=None, legacy_cleanup=Tr
         files[path] = shell_content(path, 'controlroom commands', f'[ -f "{aliases.as_posix()}" ] && . "{aliases.as_posix()}"')
     path = home / '.bash_profile'
     files[path] = shell_content(path, 'load ~/.bashrc for kmh-agent-kit', '[ -f "$HOME/.bashrc" ] && . "$HOME/.bashrc"')
-    tx = Transaction(home, [destination for _, destination in copies] + list(files) + legacy + ([workspace / '.git/config'] if refresh_only else []) + [path / '.git' for _, paths in worktrees for path in paths], archive_units=[workspace / name for name in products])
+    targets = [destination for _, destination in copies] + list(files) + legacy + ([workspace / '.git/config'] if refresh_only else []) + [path / '.git' for _, paths in worktrees for path in paths]
+    if project_root is not None:
+        # A failed first install must also remove newly created agent directories.
+        for target in list(targets):
+            parent = target.parent
+            while parent != home and not exists(parent):
+                targets.append(parent)
+                parent = parent.parent
+    instruction_modes = {path: stat.S_IMODE(path.stat().st_mode) if exists(path) else 0o644 for path in project_files}
+    tx = Transaction(home, targets, archive_units=[workspace / name for name in products])
     tx.backup()
     try:
         for original, destination in copies:
@@ -577,8 +647,10 @@ def apply(source, home, agent, products, preserve_config=None, legacy_cleanup=Tr
         origin = configured if github_repository(configured) == github_repository(ORIGIN) else ORIGIN
         git(workspace, 'remote', 'set-url', 'origin', origin)
         git(workspace, 'config', '--local', 'controlroom.agent', agent)
-        installed_profiles = dict(data['profiles'], hermes=hermes_owned)
+        installed_profiles = dict(data['profiles'], projects=installed_projects, hermes=hermes_owned)
         git(workspace, 'config', '--local', 'controlroom.installedProfiles', json.dumps(installed_profiles, ensure_ascii=False))
+        if project_root is not None:
+            git(workspace, 'config', '--local', 'controlroom.mainServerRoot', str(project_root))
         git(workspace, 'branch', '--set-upstream-to=origin/main', 'main')
         for name, stage in products.items():
             target = workspace / name
@@ -589,8 +661,8 @@ def apply(source, home, agent, products, preserve_config=None, legacy_cleanup=Tr
             if exists(path):
                 remove(path, home)
             path.parent.mkdir(parents=True, exist_ok=True)
-            path.write_bytes(content.encode('utf-8'))
-            path.chmod(0o755)
+            path.write_bytes(content if isinstance(content, bytes) else content.encode('utf-8'))
+            path.chmod(instruction_modes.get(path, 0o755))
         if os.name == 'nt':
             import winreg
             with winreg.OpenKey(winreg.HKEY_CURRENT_USER, 'Environment', 0, winreg.KEY_QUERY_VALUE | winreg.KEY_SET_VALUE) as key:
@@ -608,7 +680,7 @@ def apply(source, home, agent, products, preserve_config=None, legacy_cleanup=Tr
                     verify_copy(original, destination)
             elif exists(destination):
                 raise RuntimeError(f'Removed managed entry remains: {destination}')
-        verify(workspace, home, agent)
+        verify(workspace, home, agent, project_root=project_root)
         for root, paths in worktrees:
             git(root, 'worktree', 'repair', *paths)
             for path in paths:
@@ -649,13 +721,24 @@ def verify_copy(source, target):
         raise RuntimeError(f'Copied content differs: {target}')
 
 
-def verify(workspace, home, agent):
+def verify(workspace, home, agent, project_root=None):
     data = validate(workspace)
     homes = global_homes(home)
     for relative, target in [('codex/AGENTS.md', homes['codex'] / 'AGENTS.md'), ('claude/CLAUDE.md', homes['claude'] / 'CLAUDE.md'), ('gbrain-cards/' + agent + '.md', home / '.gbrain-agent.md')]:
         if linked(target) or digest(workspace / TOOLKIT / relative) != digest(target):
             raise RuntimeError(f'Installed instructions do not match: {target}')
-    for project, names in data['profiles']['projects'].items():
+    installed = json.loads(dict(config(workspace)).get('controlroom.installedprofiles', '{}'))
+    if project_root is not None:
+        copies, instructions, _ = main_server_assets(workspace, workspace, project_root, installed.get('projects', {}))
+        for source, target in copies:
+            if source is not None:
+                verify_copy(source, target)
+            elif exists(target):
+                raise RuntimeError(f'Removed agent skill remains: {target}')
+        for target, expected in instructions.items():
+            if linked(target) or not target.is_file() or target.read_bytes() != expected:
+                raise RuntimeError(f'Managed project instructions do not match: {target}')
+    for project, names in (data['profiles']['projects'].items() if project_root is None else []):
         docs = workspace / project / 'docs'
         if linked(docs):
             raise RuntimeError(f'Project docs must be a physical directory: {docs}')
@@ -666,8 +749,7 @@ def verify(workspace, home, agent):
                 if linked(target) or not target.is_dir():
                     raise RuntimeError(f'Installed skill must be a physical directory: {target}')
                 verify_copy(source, target)
-    installed = dict(config(workspace)).get('controlroom.installedprofiles', '{}')
-    hermes_owned = set(json.loads(installed).get('hermes', []))
+    hermes_owned = set(installed.get('hermes', []))
     for name in data['profiles']['global']:
         for tool in ('agents', 'claude', 'hermes'):
             if tool == 'hermes' and name not in hermes_owned:
@@ -676,7 +758,7 @@ def verify(workspace, home, agent):
             verify_copy(workspace / data['sources'][name], target)
 
 
-def update(home, agent=None, prepared=None, workspace=None):
+def update(home, agent=None, prepared=None, workspace=None, project_root=None):
     workspace = workspace or home / 'projects'
     role = agent or agent_for(workspace)
     cache = home / '.local/share/controlroom/tmp'
@@ -684,7 +766,7 @@ def update(home, agent=None, prepared=None, workspace=None):
     with tempfile.TemporaryDirectory(prefix='update-', dir=cache) as temporary:
         temporary = Path(temporary)
         source = temporary / 'incoming'
-        existing = next((path for path in (workspace, home / 'kmh-agent-kit', home / 'controlroom') if (path / '.git').exists()), workspace)
+        existing = workspace if project_root is not None else next((path for path in (workspace, home / 'kmh-agent-kit', home / 'controlroom') if (path / '.git').exists()), workspace)
         if prepared is None:
             clone(ORIGIN, source, existing)
         else:
@@ -701,14 +783,14 @@ def update(home, agent=None, prepared=None, workspace=None):
         validate(source)
         worktrees = [(workspace, preserve_worktrees(source, existing))]
         products = {}
-        if role in CENTRAL:
+        if role in CENTRAL and project_root is None:
             for name, origin in repositories(source):
                 stage = temporary / name
                 clone(origin, stage, workspace / name)
                 products[name] = stage
                 worktrees.append((workspace / name, preserve_worktrees(stage, workspace / name)))
         previous = config(existing)
-        apply(source, home, role, products, preserve_config=previous, worktrees=[(root, paths) for root, paths in worktrees if paths], workspace=workspace)
+        apply(source, home, role, products, preserve_config=previous, worktrees=[(root, paths) for root, paths in worktrees if paths], workspace=workspace, project_root=project_root)
 
 
 def restore_archive(home, path):
@@ -762,7 +844,7 @@ def allowed(path, role, projects):
     return len(parts) > 1 and parts[0] in projects and (role in CENTRAL or parts[0] == role) and parts[1] in {'docs', 'skills', 'AGENTS.md', 'CLAUDE.md'}
 
 
-def push(home, message, workspace=None):
+def push(home, message, workspace=None, project_root=None):
     root = workspace or home / 'projects'
     role = agent_for(root)
     check_origin(root, ORIGIN)
@@ -790,8 +872,8 @@ def push(home, message, workspace=None):
     with tempfile.TemporaryDirectory(prefix='refresh-', dir=cache) as temporary:
         source = Path(temporary) / 'incoming'
         run('git', 'clone', '--no-hardlinks', str(root), str(source))
-        apply(source, home, role, {}, legacy_cleanup=False, refresh_only=True, workspace=root)
-    if role in CENTRAL:
+        apply(source, home, role, {}, legacy_cleanup=False, refresh_only=True, workspace=root, project_root=project_root)
+    if role in CENTRAL and project_root is None:
         for name, expected in repositories(root):
             product = root / name
             check_origin(product, expected)
@@ -804,7 +886,7 @@ def push(home, message, workspace=None):
                 git(product, 'rebase', '--abort')
                 raise RuntimeError(f'Product conflict; local commits preserved: {product}')
             git(product, 'push', 'origin', 'main')
-    print('Controlroom changes and reviewed product commits published.')
+    print('Agent assets published; product repositories unchanged.' if project_root is not None else 'Controlroom changes and reviewed product commits published.')
 
 
 def main():
@@ -813,6 +895,7 @@ def main():
     default_home = own_workspace.parent if own_workspace.name == 'projects' else Path(os.environ.get('USERPROFILE' if os.name == 'nt' else 'HOME', str(Path.home())))
     parser.add_argument('--home', type=Path, default=default_home)
     parser.add_argument('--workspace', type=Path)
+    parser.add_argument('--main-server', action='store_true', help='Sync only agent instructions and skills into existing project repositories')
     sub = parser.add_subparsers(dest='action', required=True)
     for action in ('install', 'pull'):
         command = sub.add_parser(action)
@@ -826,15 +909,23 @@ def main():
     command.add_argument('archive', type=Path)
     args = parser.parse_args()
     home = Path(os.path.abspath(args.home))
-    installed = (own_workspace / '.git').is_dir() and bool(dict(config(own_workspace)).get('controlroom.installedprofiles'))
+    own_config = dict(config(own_workspace))
+    installed = (own_workspace / '.git').is_dir() and bool(own_config.get('controlroom.installedprofiles'))
     workspace = Path(os.path.abspath(args.workspace or (own_workspace if installed else home / 'projects')))
+    project_root = None
+    if args.main_server or own_config.get('controlroom.mainserverroot'):
+        saved_root = own_config.get('controlroom.mainserverroot')
+        project_root = Path(os.path.abspath(args.workspace or saved_root or home / 'projects'))
+        workspace = home / '.local/share/controlroom/source'
     try:
+        if project_root is not None and (not project_root.is_dir() or project_root.resolve() == workspace.resolve()):
+            raise RuntimeError(f'Expected an existing, separate product root: {project_root}')
         if args.action in {'install', 'pull'}:
-            update(home, args.agent, getattr(args, 'source', None), workspace=workspace)
+            update(home, args.agent, getattr(args, 'source', None), workspace=workspace, project_root=project_root)
         elif args.action == 'push':
-            push(home, args.message, workspace=workspace)
+            push(home, args.message, workspace=workspace, project_root=project_root)
         elif args.action == 'verify':
-            verify(workspace, home, agent_for(workspace))
+            verify(workspace, home, agent_for(workspace), project_root=project_root)
             print('Physical layout and installed contents verified.')
         elif args.action == 'restore':
             restore_archive(home, args.archive)

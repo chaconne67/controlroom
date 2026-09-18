@@ -21,11 +21,15 @@ python_name="$(python_command)"
 python_args=(-X utf8)
 [ "$python_name" != py ] || python_args=(-3 -X utf8)
 core_args=(--home "$home_dir")
-if [ "${1:-}" = --workspace ]; then
-  [ "$#" -ge 2 ] || die 'Expected a workspace root.'
-  core_args+=(--workspace "$2")
-  shift 2
-fi
+while [ "$#" -gt 0 ]; do
+  case "$1" in
+    --workspace)
+      [ "$#" -ge 2 ] || die 'Expected a workspace root.'
+      core_args+=(--workspace "$2"); shift 2 ;;
+    --main-server) core_args+=(--main-server); shift ;;
+    *) break ;;
+  esac
+done
 core() { "$python_name" "${python_args[@]}" "$repo_dir/scripts/controlroom.py" "${core_args[@]}" "$@"; }
 if [ ! -f "$repo_dir/scripts/controlroom.py" ]; then
   command -v git >/dev/null 2>&1 || die "Git is required."

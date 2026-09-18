@@ -1,28 +1,49 @@
 # Controlroom
 
-조정실의 공통 지침·스킬·프로젝트 계획을 관리합니다. PC·노트북 조정실의 실제 작업 폴더는 **`~/projects`**, main 서버 조정실은 기존 운영 코드와 겹치지 않는 **`~/controlroom-workspaces`**입니다. Windows의 `~`는 사용자 폴더, macOS·Linux는 HOME입니다.
+조정실의 공통 지침·스킬·프로젝트 계획을 관리합니다. **PC·노트북은 `~/projects`에 조정실을 설치**하고, **Ubuntu main 서버는 `--main-server`로 기존 코드 저장소에 에이전트 지침·스킬만 추가**합니다. Windows의 `~`는 사용자 폴더, macOS·Linux는 HOME입니다.
 
 ## 처음 설치하거나 최신본 적용
 
-Git과 Python 3.12 이상, 이 비공개 GitHub 저장소의 읽기 권한을 준비합니다. 아래 설치 파일을 다운로드한 폴더에서 실행합니다. 설치기는 인증된 Git으로 최신본을 먼저 받아 확인하고, 기존 대상을 압축 백업한 뒤 적용합니다.
+Git, Python 3.12 이상, [GitHub CLI (`gh`)](https://cli.github.com/), 비공개 Controlroom 저장소의 읽기 권한을 준비합니다. PC·노트북의 일반 설치에는 Venture 저장소 읽기 권한도 필요합니다. Windows는 Git for Windows와 PowerShell, Linux·macOS는 Bash와 curl을 사용합니다.
+
+새 장비에서 GitHub 인증을 한 번 설정합니다. 아래 두 명령은 두 OS에서 같습니다.
+
+```text
+gh auth login --hostname github.com --git-protocol https
+gh auth setup-git --hostname github.com
+```
+
+이후 OS에 맞는 **한 줄만 실행하면 다운로드부터 설치까지 진행**합니다. 비공개 저장소이므로 인증 없는 raw 주소 대신 GitHub 인증을 사용하는 API에서 설치 스크립트를 받습니다. 인증이나 다운로드가 실패하면 설치를 시작하지 않습니다.
 
 ### Windows — PowerShell
 
-[install.ps1](.controlroom/install.ps1)을 다운로드한 뒤:
-
 ```powershell
-powershell -NoProfile -ExecutionPolicy Bypass -File .\install.ps1 -Agent windows-control
+powershell -NoProfile -ExecutionPolicy Bypass -Command "& ([scriptblock]::Create((Invoke-RestMethod -Headers @{Authorization=('Bearer ' + (gh auth token --hostname github.com)); Accept='application/vnd.github.raw+json'} -Uri 'https://api.github.com/repos/chaconne67/controlroom/contents/.controlroom/install.ps1?ref=main' -ErrorAction Stop).TrimStart([char]0xFEFF))) -Agent windows-control"
 ```
 
-### macOS·Linux — Bash
-
-[install.sh](.controlroom/install.sh)을 다운로드한 뒤:
+### PC·노트북의 macOS·Linux — Bash
 
 ```bash
-bash ./install.sh windows-control
+(set -e; installer="$(mktemp)"; trap 'rm -f "$installer"' EXIT; curl -fsSL -H "Authorization: Bearer $(gh auth token --hostname github.com)" -H "Accept: application/vnd.github.raw+json" "https://api.github.com/repos/chaconne67/controlroom/contents/.controlroom/install.sh?ref=main" -o "$installer"; bash "$installer" windows-control)
 ```
 
-설치 후 터미널을 새로 엽니다. 설치 파일은 임시로 다운로드한 어디에서든 실행할 수 있습니다. PC·노트북의 최종 저장 위치는 `~/projects`이며 별도의 `~/controlroom` 체크아웃은 필요하지 않습니다. 이미 설치한 장비에서 다시 실행해도 최신본을 적용합니다.
+설치기는 최신본을 먼저 받아 확인하고 기존 대상을 압축 백업한 뒤 적용합니다. 설치 후 새 터미널에서 `controlroom verify`로 확인합니다. PC·노트북의 최종 저장 위치는 `~/projects`이며 별도의 `~/controlroom` 체크아웃은 필요하지 않습니다. 이미 설치한 장비에서 다시 실행해도 최신본을 적용합니다.
+
+### Ubuntu main 서버 — 코드 보존 설치
+
+기존 `~/projects/<프로젝트>`에서 코드가 운영되고 있으면 다음 한 줄을 실행합니다.
+
+```bash
+(set -e; installer="$(mktemp)"; trap 'rm -f "$installer"' EXIT; curl -fsSL -H "Authorization: Bearer $(gh auth token --hostname github.com)" -H "Accept: application/vnd.github.raw+json" "https://api.github.com/repos/chaconne67/controlroom/contents/.controlroom/install.sh?ref=main" -o "$installer"; bash "$installer" --main-server windows-control)
+```
+
+- 공통 원본·도구는 `~/.local/share/controlroom/source`에 보관합니다. 기존 프로젝트 폴더는 그대로 사용합니다.
+- 실제 Git 저장소가 있는 프로젝트만 선택해 `AGENTS.md`·`CLAUDE.md`의 관리 구역과 `.agents/skills`, `.claude/skills`를 갱신합니다. 기존 지침 본문과 개인 스킬은 보존합니다.
+- 프로젝트별 manifest의 스킬과 해당 코드 저장소의 원본 `skills`를 사용합니다. 같은 이름이면 프로젝트 원본을 우선합니다.
+- 제품의 `.git`, 브랜치·원격, 코드, `docs`, 원본 `skills`, 환경·고객 자료는 변경하지 않습니다. Venture를 포함해 제품 저장소를 clone·pull·push하지 않습니다.
+- 이후 `controlroom pull`, `verify`, `push`는 이 모드를 유지합니다. push는 별도 Controlroom 원본만 전송하며 제품 코드나 로컬 프로젝트 지침 본문을 수집하지 않습니다.
+
+프로젝트 루트가 다르면 마지막 실행 부분을 `bash "$installer" --main-server --workspace "$HOME/operating-projects" windows-control`로 바꿉니다. 사용자 HOME 안의 기존 실제 폴더를 지정합니다. 에이전트 앱 로그인과 프로젝트 서버 SSH 접근은 각 장비에서 준비합니다. 이 옵션은 에이전트 프로그램 자체를 설치하거나 자동 실행을 활성화하지 않습니다.
 
 ## 일상 동기화
 
@@ -32,14 +53,14 @@ controlroom push "변경 설명"
 controlroom verify
 ```
 
-- `pull`: 지침·도구·계획과 등록된 Venture 코드를 최신본으로 교체합니다. 수정 중인 파일·로컬 커밋·다른 브랜치도 먼저 백업하므로 기존 파일이 있다는 이유로 중단하지 않습니다.
-- `push`: 승인·검토한 조정실 지침·도구·계획을 저장하고 GitHub로 보낸 뒤 실행 앱의 사본도 갱신합니다. Venture는 이미 만든 커밋만 전송합니다. 작업 중인 코드를 자동으로 커밋하지 않습니다. 충돌하면 rebase를 취소해 로컬 커밋을 보존합니다.
+- `pull`: 일반 설치는 지침·도구·계획과 등록된 Venture 코드를 갱신합니다. main 서버 모드는 에이전트 자산만 갱신합니다. 교체 대상의 기존 내용은 먼저 압축 백업합니다.
+- `push`: 검토한 Controlroom 원본을 GitHub로 보내고 앱의 사본을 갱신합니다. 일반 설치는 Venture의 이미 만든 커밋도 전송하지만 main 서버 모드는 제품 Git을 변경하지 않습니다. 충돌하면 rebase를 취소해 로컬 커밋을 보존합니다.
 - `verify`: 실제 폴더 구조와 앱에서 읽는 지침·스킬의 내용이 원본과 같은지 확인합니다.
 - `kitpull`, `kitpush`는 같은 실행 경로를 사용하는 기존 명령입니다.
 
 기기를 옮기기 전 현재 계획에 목표·승인 범위, 실제 서버/저장소·브랜치·커밋, 남은 변경, 마지막 검증 결과와 다음 행동을 기록하고 push합니다. 다음 장비에서는 pull 후 계획과 실제 서버 상태를 대조합니다.
 
-## 실제 구조
+## PC·노트북의 실제 구조
 
 ```text
 ~/projects/                 Controlroom Git 저장소의 실제 루트
@@ -55,9 +76,7 @@ controlroom verify
 
 GitHub와 각 장비는 같은 상대 경로를 사용합니다. 프로젝트 문서는 바로 `<프로젝트>/docs`에 있고 스킬 원본은 `<프로젝트>/skills`에 있습니다. 공통 스킬 원본은 `.controlroom/skills`입니다. 문서·지침·스킬 원본에 연결 폴더나 하드링크를 만들지 않습니다. 앱이 요구하는 `.agents/skills`, `.claude/skills` 등에는 설치기가 실제 파일을 복사합니다. 배치 목록은 `.controlroom/manifests/skills.json` 한 곳입니다.
 
-사용자 조정실은 로컬 데스크탑이며 main 서버에는 자동 수정용 조정실을 함께 둘 수 있습니다. 같은 저장소와 설치·동기화 명령을 사용하되, main의 조정실은 `~/controlroom-workspaces` 하나를 실제 Git 루트로 사용합니다. 내부 상대 구조는 위와 같고, Venture도 이 루트의 `venture`에 둡니다. 운영 코드 네 저장소는 기존 `~/projects/<프로젝트>`에 유지합니다. Exdigm은 main의 Codex에서도 SSH로 전용 서버의 debug worktree에 접근합니다. 실제 설치 위치·인증·검증 상태는 [자동 수정 방침](exdigm/docs/operational-error-triage-repair-policy-20260918.md)을 확인합니다.
-
-main의 최초 전환은 승인된 기존 위치의 백업·이동과 함께 수행합니다. 루트를 지정하는 설치 명령은 `bash ./install.sh --workspace "$HOME/controlroom-workspaces" windows-control`입니다. 설치한 뒤에는 같은 `controlroom pull`, `push`, `verify`를 쓰며 루트 옵션을 반복 입력하지 않습니다. 기존에 SSH로 GitHub를 사용하던 장비는 같은 저장소의 SSH 주소와 인증을 이어 사용합니다. 에이전트 앱 로그인과 제품 서버 SSH 접근은 별도입니다.
+main 서버 모드는 위 조정실 구조를 코드 루트에 덮어쓰지 않습니다. 별도 원본의 프로젝트 지침·스킬을 기존 코드 저장소에 배치하고 제품 Git과 문서 구조를 유지합니다. main에 없는 Exdigm 코드 저장소는 새로 만들지 않으며 기존 전용 서버의 작업 경로를 사용합니다. 실제 운영 상태·자동 수정 권한은 [자동 수정 방침](exdigm/docs/operational-error-triage-repair-policy-20260918.md)을 따릅니다. 이 설치 옵션의 추가는 운영서버에 적용을 마쳤다는 뜻이 아닙니다.
 
 개발 에이전트는 조정실에서 실행합니다. 서버의 제품 코드·Git·데이터·미디어·빌드·테스트·배포는 각 프로젝트의 기존 SSH 절차와 실제 서버 경로를 따릅니다. Venture의 업무 스킬은 Venture 저장소의 `skills`가 원본입니다. 조정실 Git은 Venture와 고객 자료·환경 파일·인증 정보를 자동 수집하지 않습니다.
 
@@ -71,7 +90,7 @@ main의 최초 전환은 승인된 기존 위치의 백업·이동과 함께 수
 controlroom restore "백업 ZIP의 전체 경로"
 ```
 
-복원은 업데이트 직전의 Git 상태와 파일로 돌아가는 작업입니다. 복원 후 새 터미널에서 명령을 실행합니다. 옛 `~/controlroom`, `~/kmh-agent-kit`, `~/projects/_control-docs`는 성공한 전환에서 백업 후 제거하며 호환 링크로 남기지 않습니다. GBrain 역할명과 서버 런타임은 별도의 기존 운영 계약을 유지합니다.
+복원은 설치기가 교체한 파일과 자신의 Git 상태를 업데이트 전으로 되돌립니다. main 서버 모드의 백업·복구는 제품 Git을 포함하지 않습니다. 일반 설치의 옛 `~/controlroom`, `~/kmh-agent-kit`, `~/projects/_control-docs`는 전환 후 정리하지만 main 서버 모드는 옛 조정실 폴더를 이동·삭제하지 않습니다. 복원 후 새 터미널에서 명령을 실행합니다. GBrain 역할명과 서버 런타임은 기존 운영 계약을 유지합니다.
 
 ## 운영 설명
 

@@ -1,6 +1,6 @@
 ﻿# Controlroom Windows entrypoint. Uses the same update transaction as other OSes.
 [CmdletBinding()]
-param([string]$Agent, [string]$Gbrain, [string]$Project, [string]$ProfileName, [string]$Workspace, [switch]$Help)
+param([string]$Agent, [string]$Gbrain, [string]$Project, [string]$ProfileName, [string]$Workspace, [switch]$MainServer, [switch]$Help)
 $ErrorActionPreference = 'Stop'
 try { [Console]::OutputEncoding = [System.Text.Encoding]::UTF8 } catch { }
 if ($Gbrain) { if ($Agent -and $Agent -ne $Gbrain) { throw 'Conflicting role names.' }; $Agent = $Gbrain }
@@ -29,6 +29,7 @@ try {
         $coreArgs += @('--source', $bootstrapPath)
     }
     if ($Workspace) { $coreArgs = @('--workspace', $Workspace) + $coreArgs }
+    if ($MainServer) { $coreArgs = @('--main-server') + $coreArgs }
     & $python.Source @pythonArgs -X utf8 $corePath @coreArgs
     $exitCode = $LASTEXITCODE
 } finally {

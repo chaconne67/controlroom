@@ -1,5 +1,22 @@
 # controlroom 저장소 통합
 
+## Main 서버의 에이전트 자산만 동기화 — 2026-09-18 후속 지시
+
+주인님은 Ubuntu main의 기존 제품 코드 저장소를 유지하면서 Codex·Claude Code 등에 필요한 지침과 스킬만 추가하는 설치 옵션을 요청했다. 이 설치 모드에서는 아래 과거 기록의 별도 조정실/Venture 이동을 수행하지 않는다. 실제 main 설치는 주인님이 실행하며 이번 작업은 옵션 구현·격리 검증·GitHub 안내 반영이다.
+
+- 진입점은 `install.sh --main-server windows-control`이다. 기본 프로젝트 루트는 `~/projects`이며 `--workspace`로 다른 기존 루트를 지정할 수 있다. 이후 `controlroom pull`, `verify`, `push`는 저장한 모드를 유지한다.
+- Controlroom 원본과 도구는 `~/.local/share/controlroom/source`의 전용 Git 저장소에 둔다. 제품 루트에 공통 `.git`을 만들지 않는다. main의 기존 `~/controlroom`, `~/controlroom-workspaces`를 이동·삭제하지 않는다.
+- manifest와 실제 Git 저장소를 대조해 존재하는 프로젝트만 연결한다. main에서 직접 확인한 대상은 ceoloan, fundkeeper, rndlog, ziin, venture다. FundKeeper의 master, CEO Loan의 ceoloan 원격을 포함한 제품 Git 전체는 읽기 전용이다. 없는 제품 저장소를 clone하지 않는다.
+- 공통 앱 지침·스킬과 각 프로젝트의 `.agents/skills`, `.claude/skills`만 배치한다. 프로젝트 자체 `skills`가 있는 경우 그 원본도 사용하며 동명 스킬은 프로젝트 원본을 우선한다. 원본 `skills`와 `docs`, 코드·환경·고객 자료는 교체하지 않는다.
+- 프로젝트 AGENTS.md·CLAUDE.md는 기존 본문을 보존하고 설치기가 소유하는 표시 구역만 추가·갱신한다. 이 구역은 실제 코드 위치와 공통 프로젝트 지침의 위치를 알려주며, 로컬 코드/배포 계약과 main 실행 맥락을 구분한다.
+- 기존 `validate`, manifest, `Transaction`, 파일 복사/내용 대조, 명령 설치를 재사용한다. 같은 공식 install/pull 경로에 main 모드를 연결하며 별도 설치 엔진·의존성·예약 실행을 만들지 않는다.
+- 수정 전 기준선은 최신 GitHub ce6893a와 격리 checkout이다. 기존 OS 설치·다운로드 실패·문서 검사 결과를 유지하고 기본 설치/백업/복구/Git 왕복 회귀 검사도 실행한다. 운영 폴더는 읽기 확인만 했다.
+- 추가 검증은 공식 옵션의 최초 설치·반복 pull·verify·도구 원본 push와 실패 복구다. Git 폴더 전체, master/main 및 원격, staged/unstaged 코드, docs·원본 스킬·환경 파일의 전후 바이트를 비교한다. 기존 지침 본문·별도 사용자 스킬 보존, 소스에서 삭제된 배치 스킬 정리, 없는 저장소 미생성, 제품 원격이 끊겨도 제품 Git을 호출하지 않는지를 확인한다.
+
+공통 `windows-control` 카드도 이 설치 모드의 실제 코드/공유 기획 경로를 안내한다. GBrain은 현재 로컬 카드의 공식 main 직접 접속 명령으로 맞췄으며 운영 프로토콜 조회 성공을 확인했다. 기존 정책·저장공간·자동 실행 권한은 변경하지 않는다.
+
+상태: 공식 설치기에 main 서버 옵션을 구현했다. Windows에서 신규 옵션·실패 복구·기존 PC 동작을 포함한 격리 통합 검사 19개를 통과했다. 실제 운영 main 폴더에 대한 설치 적용은 주인님이 실행하며, 이 변경은 서버 코드 저장소 전환 완료를 뜻하지 않는다.
+
 사용자 승인: 두 저장소를 controlroom으로 합친다. 공개·비공개 설정은 사용자가 나중에 결정하므로 변경하지 않는다.
 
 기존 private control-room-docs를 controlroom으로 이름 변경하고 public kmh-agent-kit의 코드·이력을 가져온다. 원래 공개 키트는 이전 안내를 남긴 보관 저장소로 전환한다. 비공개 자료를 기존 공개 저장소에 올리지 않는다.

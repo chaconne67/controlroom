@@ -119,7 +119,7 @@ class KitFixture:
         run('git', 'init', '--initial-branch=main', self.seed)
         self._configure(self.seed)
         toolkit = self.seed / '.controlroom'
-        for relative in ['install.ps1', 'install.sh', 'scripts/controlroom.py', 'shell/kit-aliases.sh']:
+        for relative in ['install.ps1', 'install.sh', 'scripts/controlroom.py', 'shell/kit-aliases.sh', 'templates/main-server-project.md']:
             destination = toolkit / relative
             destination.parent.mkdir(parents=True, exist_ok=True)
             shutil.copy2(ROOT / relative, destination)
@@ -197,7 +197,7 @@ class KitFixture:
             self.cleanups.enter_context(preserve_windows_installer_path(home))
         return home
 
-    def install(self, home, agent='windows-control', standalone=False, bash=False, workspace=None):
+    def install(self, home, agent='windows-control', standalone=False, bash=False, workspace=None, main_server=False):
         installer = self.seed / '.controlroom' / ('install.ps1' if os.name == 'nt' and not bash else 'install.sh')
         if standalone:
             destination = home / installer.name
@@ -205,8 +205,12 @@ class KitFixture:
             installer = destination
         if os.name == 'nt' and not bash:
             options = ['-Workspace', workspace] if workspace else []
+            if main_server:
+                options += ['-MainServer']
             return run('powershell.exe', '-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', installer, '-Agent', agent, *options, env=self.env(home))
         options = ['--workspace', workspace] if workspace else []
+        if main_server:
+            options += ['--main-server']
         return run(BASH, '--noprofile', '--norc', installer, *options, agent, env=self.env(home))
 
     def clone(self, agent='main', spaces=False):
