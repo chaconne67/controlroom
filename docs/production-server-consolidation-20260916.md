@@ -3,12 +3,12 @@
 작성일: 2026-09-16 (Asia/Seoul)
 계획 정본: controlroom/docs/production-server-consolidation-20260916.md
 목표 호스트: chaconne@49.247.192.127, hostname main
-상태: 운영·DNS 14개·프로젝트 루트 및 보관 디스크 이전 완료 · 일일 전체 DB 백업·실제 03:40 실행·전체 복원 확인(20절) · 인증서 전달 복구 완료 · 기억 정리 응답 형식·Coconut 캐시 후속 대기(21절)
+상태: 운영·DNS·프로젝트 루트·보관 디스크 및 전체 DB 복원 완료 · 백업 최근3일 보관 · GBrain 기억8개 저장·Coconut US/KR 캐시 마감 완료(22절)
 대상: 기존 DB, Coconut/FundKeeper, RNDLOG, ZiiN, CEO Loan, GBrain 런타임·자료 게이트웨이·필요한 제품 런타임
 제외: Exdigm 앱·운영서버·도메인 이전. 공용 DB를 쓰는 Exdigm 소비자의 기존 접속·업무 계약도 보호한다.
 
 
-> 최신 상태: 현행 프로젝트 루트는 19절, 보관 디스크·하루 한 번 전체 DB 백업과 실제 복원 결과는 20절, 정상 예약 관찰과 인증서·조정실 기억 정리 후속은 21절을 먼저 읽는다. 실제 운영 인계는 16절, 공개 DNS 14개 완료와 옛 서버 의존성은 18절이다. 앞 절의 당시 경로·승인·준비 상태는 이력으로 보존한다.
+> 최신 상태: 백업3일 보관·GBrain 기억 정리와 Coconut 캐시 마감은22절을 먼저 읽는다. 현행 프로젝트 루트는19절, 보관 디스크·전체 DB 복원 결과는20절, 정상 예약·인증서 연결의 당시 결과는21절이다. 실제 운영 인계는 16절, 공개 DNS 14개 완료와 옛 서버 의존성은 18절이다. 앞 절의 당시 경로·승인·준비 상태는 이력으로 보존한다.
 
 ## 1. 사용자 결정과 완료 의미
 
@@ -773,7 +773,7 @@ RNDLOG 자료 코드994ef3b와 ZiiN af6888f는 기존 GitHub origin/main에 push
 
 기존 단일 `consolidation-ceo-loan-backup.timer`를 재사용해 **매일 03:40 한국 시각**, `consolidation-ceo-loan-backup.service` → `daily-database-backup.py` → 기존 `legacy/backup-ceo-loan-db.sh`/native PG 도구와 native MySQL 도구로 백업한다. 기존 유닛 이름은 호환 식별자로 남아 있고 대상은 현재 PG의 모든 접속 가능한 비템플릿 DB와 MySQL의 모든 저장 스키마다. 정보 조회용 가상 스키마 두 개만 MySQL에서 제외한다. MySQL `sys`의 원본 설정 데이터도 명시적으로 포함한다.
 
-완료 묶음은 한국 날짜별 하나다. 같은 날 재호출하면 기존 manifest·파일 크기·SHA-256을 먼저 확인하고 새로 덤프하지 않는다. 신규 백업은 비공개 `.partial-*`에 쓰고 native 파일 검사 및 SHA를 확인한 뒤 날짜 폴더로 원자 확정한다. 기존 보존 기본값 14일을 유지하며 이 작업이 만든 14일 초과 완료 묶음만 정리한다. 과거 복구 사본·알 수 없는 파일·불완전 묶음을 성공으로 간주하거나 삭제하지 않는다.
+완료 묶음은 한국 날짜별 하나다. 같은 날 재호출하면 기존 manifest·파일 크기·SHA-256을 먼저 확인하고 새로 덤프하지 않는다. 신규 백업은 비공개 `.partial-*`에 쓰고 native 파일 검사 및 SHA를 확인한 뒤 날짜 폴더로 원자 확정한다. 2026-09-18 추가 지시에 따라 최근3일분만 보관하며 이 작업이 만든3일 범위 밖 완료 묶음만 정리한다. 초기14일 설정은 이 후속 결정으로 대체한다. 과거 복구 사본·알 수 없는 파일·불완전 묶음을 성공으로 간주하거나 삭제하지 않는다.
 
 유닛은 실제 `/mnt/data` mount를 요구하고 스크립트는 고정 UUID를 확인한 뒤 쓰기를 시작한다. 추가 디스크가 없거나 다른 디스크이면 시스템 디스크에 백업을 생성하지 않고 실패한다. 서비스는 root, 파일/백업 폴더는 기존 비공개 권한으로 실행한다.
 
@@ -826,3 +826,40 @@ Main infra 75dbab3b2a6a9dc258346a44a160a571f0043245의 full Git bundle, 현재 h
 ### 남은 별도 작업
 
 Coconut cache는 20절과 outputs의 구체적 한 파일 수정안·캐시 전용 제안 이미지·실행 정의를 따른다. 실제 수정·적용·1회 재생성의 허용 응답은 아직 없으며 이번 기억 정리 1회 승인을 재사용하지 않는다. 정상 token 08:30·accounts 09:10·prices 09:30 및 RNDLOG/CEO Loan noon timer는 실제 status0을 관찰했다. 고객 수신·금융 결과를 별도로 시험한 것으로 확대하지 않는다. ZiiN 주간 Kakao는 다음9월21일 실제 결과가 필요하다. 옛 서버별 호환 소비자·제외 서비스·서버 외부 정기 백업과 최종 해지 판단은 18절 후속을 유지한다.
+
+
+## 22. 2026-09-18 기억 정리·캐시 마감과 백업 보관 축소
+
+주인님의 “필요한 조치를 해서 마저 다 끝내라” 지시로 이 범위의 응답 형식 수정·추가 모델 생성과 Coconut 캐시 수정·실제 생성이 허용됐다. 이 절은20·21절의 기억 정리/캐시 승인 대기·미완료 상태와 초기14일 보관값을 대체한다. 옛 서버 삭제나 실제 고객 발송·금융 주문은 이번 후속에 포함하지 않는다.
+
+### DB 백업은 하루 한 묶음, 최근3일분
+
+기억 정리는 대화에서 앞으로 참고할 규칙·결정을 GBrain에 저장하는 작업이고 DB 복원용 백업과 별개다. DB 백업은 기존 단일03:40 Asia/Seoul 예약과 `/mnt/data/backups/daily/YYYY-MM-DD`를 유지하며 service env 및 wrapper 기본값을3으로 맞췄다. 현재 완료 백업은2026-09-18 한 묶음·약1.411GB다. 정상적으로 매일 완료되면 현재 날짜와 이전 두 날짜, 최대3일분을 보관한다. 현재 크기 기준 약4.2GB이며 증가할 수 있다.
+
+기존 날짜의 파일 SHA·inode·mtime·크기를 대조하며 같은 공식 service를 호출해 중복 덤프/수정 없음을 확인했다. 같은 실제 정리 코드의 날짜·본 작업 kind 조건을 격리 검사해3일 밖 완료 묶음만 정리하고 미확인 보관자료·불완전 묶음·symlink를 보존했다. 고정 mount UUID·파일 lock·native DB dump/전체 복원 계약은 바꾸지 않았다. 기존 전체 복원 증거는20절을 사용한다. 장기 복구 사본과 서버외부 인계 백업은 일일3일 정리 대상이 아니다.
+
+### 조정실 GBrain 기억 정리 실제 완료
+
+기존 모델 `google/gemini-3-flash-preview`와 판단 프롬프트·parser를 유지하며 OpenRouter native JSON schema/strict 및 지원 parameter 라우팅을 요청한다. 배열·문자열 등을 유효한 object로 감싸지 않는다. 14:33:48 시작한 native Windows task에서9월17일 새 대화46개를 읽고 저장할 기억8개를 정상 생성했다. 첫 저장6개 뒤2개가 미등록 native reference type으로 막혔다.
+
+이미 저장해 둔 생성 원문을 같은 adapter의 공식 generate 경로에서 이어 전달하도록 연결했다. 새 reference 기억은 지원되는 native note와 도메인 page_type:reference로 저장한다. 기존 topic의 full Markdown/title/native type은 먼저 읽어 보존하며 legacy reference topic을 임의 전환하지 않는다. 14:38:15 native task 재실행은 실패했던2개만 처리해 추가 LLM 호출0회·전체 기억8개·blocker0·종료값0으로 끝났다. report/ledger와8개 실제 GBrain get을 확인했고 옛 실패 이력도 보존됐다. 이번 추가 유료 모델 생성은1회이며 옛 서버 대화·결과는 읽기 범위에서 제외해 보관한다. 정상 다음 일정은9월19일03:30이다.
+
+### Coconut 캐시와 실제 소비자 확인
+
+`/home/chaconne/projects/fundkeeper`의 `xmodules/system/update_cache_data.py`, `update_tickers_master.py` 두 파일을 고쳤다. 현재 종목 표를 required Ticker/Company로 찾고, 종목 사전을 캐시 생성 전에 갱신하며 사전/캐시는 임시 parquet→원자 확정으로 발행한다. 새 파일이 성공하기 전에 옛 캐시를 지우지 않고 사전 갱신 오류를 숨기지 않는다. ICB를 GICS로 바꿔 표시하지 않는다.
+
+첫 적용14:36 실행은4월21일 사전의 BNY 누락에서 중단됐다. 사전 갱신 순서 수정 뒤 미국 캐시와 새 종목14개 등록은 완료됐으나 한국 시작에서32 worker의3GiB cgroup OOM/종료137을 실제 kernel 로그로 확인했다. 기존 pool의 worker를2로 제한하며3GiB 예약 한도는 유지했다. 완료된 미국 파일/등록 종목을 재사용한14:45:29~41 실행은US/KR 전체 흐름 status0이었다. 소스의 원래 LF 줄바꿈까지 보존한 최종 이미지의14:49:32~37 공식 service 재실행도 status0·두 일일 캐시 SHA 불변이었다.
+
+최종 캐시 전용 이미지 `sha256:1bfa57ef77b51e630c75b86313586e1551676f63a2aec4b465e731fbad2d1ae9`는 기존 웹 frozen base에서 두 소스 파일만 교체했다. `compose.cache.coconut.json`은 이미지 필드 하나이며 cache service에만 네 번째 Compose로 연결했다. 웹·token/accounts/prices 이미지/정의와 운영 웹 ID/StartedAt은 유지했다. 원래02:10 timer를 재사용한다.
+
+- US 파일 `us516_20260918.parquet`:518종목·2,999,817행·298,177,908bytes. 실제 새 종목 표 합집합과 ticker가 정확히 일치하며2000-01-03~2026-09-17 가격 행을 읽었다. us516은 기존 호환 파일명이며 종목 수를516으로 제한하지 않는다.
+- KR 파일 `kr350_20260918.parquet`:350종목·927,003행·59,985,552bytes. 운영 웹의 공식 `manage.py shell`에서 실제 `krx_filter.views.FilterKrx`가 새 파일을 읽었다. 기존 Tools.get_tickers_master도16,702행 사전과BNY를 읽었다. 조회 시험의 추가 가격 API/AI 호출은0회다.
+- KRX_ID/PW 인증 경고가 있으나 실제 사전 및 KR 캐시는 성공했다. 이번은 기존 XLS/DB 가격으로 생성한 캐시와 실제 소비자 읽기를 검증한 결과다. KRX 인증 직접 조회의 성공으로 확대하지 않는다. Drive 단계 제외 결정은1절대로 유지한다.
+
+FundKeeper `b5b601d5231271d9bdb881739b2eebabb13dda8e`는 두 파일만 커밋해 origin/master에 반영·원격 HEAD를 확인했다. main 공통 설정 Git과 최신 암호화 복구 사본은 아래 최종 저장 결과를 따른다. 코드 리뷰에서 승인된 finding은0개이며 공식 경로와 실패 시 이전 파일 보존 검사를 통과했다.
+
+### 운영 보존과 남은 관리 항목
+
+14:50 공개 HTTPS14개는 신뢰 CA/호스트명 검증을 포함해 최종200이다. 기존 Coconut 웹/프런트·public edge·선택 PG/MySQL ID/StartedAt/image를 보존했고 main.verify는 단일 쓰기 정본·제품 런타임5개·CEO 원본 및 RNDLOG 자료 접근을 통과했다. 시스템 디스크는 사용48.824GB/여유158.231GB(24%), 보관 디스크는 사용107.823GB/여유102.402GB(52%)였다. 이 값은 동시 개발·정상 업무로 바뀔 수 있다.
+
+이번 지적한 기억 정리·보관수·캐시 마감에는 추가 사용자 조치가 없다. 다음 날짜 정상 실행 결과와9월21일 주간 Kakao 실제 결과, 옛 IP/SQL/GBrain/자료 호환 소비자 정리·제외 서비스·정기 서버외부 백업 및 옛 서버 해지는18절의 별도 후속이다. DNS 완료만으로 옛 서버를 삭제하지 않는다. 기존 GDrive 단계도 별도 과제이며 `.env`를 보내는 코드로 대체하지 않는다.

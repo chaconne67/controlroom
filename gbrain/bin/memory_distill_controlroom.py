@@ -67,6 +67,11 @@ def run_gbrain(args, timeout=120):
                     args += ['--type', page['type']]
             elif '[page_not_found]' not in current.stderr:
                 raise RuntimeError('Existing GBrain content could not be checked; capture stopped')
+            elif '--type' in args and args[args.index('--type') + 1] == 'reference':
+                # New reference memories use the declared native note type.
+                args[args.index('--type') + 1] = 'note'
+                data = data.replace(b'type: reference', b'type: note', 1)
+                data = data.replace(b'page_type: project', b'page_type: reference', 1)
         args.append('--stdin')
     if '--source' not in args:
         args += ['--source', 'default']
@@ -120,6 +125,49 @@ def extract_user_messages(target_date):
     return messages
 
 
+def resume_failed_captures(target_date, ledger, previous, no_gbrain):
+    summary = dict(previous['summary'])
+    applied = list(summary['applied_slugs'])
+    blockers = []
+    newly_applied = []
+    for failure in summary['blockers']:
+        slug = failure.partition(': ')[0]
+        path = pipeline.DISTILLED_PAGES_DIR / (slug.replace('/', '__') + '.md')
+        markdown = path.read_text(encoding='utf-8')
+        if 'distilled_from: codex-jsonl-' + target_date not in markdown:
+            raise RuntimeError('The saved memory belongs to a different source date')
+        ok, detail = pipeline.capture_page(slug, markdown)
+        if ok:
+            if slug not in applied:
+                applied.append(slug)
+                newly_applied.append({'slug': slug, 'path': detail})
+        else:
+            blockers.append(slug + ': ' + detail)
+    summary.update(memories_applied=len(applied), applied_slugs=applied, blockers=blockers)
+    report_path = Path(previous['report_path'])
+    report = report_path.read_text(encoding='utf-8')
+    report = pipeline.re.sub(r'^- Memories applied: \d+$',
+                             '- Memories applied: ' + str(len(applied)), report, flags=pipeline.re.M)
+    report = pipeline.re.sub(r'^- Blockers: \d+$', '- Blockers: ' + str(len(blockers)), report, flags=pipeline.re.M)
+    blocker_section = ('## Blockers\n\n' + '\n'.join('- ' + b for b in blockers) + '\n\n') if blockers else ''
+    report = pipeline.re.sub(r'^## Blockers\n\n.*?(?=^## |\Z)', lambda match: blocker_section, report, flags=pipeline.re.M | pipeline.re.S)
+    added = '\n'.join('- `' + item['slug'] + '` -> `' + item['path'] + '`' for item in newly_applied)
+    if added:
+        if '## Applied Memories\n\n' in report:
+            report = report.replace('## Applied Memories\n\n',
+                                    '## Applied Memories\n\n' + added + '\n', 1)
+        else:
+            report += '\n## Applied Memories\n\n' + added + '\n'
+    report_path.write_text(report, encoding='utf-8')
+    if not no_gbrain:
+        write_gbrain_report(previous['gbrain_slug'], report_path)
+    ledger['reports'][target_date] = {**previous, 'summary': summary, 'captures_resumed_at': pipeline.now_iso()}
+    pipeline.save_ledger(ledger)
+    print(json.dumps({'date': target_date, 'report_path': str(report_path), 'summary': summary,
+                      'resumed_saved_captures': True, 'llm_calls': 0}, ensure_ascii=False))
+    return 2 if blockers else 0
+
+
 def main():
     pipeline.run_gbrain = run_gbrain
     pipeline.write_gbrain_report = write_gbrain_report
@@ -141,6 +189,16 @@ def main():
         return 0
     args = pipeline.build_parser().parse_args()
     if args.command == 'generate':
+        target_date = args.date or pipeline.default_target_date()
+        ledger = pipeline.load_ledger()
+        previous = ledger.get('reports', {}).get(target_date, {})
+        summary = previous.get('summary', {})
+        if (not args.no_apply and summary.get('model') == args.model
+                and summary.get('blockers') and summary.get('store_recommended', 0) > 0
+                and all((pipeline.DISTILLED_PAGES_DIR
+                         / (failure.partition(': ')[0].replace('/', '__') + '.md')).is_file()
+                        for failure in summary['blockers'])):
+            return resume_failed_captures(target_date, ledger, previous, args.no_gbrain)
         credential = provider_key()
         pipeline.load_provider_env_value = lambda name: credential if name == 'OPENROUTER_API_KEY' else ''
     return args.func(args)

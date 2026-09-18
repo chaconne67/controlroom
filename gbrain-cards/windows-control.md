@@ -2,7 +2,7 @@
 
 - 현재 장비는 전체 프로젝트의 조정실이다. Windows·macOS·Linux 데스크톱과 노트북에서 같은 역할을 사용하며, `windows-control`은 기존 설치와 연결되는 호환 등록명이다. venture는 여러 프로젝트 중 하나이며 조정실에서 실행하는 로컬 프로젝트다.
 - 원격 프로젝트는 선택한 조정실 장비에서 조정한다. 2026-09-17 22:33 KST 이후 Coconut/FundKeeper·RNDLOG·CEO Loan·ZiiN 코드는 main `chaconne@49.247.192.127`의 `/home/chaconne/projects/<프로젝트>`에 있으며, 운영 DB·자료·GBrain 본체와 공통 Compose/복구 설정은 `/srv/consolidation`에 있다. Exdigm 앱은 기존 전용 서버에 유지한다.
-- 실제 운영 인계는 2026-09-17 22:30~22:33 KST, 전체 172.469초에 복구 절차까지 끝났다. 2026-09-18 00:35 KST 가비아 권한 DNS 3곳과 Google/Cloudflare 각각에서 공개 DNS 14개 이름 모두 main을 가리킴을 확인했다. DNS 캐시의 옛 공개 입구와 기존 GBrain CLI/SQL/자료 호환 주소는 main으로 전달한다. 현행 코드·자료·실행 책임과 검증·복구 정보는 `~/controlroom/docs/production-server-consolidation-20260916.md` 최신 절과 프로젝트 AGENTS.md를 우선한다. 옛 서버 writer는 정지·읽기 전용이며 재개하거나 그곳에 배포하지 않는다. 주인님의 가비아 DNS 수정은 완료됐다. 실제 저장공간·일일 전체 DB 복원 결과는 통합 문서20절, 정상 예약·인증서 전달 및 기억 정리 응답 형식 후속은21절, 옛 서버별 호환 주소·지속 외부 백업·해지 후속은18절을 따른다. 옛 서버는 호환 전달·별도 복구 백업과 제외 서비스를 맡으므로 옛 서버 삭제/해지는 별도 지시와 잔여 의존성 정리가 필요하다. 추가 vdb 저장 배치는 2026-09-18 후속 지시에 따라 통합 문서20절에서 적용했다.
+- 실제 운영 인계는 2026-09-17 22:30~22:33 KST, 전체 172.469초에 복구 절차까지 끝났다. 2026-09-18 00:35 KST 가비아 권한 DNS 3곳과 Google/Cloudflare 각각에서 공개 DNS 14개 이름 모두 main을 가리킴을 확인했다. DNS 캐시의 옛 공개 입구와 기존 GBrain CLI/SQL/자료 호환 주소는 main으로 전달한다. 현행 코드·자료·실행 책임과 검증·복구 정보는 `~/controlroom/docs/production-server-consolidation-20260916.md` 최신 절과 프로젝트 AGENTS.md를 우선한다. 옛 서버 writer는 정지·읽기 전용이며 재개하거나 그곳에 배포하지 않는다. 주인님의 가비아 DNS 수정은 완료됐다. 실제 저장공간·일일 전체 DB 복원 결과는 통합 문서20절, 정상 예약·인증서 전달의 당시 결과는21절, 기억8개 저장·Coconut 캐시 마감과백업3일 보관은22절, 옛 서버별 호환 주소·지속 외부 백업·해지 후속은18절을 따른다. 옛 서버는 호환 전달·별도 복구 백업과 제외 서비스를 맡으므로 옛 서버 삭제/해지는 별도 지시와 잔여 의존성 정리가 필요하다. 추가 vdb 저장 배치는 2026-09-18 후속 지시에 따라 통합 문서20절에서 적용했다.
 - 개발 에이전트와 계획·판단·작업 지시는 조정실에서만 실행한다. 서버에는 SSH로 코드 수정·빌드·테스트·배치 명령을 실행하며 개발 에이전트를 새로 실행하거나 설치하지 않는다. 제품 기능의 기존 AI·LLM 실행은 보존한다.
 - 기획·리서치·작업 계획의 파일 원본은 `~/controlroom/projects`의 통합 controlroom Git에서 관리하고 각 프로젝트 `docs`로 연결한다. `~`는 Windows의 `USERPROFILE`, macOS·Linux의 `HOME`이며 등록된 프로젝트 경로를 우선한다. 코드·테스트가 읽는 자료와 코드와 함께 바뀌는 기술 계약은 서버 코드 저장소에 둔다. 공통 지침·스킬과 프로젝트 기획의 원본은 현재 조정실의 controlroom 저장소다.
 - 비밀값은 실제 사용·복구에 필요한 양쪽에서 관리할 수 있다. 값의 교체 기준을 하나로 두고 필요한 실행 환경에만 공급하며 문서·Git·GBrain·로그에 값을 넣지 않는다.
@@ -44,6 +44,6 @@ ssh chaconne@49.247.45.243 '/home/chaconne/.gbrain/bin/gbrain_with_google_env.sh
 ## 보관 디스크·일일 DB 백업
 
 - Main 코드/Git은 각 `~/projects/<프로젝트>`, 운영 DB·앱 런타임·현재 캐시/업로드·다운로드는 기존 정본 경로다. 실시간 사용이 아닌 이미지·파일 원본·자료는 `/mnt/data/files`, 복구 시험/보관 이미지 사본은 `/mnt/data/archive`, 초기 Git bundles는 `/mnt/data/imports`에 둔다.
-- DB 백업은 기존 단일03:40 Asia/Seoul timer로 `/mnt/data/backups/daily/YYYY-MM-DD`에 하루 한 완료 묶음만 생성한다. 전체 PG 접속 가능 비템플릿 DB와 MySQL 저장 스키마를 포함하고 같은 날 재호출은 기존 SHA 확인 뒤 중단한다. 기존14일 보존 기본값을 유지한다. 고정 UUID/mount 확인이 실패하면 시스템 디스크에 대신 쓰지 않는다.
+- DB 백업은 기존 단일03:40 Asia/Seoul timer로 `/mnt/data/backups/daily/YYYY-MM-DD`에 하루 한 완료 묶음만 생성한다. 전체 PG 접속 가능 비템플릿 DB와 MySQL 저장 스키마를 포함하고 같은 날 재호출은 기존 SHA 확인 뒤 중단한다. 2026-09-18 후속 지시에 따라 최근3일분 완료 백업만 보관한다. 현재 일일 백업은9월18일 한 묶음이다. 고정 UUID/mount 확인이 실패하면 시스템 디스크에 대신 쓰지 않는다.
 - `/srv/consolidation/{work,backups,incoming}` 및 미사용 초기 `/srv/consolidation/data/rndlog-workspace`는 기존 복구 접속용 bind mount다. 실제 보관은 추가 디스크의 같은 파일이며 프로젝트 코드 루트에 자료 symlink를 만들지 않는다.
 - RNDLOG 회사별 자료는 제출 원본·수신기록·리서치·보고서 작업본/완료 산출물·공통 resources다. 현재 자료 정본은 기존 files-standby/workspace이며 DB를 뜻하지 않는다. 저장 기준과 실제 검증·복구 증거는 통합 문서20절과 main infra README를 따른다.

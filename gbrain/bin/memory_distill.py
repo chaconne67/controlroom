@@ -324,7 +324,40 @@ def openrouter_chat(messages: list[dict[str, str]], model: str, timeout: int = 9
         "messages": messages,
         "temperature": 0.1,
         "max_tokens": 12000,
-        "response_format": {"type": "json_object"},
+        "response_format": {
+            "type": "json_schema",
+            "json_schema": {
+                "name": "gbrain_memory_distillation",
+                "strict": True,
+                "schema": {
+                    "type": "object",
+                    "properties": {
+                        "summary": {"type": "string"},
+                        "candidates": {
+                            "type": "array",
+                            "items": {
+                                "type": "object",
+                                "properties": {
+                                    "decision": {"type": "string", "enum": ["store", "needs_review", "skip"]},
+                                    "title": {"type": "string"},
+                                    "slug": {"type": "string"},
+                                    "kind": {"type": "string"},
+                                    "reason": {"type": "string"},
+                                    "memory": {"type": "string"},
+                                    "evidence": {"type": "array", "items": {"type": "string"}},
+                                    "confidence": {"type": "string", "enum": ["high", "medium", "low"]},
+                                },
+                                "required": ["decision", "title", "slug", "kind", "reason", "memory", "evidence", "confidence"],
+                                "additionalProperties": False,
+                            },
+                        },
+                    },
+                    "required": ["summary", "candidates"],
+                    "additionalProperties": False,
+                },
+            },
+        },
+        "provider": {"require_parameters": True},
     }
     request = urllib.request.Request(
         "https://openrouter.ai/api/v1/chat/completions",
