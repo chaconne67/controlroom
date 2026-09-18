@@ -235,6 +235,8 @@ class Transaction:
                 hardlink = Path(record['hardlink']) if record.get('hardlink') else None
                 same_link = not hardlink or (exists(path) and hardlink.exists() and path.stat().st_ino == hardlink.stat().st_ino and path.stat().st_dev == hardlink.stat().st_dev)
                 if path.is_file() and not linked(path) and digest(path) == record['sha256'] and same_link:
+                    if stat.S_IMODE(path.stat().st_mode) != record['mode']:
+                        path.chmod(record['mode'])
                     continue
                 if exists(path):
                     remove(path, self.home)
@@ -243,6 +245,12 @@ class Transaction:
                 else:
                     with archive.open(record['entry']) as source, path.open('wb') as target:
                         shutil.copyfileobj(source, target)
+                    path.chmod(record['mode'])
+        # Apply directory modes after their contents, including read-only originals.
+        for record in reversed(self.records):
+            if record.get('restore', True) and record['kind'] == 'dir':
+                path = Path(record['path'])
+                if stat.S_IMODE(path.stat().st_mode) != record['mode']:
                     path.chmod(record['mode'])
         if self.registry is not None:
             import winreg

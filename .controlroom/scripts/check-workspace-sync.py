@@ -150,6 +150,9 @@ class WorkspaceSyncTests(unittest.TestCase):
 
     def test_explicit_restore_recovers_docs_and_git_index(self):
         home, repo = self.device()
+        if os.name != 'nt':
+            (repo / 'rndlog/docs').chmod(0o700)
+            (repo / '.controlroom/common.txt').chmod(0o444)
         plan = self.plan(repo)
         plan.write_bytes(b'old local state\r\n')
         run('git', 'add', 'rndlog/docs/plan.md', cwd=repo)
@@ -159,6 +162,9 @@ class WorkspaceSyncTests(unittest.TestCase):
         self.command(home, f'controlroom restore "{archive}"')
         self.assertEqual(plan.read_bytes(), b'old local state\r\n')
         self.assertEqual((repo / '.git/index').read_bytes(), index)
+        if os.name != 'nt':
+            self.assertEqual((repo / 'rndlog/docs').stat().st_mode & 0o777, 0o700)
+            self.assertEqual((repo / '.controlroom/common.txt').stat().st_mode & 0o777, 0o444)
 
     def test_product_failure_before_backup_preserves_all_local_state(self):
         home, repo = self.device()
