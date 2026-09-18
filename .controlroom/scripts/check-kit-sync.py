@@ -189,6 +189,9 @@ class KitFixture:
                    GIT_CONFIG_VALUE_1='git@github.com:chaconne67/venture.git',
                    PYTHONUTF8='1', TEMP=str(home / '.tmp'), TMPDIR=(home / '.tmp').as_posix())
         env['PATH'] = str(home / '.local/bin') + os.pathsep + env['PATH']
+        if os.name == 'nt':
+            # powershell.exe must not autoload modules inherited from a pwsh host.
+            env['PSModulePath'] = str(Path(os.environ['SystemRoot']) / 'System32/WindowsPowerShell/v1.0/Modules')
         return env
 
     def new_home(self, spaces=False):
@@ -416,6 +419,9 @@ class WindowsInstallerTests(unittest.TestCase):
         command = re.search(r'```powershell\n([^\n]+)\n```', readme)[1]
         self.assertIn(command, (ROOT / 'docs/onboarding-new-server.md').read_text(encoding='utf-8'))
         verify = r'''
+foreach ($scope in @('MachinePolicy', 'UserPolicy', 'CurrentUser', 'LocalMachine')) {
+    if ((Get-ExecutionPolicy -Scope $scope) -ne $policyBefore[$scope]) { throw 'Persistent execution policy changed' }
+}
 foreach ($name in @('kitpull', 'kitpush')) {
     $expected = Join-Path $env:USERPROFILE ('.local\bin\' + $name + '.cmd')
     if ((Get-Command $name).Source -ne $expected) { throw 'Wrong command path' }
@@ -425,8 +431,11 @@ if ($LASTEXITCODE) { throw 'Verification failed' }
 kitpush --help
 if ($LASTEXITCODE) { throw 'Command dispatch failed' }
 '''
-        result = run('powershell.exe', '-NoProfile', '-Command',
+        result = run('powershell.exe', '-NoProfile', '-ExecutionPolicy', 'Restricted', '-Command',
                      "$ErrorActionPreference='Stop'; if (Get-Command gh -ErrorAction SilentlyContinue) { throw 'gh must be absent' }; "
+                     "if ((Get-ExecutionPolicy) -ne 'Restricted') { throw 'Restricted starting policy required' }; "
+                     "$policyBefore=@{}; foreach ($scope in @('MachinePolicy','UserPolicy','CurrentUser','LocalMachine')) "
+                     "{ $policyBefore[$scope]=Get-ExecutionPolicy -Scope $scope }; "
                      + command + '\n' + verify + command + '\n' + verify, env=env)
         self.assertEqual(result.stdout.count('Physical layout and installed contents verified.'), 2)
         self.assertEqual(result.stdout.count('usage: kitpush'), 2)
@@ -434,7 +443,7 @@ if ($LASTEXITCODE) { throw 'Command dispatch failed' }
         failed_home = self.fixture.new_home()
         # No rewrite is available and file is the only allowed transport: clone must fail.
         failed_env = self.fixture.env(failed_home) | {'GIT_CONFIG_COUNT': '0'}
-        result = run('powershell.exe', '-NoProfile', '-Command', command, env=failed_env, check=False)
+        result = run('powershell.exe', '-NoProfile', '-ExecutionPolicy', 'Restricted', '-Command', command, env=failed_env, check=False)
         self.assertNotEqual(result.returncode, 0)
         for relative in ('controlroom', '.codex', 'backups'):
             self.assertFalse((failed_home / relative).exists())
@@ -445,7 +454,7 @@ if ($LASTEXITCODE) { throw 'Command dispatch failed' }
         env['PATH'] = os.pathsep.join(env['PATH'].split(os.pathsep)[1:])
         readme = (ROOT.parent / 'README.md').read_text(encoding='utf-8')
         command = re.search(r'```powershell\n([^\n]+)\n```', readme)[1]
-        result = run('powershell.exe', '-NoProfile', '-Command', command +
+        result = run('powershell.exe', '-NoProfile', '-ExecutionPolicy', 'RemoteSigned', '-Command', command +
                      '; cmd.exe /d /c "where kitpull && where kitpush && kitpull --verify && kitpush --help"; '
                      'if ($LASTEXITCODE) { throw "CMD commands failed" }', env=env)
         resolved = {Path(line).resolve() for line in result.stdout.splitlines() if line.endswith('.cmd')}

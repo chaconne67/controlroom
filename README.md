@@ -9,9 +9,10 @@ Git, Python 3.12 이상, GitHub SSH 키 접근을 준비합니다. 인증은 사
 ### Windows — PowerShell
 
 PowerShell에서 다음 한 줄을 실행합니다. 설치 직후 같은 PowerShell과 새 명령 프롬프트(CMD)에서 `kitpull`, `kitpush`를 사용합니다.
+현재 PowerShell 창의 실행 정책만 `RemoteSigned`로 설정합니다. 창을 닫으면 이 설정은 끝나며, 컴퓨터·사용자의 영구 설정이나 조직이 강제한 정책은 변경하지 않습니다.
 
 ```powershell
-$d=Join-Path $env:TEMP ([guid]::NewGuid()); git clone git@github.com:chaconne67/controlroom.git $d; if($LASTEXITCODE){throw 'Controlroom download failed'}; & "$d\.controlroom\install.ps1"
+Set-ExecutionPolicy -Scope Process RemoteSigned -Force -ErrorAction Stop; $d=Join-Path $env:TEMP ([guid]::NewGuid()); git clone git@github.com:chaconne67/controlroom.git $d; if($LASTEXITCODE){throw 'Controlroom download failed'}; & (Join-Path $d '.controlroom/install.ps1')
 ```
 
 ### macOS·Linux — Bash/Zsh
