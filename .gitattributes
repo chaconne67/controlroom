@@ -11,5 +11,5 @@
 *.ps1     text eol=crlf
 
 # Preserve the original bytes of planning documents.
-**/docs/** -text
+**/docs/** -text whitespace=blank-at-eol,blank-at-eof,space-before-tab,cr-at-eol
 /.controlroom/history/** -text

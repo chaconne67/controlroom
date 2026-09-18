@@ -80,7 +80,7 @@ def physical_parent(path, home):
 def scheduled_task():
     if os.name != 'nt':
         return None
-    script = "[Console]::OutputEncoding=[Text.UTF8Encoding]::new(); $t=Get-ScheduledTask -TaskName '" + MEMORY_TASK + "' -ErrorAction SilentlyContinue; if($t) { Export-ScheduledTask -TaskName $t.TaskName }"
+    script = "[Console]::OutputEncoding=[Text.UTF8Encoding]::new(); $t=Get-ScheduledTask -ErrorAction Stop | Where-Object TaskName -eq '" + MEMORY_TASK + "'; if($t) { Export-ScheduledTask -TaskName $t.TaskName }"
     result = run('powershell.exe', '-NoProfile', '-Command', script)
     return result.stdout.strip() or None
 
@@ -385,6 +385,12 @@ def preserve_worktrees(source, existing):
     common = Path(git(existing, 'rev-parse', '--git-common-dir').stdout.strip())
     if not common.is_absolute():
         common = existing / common
+    # Staged worktree blobs may be unreachable from every branch/tag.
+    for item in (common / 'objects').rglob('*'):
+        destination = source / '.git/objects' / item.relative_to(common / 'objects')
+        if item.is_file() and not destination.exists():
+            destination.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(item, destination)
     if (common / 'worktrees').is_dir():
         shutil.copytree(common / 'worktrees', source / '.git/worktrees', dirs_exist_ok=True)
     return paths

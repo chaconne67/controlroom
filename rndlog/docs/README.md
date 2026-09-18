@@ -9,7 +9,7 @@
 ## 문서
 
 - [담당자 역할 셀 편집 — 2026-09-17](plans/2026-09-17-member-role-inline-edit.md) — 이미지 2와 같은 역할 UI 및 HTMX 역할 셀 교체. 격리 환경 검증과 승인 후 운영 배포·실제 운영 편집 GET 확인 완료.
-- [진행 중: 새 운영서버 통합](../../../docs/production-server-consolidation-20260916.md) — 대상 `chaconne@49.247.192.127`. 현재 웹은 `49.247.207.147`, DB·자료 정본은 `49.247.45.243`입니다. 2026-09-16 실제 운영 DB는 `company_main`으로 확인했습니다. 자료 SSH 게이트웨이·업로드·문자 예약 작업의 인계가 끝나기 전에는 정본이 이동했다고 판단하지 않습니다.
+- [진행 중: 새 운영서버 통합](../../.controlroom/docs/production-server-consolidation-20260916.md) — 대상 `chaconne@49.247.192.127`. 현재 웹은 `49.247.207.147`, DB·자료 정본은 `49.247.45.243`입니다. 2026-09-16 실제 운영 DB는 `company_main`으로 확인했습니다. 자료 SSH 게이트웨이·업로드·문자 예약 작업의 인계가 끝나기 전에는 정본이 이동했다고 판단하지 않습니다.
 - [2026-09-05-rndlog-admin-management-plan.md](<plans/2026-09-05-rndlog-admin-management-plan.md>)
 - [2026-09-05-rndlog-admin-quality-bar.md](<plans/2026-09-05-rndlog-admin-quality-bar.md>)
 - [2026-09-06-rndlog-file-upload-tree-plan.md](<plans/2026-09-06-rndlog-file-upload-tree-plan.md>)

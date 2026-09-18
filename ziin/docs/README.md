@@ -8,7 +8,7 @@
 
 ## 문서
 
-- [진행 중: 새 운영서버 통합](../../../docs/production-server-consolidation-20260916.md) — 대상 `chaconne@49.247.192.127`. 현재 운영과 DNS는 `49.247.45.243`에 유지합니다. 2026-09-16 실행 이미지의 코드 표시는 `9179f77`, 소스 HEAD는 `427729d`로 달라, 이전 준비는 실제 실행 이미지를 기준으로 합니다.
+- [진행 중: 새 운영서버 통합](../../.controlroom/docs/production-server-consolidation-20260916.md) — 대상 `chaconne@49.247.192.127`. 현재 운영과 DNS는 `49.247.45.243`에 유지합니다. 2026-09-16 실행 이미지의 코드 표시는 `9179f77`, 소스 HEAD는 `427729d`로 달라, 이전 준비는 실제 실행 이미지를 기준으로 합니다.
 - [아티팩트-방법론.md](<implementation/아티팩트-방법론.md>)
 - [지니-챗봇-작업지시.md](<implementation/지니-챗봇-작업지시.md>)
 - [how-it-works.md](<product/how-it-works.md>)

@@ -18,9 +18,9 @@ python_command() {
   else die "Python 3.12 or newer is required."; fi
 }
 python_name="$(python_command)"
-python_args=()
-[ "$python_name" != py ] || python_args=(-3)
-core() { "$python_name" "${python_args[@]}" -X utf8 "$repo_dir/scripts/controlroom.py" "$@"; }
+python_args=(-X utf8)
+[ "$python_name" != py ] || python_args=(-3 -X utf8)
+core() { "$python_name" "${python_args[@]}" "$repo_dir/scripts/controlroom.py" "$@"; }
 if [ ! -f "$repo_dir/scripts/controlroom.py" ]; then
   command -v git >/dev/null 2>&1 || die "Git is required."
   bootstrap_parent="$(cd "${TMPDIR:-/tmp}" && pwd -P)"

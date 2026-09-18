@@ -178,9 +178,11 @@ class WorkspaceSyncTests(unittest.TestCase):
         plan.write_bytes(b'worktree local progress\r\n')
         run('git', 'add', 'rndlog/docs/plan.md', cwd=worktree)
         before = run('git', 'diff', '--cached', '--binary', cwd=worktree).stdout
+        staged = run('git', 'show', ':rndlog/docs/plan.md', cwd=worktree).stdout
         self.command(home)
         self.assertEqual(run('git', 'branch', '--show-current', cwd=worktree).stdout.strip(), 'unfinished')
         self.assertEqual(run('git', 'diff', '--cached', '--binary', cwd=worktree).stdout, before)
+        self.assertEqual(run('git', 'show', ':rndlog/docs/plan.md', cwd=worktree).stdout, staged)
         self.assertEqual(plan.read_bytes(), b'worktree local progress\r\n')
 
     def test_legacy_root_migration_repairs_existing_worktree(self):
@@ -191,6 +193,7 @@ class WorkspaceSyncTests(unittest.TestCase):
         plan.write_bytes(b'worktree data\n')
         run('git', 'add', 'rndlog/docs/plan.md', cwd=worktree)
         before = run('git', 'diff', '--cached', '--binary', cwd=worktree).stdout
+        staged = run('git', 'show', ':rndlog/docs/plan.md', cwd=worktree).stdout
         legacy = home / 'kmh-agent-kit'
         repo.rename(legacy)
         run('git', 'worktree', 'repair', cwd=legacy)
@@ -199,6 +202,7 @@ class WorkspaceSyncTests(unittest.TestCase):
         self.assertIn('/projects/.git/worktrees/', (worktree / '.git').read_text().replace(chr(92), '/'))
         self.assertEqual(run('git', 'branch', '--show-current', cwd=worktree).stdout.strip(), 'unfinished')
         self.assertEqual(run('git', 'diff', '--cached', '--binary', cwd=worktree).stdout, before)
+        self.assertEqual(run('git', 'show', ':rndlog/docs/plan.md', cwd=worktree).stdout, staged)
         self.assertEqual(plan.read_bytes(), b'worktree data\n')
 
     def test_rollback_preserves_concurrent_changes_to_unmanaged_runtime_data(self):
