@@ -1,0 +1,175 @@
+{
+  "_readme": "원본은 sources에 명시한 실제 폴더다. global과 projects는 도구 설치 위치에 복사할 스킬 이름이며 프로필 링크를 만들지 않는다.",
+  "external_sources": {},
+  "depends_on": {
+    "code-review-loop": [
+      "code-review"
+    ],
+    "full-review": [
+      "code-review"
+    ],
+    "fundkeeper-client-balance": [
+      "fundkeeper"
+    ],
+    "grill-agent": [
+      "grill-with-docs"
+    ],
+    "grill-with-docs": [
+      "grilling",
+      "domain-modeling"
+    ],
+    "masterplan-write": [
+      "code-review-loop"
+    ],
+    "microplan-batch": [
+      "microplan-implement",
+      "microplan-verify",
+      "code-review-loop"
+    ],
+    "microplan-implement": [
+      "microplan-review"
+    ],
+    "microplan-review-batch": [
+      "microplan-review",
+      "code-review-loop"
+    ],
+    "microplan-verify": [
+      "microplan-review"
+    ],
+    "skill-review": [
+      "skill-writing-guide"
+    ],
+    "testbed": [
+      "testbed-base",
+      "testbed-algo-report",
+      "testbed-etf",
+      "testbed-rebal-report"
+    ],
+    "web-automation": [
+      "hidden-desktop-browser"
+    ]
+  },
+  "sources": {
+    "Forge": ".controlroom/skills/Forge",
+    "agent-script-role": ".controlroom/skills/agent-script-role",
+    "check-master-plan": ".controlroom/skills/check-master-plan",
+    "code-review-loop": ".controlroom/skills/code-review-loop",
+    "code-review": ".controlroom/skills/code-review",
+    "domain-modeling": ".controlroom/skills/domain-modeling",
+    "evolution-loop": ".controlroom/skills/evolution-loop",
+    "full-review": ".controlroom/skills/full-review",
+    "grill-agent": ".controlroom/skills/grill-agent",
+    "grill-with-docs": ".controlroom/skills/grill-with-docs",
+    "grilling": ".controlroom/skills/grilling",
+    "hidden-desktop-browser": ".controlroom/skills/hidden-desktop-browser",
+    "html-plan-writing": ".controlroom/skills/html-plan-writing",
+    "humanize-korean": ".controlroom/skills/humanize-korean",
+    "masterplan-write": ".controlroom/skills/masterplan-write",
+    "microplan-batch": ".controlroom/skills/microplan-batch",
+    "microplan-implement": ".controlroom/skills/microplan-implement",
+    "microplan-review-batch": ".controlroom/skills/microplan-review-batch",
+    "microplan-review": ".controlroom/skills/microplan-review",
+    "microplan-verify": ".controlroom/skills/microplan-verify",
+    "microplan-write": ".controlroom/skills/microplan-write",
+    "preflight": ".controlroom/skills/preflight",
+    "prompt-guide": ".controlroom/skills/prompt-guide",
+    "remote-execute": ".controlroom/skills/remote-execute",
+    "skill-review": ".controlroom/skills/skill-review",
+    "skill-writing-guide": ".controlroom/skills/skill-writing-guide",
+    "smart-ux": ".controlroom/skills/smart-ux",
+    "web-automation": ".controlroom/skills/web-automation",
+    "ceoloan-design-system": "ceoloan/skills/ceoloan-design-system",
+    "cretop-scraping": "ceoloan/skills/cretop-scraping",
+    "cretop": "ceoloan/skills/cretop",
+    "iros-registry": "ceoloan/skills/iros-registry",
+    "auto-posting": "exdigm/skills/auto-posting",
+    "data-extraction": "exdigm/skills/data-extraction",
+    "exdigm-deploy": "exdigm/skills/exdigm-deploy",
+    "exdigm-design": "exdigm/skills/exdigm-design",
+    "exdigm-hermes-agent": "exdigm/skills/exdigm-hermes-agent",
+    "extraction-pipeline-verify": "exdigm/skills/extraction-pipeline-verify",
+    "resume-evolution-loop": "exdigm/skills/resume-evolution-loop",
+    "fundkeeper-client-balance": "fundkeeper/skills/fundkeeper-client-balance",
+    "fundkeeper-deploy": "fundkeeper/skills/fundkeeper-deploy",
+    "fundkeeper-design-system": "fundkeeper/skills/fundkeeper-design-system",
+    "fundkeeper": "fundkeeper/skills/fundkeeper",
+    "rndlog-design-system": "rndlog/skills/rndlog-design-system",
+    "rndlog": "rndlog/skills/rndlog",
+    "testbed-algo-report": "testbed/skills/testbed-algo-report",
+    "testbed-base": "testbed/skills/testbed-base",
+    "testbed-etf": "testbed/skills/testbed-etf",
+    "testbed-rebal-report": "testbed/skills/testbed-rebal-report",
+    "testbed": "testbed/skills/testbed"
+  },
+  "profiles": {
+    "global": [
+      "Forge",
+      "agent-script-role",
+      "check-master-plan",
+      "code-review",
+      "code-review-loop",
+      "domain-modeling",
+      "evolution-loop",
+      "full-review",
+      "grill-agent",
+      "grill-with-docs",
+      "grilling",
+      "hidden-desktop-browser",
+      "html-plan-writing",
+      "humanize-korean",
+      "masterplan-write",
+      "microplan-batch",
+      "microplan-implement",
+      "microplan-review",
+      "microplan-review-batch",
+      "microplan-verify",
+      "microplan-write",
+      "preflight",
+      "prompt-guide",
+      "remote-execute",
+      "skill-review",
+      "skill-writing-guide",
+      "smart-ux",
+      "web-automation"
+    ],
+    "projects": {
+      "ceoloan": [
+        "ceoloan-design-system",
+        "cretop",
+        "cretop-scraping",
+        "iros-registry"
+      ],
+      "exdigm": [
+        "auto-posting",
+        "data-extraction",
+        "exdigm-deploy",
+        "exdigm-design",
+        "exdigm-hermes-agent",
+        "extraction-pipeline-verify",
+        "resume-evolution-loop"
+      ],
+      "fundkeeper": [
+        "fundkeeper",
+        "fundkeeper-client-balance",
+        "fundkeeper-deploy",
+        "fundkeeper-design-system",
+        "testbed",
+        "testbed-algo-report",
+        "testbed-base",
+        "testbed-etf",
+        "testbed-rebal-report"
+      ],
+      "rndlog": [
+        "rndlog",
+        "rndlog-design-system"
+      ],
+      "testbed": [
+        "testbed",
+        "testbed-algo-report",
+        "testbed-base",
+        "testbed-etf",
+        "testbed-rebal-report"
+      ]
+    }
+  }
+}

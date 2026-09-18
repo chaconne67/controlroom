@@ -4,14 +4,14 @@ on:
   push:
     paths:
       - '.github/workflows/workspace-sync.yml'
-      - 'install.*'
-      - 'shell/**'
-      - 'scripts/check-*-sync.py'
-      - 'manifests/**'
-      - 'projects/**'
-      - 'gbrain-cards/**'
+      - '.controlroom/**'
+      - '*/docs/**'
+      - '*/skills/**'
+      - '*/AGENTS.md'
+      - '*/CLAUDE.md'
       - 'README.md'
-      - 'docs/onboarding-new-server.md'
+      - '.gitignore'
+      - '.gitattributes'
   pull_request:
   workflow_dispatch:
 
@@ -36,10 +36,12 @@ jobs:
       - uses: actions/setup-python@v7
         with:
           python-version: '3.13'
+      - name: Physical sources and dependencies
+        run: python -X utf8 .controlroom/scripts/check-skill-deps.py
       - name: Native installer and entrypoint contracts
-        run: python -X utf8 scripts/check-kit-sync.py EntryPointDocumentationTests WindowsInstallerTests PosixControlRoomInstallerTests -v
+        run: python -X utf8 .controlroom/scripts/check-kit-sync.py EntryPointDocumentationTests WindowsInstallerTests PosixControlRoomInstallerTests -v
       - name: Existing POSIX command contracts
         if: runner.os != 'Windows'
-        run: python -X utf8 scripts/check-kit-sync.py KitSyncTests -v
+        run: python -X utf8 .controlroom/scripts/check-kit-sync.py KitSyncTests GBrainAccessTests -v
       - name: Two control rooms and failure preservation
-        run: python -X utf8 scripts/check-workspace-sync.py -v
+        run: python -X utf8 .controlroom/scripts/check-workspace-sync.py -v

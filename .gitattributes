@@ -9,3 +9,7 @@
 
 # PowerShell 5.1은 CRLF를 기대한다.
 *.ps1     text eol=crlf
+
+# Preserve the original bytes of planning documents.
+**/docs/** -text
+/.controlroom/history/** -text
