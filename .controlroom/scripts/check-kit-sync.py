@@ -237,7 +237,7 @@ class KitFixture:
     def backed_up(self, home, path, archive_path=None):
         with zipfile.ZipFile(archive_path or self.archive(home)) as archive:
             records = json.loads(archive.read('manifest.json'))['records']
-            record = next(r for r in records if r['path'] == str(path))
+            record = next(r for r in records if Path(r['path']).resolve() == path.resolve())
             return archive.read(record['entry'])
 
 

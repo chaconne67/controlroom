@@ -43,5 +43,5 @@ description: "Use when writing or reviewing Codex skills, Claude skills, prompt 
 
 ## 스킬 구현 금지사항
 
-- **파일 관리 원칙**: 재활용 가능한 스크립트/설정은 스킬 디렉토리(`~/projects/.controlroom/skills/{스킬명}/` 또는 `~/projects/<프로젝트>/skills/{스킬명}/`)에 영구 보관하여 보강. 일회성 코드는 임시 생성 후 **즉시 삭제**. 아무 디렉토리에 방치하지 않음
+- **파일 관리 원칙**: 재활용 가능한 스크립트/설정은 스킬 디렉토리(`~/controlroom/.controlroom/skills/{스킬명}/` 또는 `~/controlroom/<프로젝트>/skills/{스킬명}/`)에 영구 보관하여 보강. 일회성 코드는 임시 생성 후 **즉시 삭제**. 아무 디렉토리에 방치하지 않음
 - **하드코딩 금지**: 컬럼 번호, 행 번호, 매직 넘버 등을 코드에 직접 기입하지 않음. 헤더 탐지, 패턴 매칭, 설정 파일 등으로 동적 처리
