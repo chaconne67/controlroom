@@ -26,6 +26,8 @@
 
 ## 최근 완료 작업
 
+- [이력서의 정해진 접수 실패·담당 컨설턴트 보완 안내 — 운영 반영·본문 이메일 링크·지정 원본 종결·웹 알림 1회 전송 확인](resume-expected-rejection-notification-20260918.md)
+
 - [자동게시·오류 기록·명단 판정·Hermes 합동 배포 — de20cf82 운영 반영·733개 검사·6명 실제 조회 확인](auto-posting-other-sites-20260916.md)
 
 - [오류 기록 한국 시간·처리 결과 — 운영 반영·과거 오류 보존 완료](operational-error-time-results-20260916.md)
