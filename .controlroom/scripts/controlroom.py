@@ -51,8 +51,7 @@ def digest(path):
 def remove(path, home):
     # Check the lexical entry before removal; never follow a junction into its target.
     path = Path(os.path.abspath(path))
-    if path == home or home not in path.parents:
-        raise RuntimeError(f'Outside the approved workspace: {path}')
+    physical_parent(path, home)
     if path.is_symlink():
         path.unlink()
     elif hasattr(path, 'is_junction') and path.is_junction():
@@ -69,8 +68,11 @@ def remove(path, home):
 
 
 def physical_parent(path, home):
+    roots = {home, home.resolve()}
+    if path in roots:
+        raise RuntimeError(f'Outside the approved workspace: {path}')
     for parent in path.parents:
-        if parent == home:
+        if parent in roots:
             return
         if linked(parent):
             raise RuntimeError(f'Linked parent must be migrated before use: {parent}')
@@ -101,8 +103,6 @@ class Transaction:
         for items, result in [(list(targets), self.targets), (list(targets) + list(archive_units), self.archive_targets)]:
             ordered = sorted(set(Path(os.path.abspath(p)) for p in items), key=lambda p: len(p.parts))
             for path in ordered:
-                if path == home or home not in path.parents:
-                    raise RuntimeError(f'Outside the approved workspace: {path}')
                 if not any(parent == path or parent in path.parents for parent in result):
                     physical_parent(path, home)
                     result.append(path)
@@ -698,7 +698,7 @@ def update(home, agent=None, prepared=None):
 
 def restore_archive(home, path):
     folder = home / 'backups/controlroom'
-    if folder not in path.resolve().parents:
+    if folder.resolve() not in path.resolve().parents:
         raise RuntimeError('Recovery archive must be in ~/backups/controlroom')
     with zipfile.ZipFile(path) as archive:
         saved = json.loads(archive.read('manifest.json'))
