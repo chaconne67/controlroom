@@ -14,8 +14,8 @@ import memory_distill as pipeline
 
 SSH = shutil.which('ssh')
 MAIN = 'chaconne@49.247.192.127'
-GBRAIN_HOST = 'chaconne@49.247.45.243'
-WRAPPER = '/home/chaconne/.gbrain/bin/gbrain_with_google_env.sh'
+GBRAIN_HOST = 'chaconne@49.247.192.127'
+WRAPPER = '/srv/consolidation/infra/gbrain-host'
 PROVIDER_FILE = '/srv/consolidation/data/gbrain-runtime/.gbrain/provider.env'
 
 

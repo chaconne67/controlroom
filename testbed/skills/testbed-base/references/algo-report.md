@@ -23,10 +23,11 @@ WORK_DIR=/tmp/testbed-work.<actual>
 - 원격 스크립트와 JSON은 정확한 `/tmp` 경로를 사용하고 작업 뒤 정리한다.
 
 ```bash
-scp "$ALGO_DIR/fetch_algo_data.py" chaconne@49.247.38.186:/tmp/testbed_fetch_algo_data.py
-ssh chaconne@49.247.38.186 \
-  "PYTHONPATH=/home/chaconne/fundkeeper DJANGO_SETTINGS_MODULE=fundkeeper.settings.deploy /home/chaconne/fundkeeper/.venv/bin/python /tmp/testbed_fetch_algo_data.py '확정 검색어' /tmp/testbed_algo_data.json"
-scp chaconne@49.247.38.186:/tmp/testbed_algo_data.json "$WORK_DIR/algo_data.json"
+ssh chaconne@49.247.192.127 \
+  "sudo -n docker exec -i --workdir /home/work/fundkeeper -e DJANGO_SETTINGS_MODULE=fundkeeper.settings.deploy production-coconut-web-1 python - '확정 검색어' /tmp/testbed_algo_data.json" < "$ALGO_DIR/fetch_algo_data.py"
+ssh chaconne@49.247.192.127 \
+  'sudo -n docker exec production-coconut-web-1 cat /tmp/testbed_algo_data.json' > "$WORK_DIR/algo_data.json"
+
 ```
 
 ## 구조 추출

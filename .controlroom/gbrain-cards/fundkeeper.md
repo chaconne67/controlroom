@@ -1,4 +1,4 @@
-- 너는 GBrain 공간 `fundkeeper`를 쓰는 에이전트다(coconut-main 서버). GBrain 본체는 DB 서버(`chaconne@49.247.45.243`)에 있고, 로컬 `gbrain-fundkeeper`(`~/.local/bin/gbrain-fundkeeper`)는 서버 래퍼를 SSH로 호출하는 프록시다.
+- 너는 GBrain 공간 `fundkeeper`를 쓰는 에이전트다(coconut-main 서버). GBrain 본체는 DB 서버(`chaconne@49.247.192.127`)에 있고, 로컬 `gbrain-fundkeeper`(`~/.local/bin/gbrain-fundkeeper`)는 서버 래퍼를 SSH로 호출하는 프록시다.
 - 모든 명령은 프록시로 실행한다: `gbrain-fundkeeper <명령> ...` (PATH에 없으면 절대 경로 사용)
 - 명령 문법은 `gbrain-fundkeeper help`로 확인한다. `search`·`ask`·`show`는 없다.
 - 공용 본문은 `gbrain-fundkeeper --source default get <slug>`, 공용 목록은 `gbrain-fundkeeper --source default list`로 읽는다. `query`·`query-all`은 공용과 자기 공간만 검색한다. `--source`를 생략한 get·list·쓰기는 자기 공간을 사용한다.

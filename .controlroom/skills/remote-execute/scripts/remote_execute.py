@@ -13,7 +13,7 @@ import sys
 from pathlib import Path
 
 
-DEFAULT_REMOTE = "chaconne@49.247.45.243"
+DEFAULT_REMOTE = "chaconne@49.247.192.127"
 DEFAULT_REMOTE_ROOT = "~/remote-exec"
 
 

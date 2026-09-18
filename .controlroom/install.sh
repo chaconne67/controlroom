@@ -7,7 +7,7 @@ home_dir="${HOME:?HOME is required}"
 gbrain_home="${GBRAIN_HOME:-$home_dir/.gbrain}"
 policy_file="${GBRAIN_POLICY_FILE:-$gbrain_home/memory/agent-policy.toml}"
 gbrain_cli="${GBRAIN_CLI_WRAPPER:-$gbrain_home/bin/gbrain_with_google_env.sh}"
-gbrain_host="${GBRAIN_HOST:-chaconne@49.247.45.243}"
+gbrain_host="${GBRAIN_HOST:-chaconne@49.247.192.127}"
 stamp="$(date +%Y%m%d-%H%M%S)"
 die() { echo "[error] $*" >&2; exit 64; }
 validate_agent_name() { [[ "$1" =~ ^[a-z0-9]([a-z0-9-]{0,30}[a-z0-9])?$ ]] || die "Invalid role: $1"; }
@@ -50,7 +50,7 @@ link_entry() { install_file "$1" "$2"; }
 
 render_agent_card() {
   local agent_name="$1"
-  printf '%s\n' "- 너는 GBrain 공간 \`$agent_name\`을 쓰는 에이전트다. GBrain 본체는 중앙 서버(\`chaconne@49.247.45.243\`)에 있고, 로컬 \`gbrain-$agent_name\`은 중앙의 정책 래퍼를 호출한다."
+  printf '%s\n' "- 너는 GBrain 공간 \`$agent_name\`을 쓰는 에이전트다. GBrain 본체는 중앙 서버(\`chaconne@49.247.192.127\`)에 있고, 로컬 \`gbrain-$agent_name\`은 중앙의 정책 래퍼를 호출한다."
   printf '%s\n' "- 작업 전 \`gbrain-$agent_name query \"작업 주제\"\`로 공용 지식과 자기 공간을 함께 조회한다. 명령 문법은 \`gbrain-$agent_name help\`로 확인한다."
   printf '%s\n' "- 공용 본문은 \`gbrain-$agent_name --source default get <slug>\`, 공용 목록은 \`gbrain-$agent_name --source default list\`로 읽는다. \`--source\`를 생략한 get·list·쓰기는 자기 공간을 사용한다."
   printf '%s\n' "- 사적 기록은 \`gbrain-$agent_name note\` 또는 \`put\`으로 저장한다. 쓰기는 \`$agent_name\` 소스의 \`agents/$agent_name/private/\` 아래로 제한된다."

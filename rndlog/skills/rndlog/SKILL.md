@@ -152,8 +152,8 @@ AR Shift의 RNDLOG는 현업에 바쁜 기업을 대신해 연구 주제를 구�
 
 ## 6. DOCX 디자인과 서명란
 
-디자인 보관 원본은 옛 RNDLOG 서버 `chaconne@49.247.207.147`의
-`/home/chaconne/rndlog/assets/name-card/견적서_RNDlog_ver1.0.docx`다.
+디자인 보관 원본은 main `chaconne@49.247.192.127`의
+`/mnt/data/files/rndlog-assets/name-card/견적서_RNDlog_ver1.0.docx`다.
 문서별 구조는 같은 서버의
 `/home/ceo-agent/RNDlog/05_고객제공샘플/RNDlog_월관리_비식별_샘플/`에 있는 DOCX 7종을 사용한다.
 이는 기존 공통 자산을 읽는 보관 경로이며 신규 고객 문서는 프로젝트 지침의 현행 고객자료 작업공간에 작성한다.

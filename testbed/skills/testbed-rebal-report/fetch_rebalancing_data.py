@@ -6,6 +6,7 @@ import argparse
 import json
 import os
 import re
+import runpy
 import subprocess
 import sys
 from pathlib import Path
@@ -32,7 +33,7 @@ def get_base_dir():
 
 
 def get_remote_host():
-    return os.environ.get('FUNDKEEPER_HOST', 'root@49.247.38.186')
+    return os.environ.get('FUNDKEEPER_HOST', 'chaconne@49.247.192.127')
 
 
 def get_remote_project():
@@ -57,29 +58,9 @@ def get_json_path(recipe_dir, schedule_id):
 
 # ===== SSH =====
 
-def run_server_command(cmd_args):
-    """SSH로 서버의 TestBed2 CLI를 호출하고 JSON 결과 파싱"""
-    host = get_remote_host()
-    project = get_remote_project()
-
-    cmd = f'ssh {host} "cd {project} && python xmodules/test_bed/test_bed.py {cmd_args}"'
-    result = subprocess.run(cmd, shell=True, capture_output=True, text=True, encoding='utf-8', errors='replace', timeout=120)
-
-    stderr = result.stderr or ''
-    if result.returncode != 0:
-        print(f'[ERROR] SSH 명령 실패 (returncode={result.returncode})')
-        print(f'stderr: {stderr[:500]}')
-        sys.exit(1)
-
-    output = result.stdout or ''
-    match = re.search(r'===JSON_START===\n(.*?)\n===JSON_END===', output, re.DOTALL)
-    if not match:
-        print(f'[ERROR] 서버 출력에서 JSON을 찾을 수 없음')
-        print(f'stdout: {output[:500]}')
-        print(f'stderr: {stderr[:500]}')
-        sys.exit(1)
-
-    return json.loads(match.group(1))
+run_server_command = runpy.run_path(
+    str(SCRIPT_DIR.parent / 'testbed-base/scripts/rebal-report/fetch_rebalancing_data.py')
+)['run_server_command']
 
 
 def fetch_schedules(recipe=None, limit=10):

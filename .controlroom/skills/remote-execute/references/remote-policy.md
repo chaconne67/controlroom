@@ -1,11 +1,11 @@
 # Remote Execution Policy
 
-Use `chaconne@49.247.45.243` as a compute worker, not as a source of truth. Git is for source state and small review artifacts; `rsync`/`scp` is for large generated outputs.
+Run heavy commands on the selected host; the default is `chaconne@49.247.192.127`. Each project AGENTS.md defines its canonical code repository. Isolated `~/remote-exec` run directories contain temporary worker checkouts and outputs. Git stores source changes and small review artifacts; `rsync`/`scp` transfers large generated outputs.
 
 ## Allowed By Default
 
 - Running tests, linters, static checks, and browser/screenshot verification.
-- Running code generation or implementation agents when all inputs are committed.
+- Running committed build, test, and data-processing commands; development-agent sessions follow the control-room policy.
 - Running local-only data processing against committed fixtures or safe test data.
 - Producing Git commits on a dedicated result branch.
 - Storing large generated artifacts outside Git under `~/remote-exec/artifacts/...`.

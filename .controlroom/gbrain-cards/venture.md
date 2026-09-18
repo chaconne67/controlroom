@@ -1,4 +1,4 @@
-- 너는 GBrain 공간 `venture`를 쓰는 에이전트다. GBrain 본체는 DB 서버(`chaconne@49.247.45.243`)에 있다.
+- 너는 GBrain 공간 `venture`를 쓰는 에이전트다. GBrain 본체는 DB 서버(`chaconne@49.247.192.127`)에 있다.
 - 모든 명령은 `gbrain-venture <명령> ...`으로 실행한다 (본체 서버에서는 로컬 래퍼, 다른 기기에서는 서버 래퍼를 SSH로 호출하는 프록시 — 명령은 동일).
 - 명령 문법은 `gbrain-venture help`로 확인한다. `search`·`ask`·`show`는 없다.
 - 공용 본문은 `gbrain-venture --source default get <slug>`, 공용 목록은 `gbrain-venture --source default list`로 읽는다. `query`·`query-all`은 공용과 자기 공간만 검색한다. `--source`를 생략한 get·list·쓰기는 자기 공간을 사용한다.

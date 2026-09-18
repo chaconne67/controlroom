@@ -18,13 +18,13 @@ FundKeeper는 모멘텀에셋의 자산배분·리밸런싱 서비스이고, 사
 
 | 항목 | 값 |
 |---|---|
-| SSH | `chaconne@49.247.38.186` |
-| 저장소 | `/home/chaconne/fundkeeper` |
+| SSH | `chaconne@49.247.192.127` |
+| 저장소 | `/home/chaconne/projects/fundkeeper` |
 | 호환 경로 | `/home/work/fundkeeper` |
 | GitHub | `reneesoft/fundkeeper` |
 | 기준 브랜치 | `master` |
-| Python | `.venv/bin/python` (프로젝트 요구사항 3.12 이상) |
-| 운영 | Docker Swarm `Coconut`, Nginx, Gunicorn |
+| Python | 운영 이미지의 Python; 호스트 .venv 없음 |
+| 운영 | Docker Compose `production-coconut`, Nginx, Gunicorn |
 | 도메인 | `https://coconut.ai.kr` |
 | DB | MySQL `fundkeeper`(Django ORM), `price`(시장 가격) |
 
@@ -55,20 +55,20 @@ AWT, BAA, Mix는 각각 별도 전략 앱이지만 공통 시뮬레이션과 포
 
 `support/views.py`의 상담원과 `xmodules/system/description_convertor.py`의 자산명 변환기가 Codex CLI를 호출한다.
 
-- 컨테이너는 호스트 `/home/chaconne/.codex`를 `/root/.codex:ro`로 마운트한다.
+- 컨테이너는 main `/srv/consolidation/secrets/coconut-codex`를 `/root/.codex:ro`로 마운트한다.
 - 각 호출은 임시 `CODEX_HOME`을 만들고 `auth.json`, `config.toml`, `installation_id`가 있으면 복사한다.
 - 호출은 `/home/work/fundkeeper`에서 read-only sandbox, ephemeral 모드로 실행된다.
 - 모델은 `CODEX_MODEL`로 정하며 현재 이미지 기본값은 `gpt-5.5`다.
 - 상담원 역할·RAG·사용자 데이터 규칙은 애플리케이션 프롬프트가 정본이다.
 
-따라서 원격 호스트의 Codex 설정을 순정 상태로 유지한다. 프로젝트 지침·스킬·GBrain을 원격에 설치하면 제품 런타임 프롬프트와 컨텍스트가 오염될 수 있다.
+제품 Codex 인증·실행 파일은 위 전용 경로로 분리한다. 조정실 지침·스킬·GBrain을 이 제품 경로에 설치하지 않는다. 공통 서버 지침은 현행 프로젝트 AGENTS.md를 따른다.
 
 ## 구현과 검증
 
 1. `git status --short --branch`로 기존 변경을 확인한다.
 2. 현재 호출 경로와 모델·설정·템플릿을 읽는다.
 3. 요청 범위만 수정한다.
-4. `.venv/bin/python manage.py check --settings=fundkeeper.settings.deploy`를 기본 검사로 실행한다.
+4. `sudo -n docker exec --workdir /home/work/fundkeeper production-coconut-web-1 python manage.py check --settings=fundkeeper.settings.deploy`를 기본 검사로 실행한다.
 5. 관련 테스트는 운영 DB·외부 API·파일을 바꾸지 않는지 확인한 뒤 대상만 실행한다.
 6. 변경 파일의 diff와 원격 상태를 다시 확인한다.
 

@@ -873,3 +873,36 @@ FundKeeper `b5b601d5231271d9bdb881739b2eebabb13dda8e`는 두 파일만 커밋해
 - 15:08 KST 최종 main.verify는 같은 authority marker·PG/MySQL identity·제품5개·CEO 원본/RNDLOG 자료 접근을 통과했다. 두 공식 service는 종료값0, 현재 일일 백업은9월18일 한 묶음이고 다음 캐시02:10/백업03:40은9월19일이다. Windows task는 Ready·종료값0·다음9월19일03:30이다. 시스템 디스크 사용48.817GB/여유158.238GB(24%), `/mnt/data` 사용107.824GB/여유102.401GB(52%)다. 실제 재부팅과 다음 날짜/주간 실행은 이번 시험 결과에 포함하지 않는다.
 
 이번 지적 사항의 현재 결과와 모든 증거의 색인은 조정실 작업 outputs의 `운영서버_통합_후속마감_20260918.md/.json` 및 `운영서버_통합_다음세션_인계_20260918.md`를 따른다. 예전 수정안·실패·초기14일 값은 관측 이력이며 재적용하거나 현재 미완료로 해석하지 않는다.
+
+
+## 23. 2026-09-18 옛 운영 연결 종료와 Hermes 사용자별 이전
+
+주인님의 “기존 서버가 사용되는 곳이 하나도 남지 않도록” 지시와 공식 Hermes 설치 지시에 따른 마감이다. 이 절은18·20·21·22절의 옛 HTTPS/SQL/GBrain/파일 전달 경로 유지와 Hermes 이전 대기 상태를 대체한다. 과거 실패·준비 기록은 이력으로 보존한다. Exdigm은 전용49.247.202.197에 유지하며 Main으로 가져오지 않는다.
+
+### 운영 연결은 Main과 Exdigm 전용 서버로 직접 연결
+
+- CEO Loan 등기 원본 조회는 기존 registry_gateway.py와 읽기 전용 제한을 재사용하며 Main 내부172.30.32.128로 연결한다. 옛 DB의 GBrain/등기파일 전달용 Main 제한 키는 제거했다.
+- GBrain 원본 조회는 Main `/srv/consolidation/infra/gbrain-host`, 사용자별 정책 조회는 같은 위치의 `gbrain-policy-host <agent>`를 사용한다. 기존 default source 범위·거부 조건과 stdin 전달을 유지한다. 정책 밖 source는 종료값64로 차단된다. Windows03:30 기억 정리도 Main을 조회하며 모델·새 Windows 대화만 읽는 범위와 예약은 유지한다.
+- 인증서는 Main에서 갱신·Nginx 검사·reload한다. 옛 서버 전달 목록은 비웠고 공식 갱신 service의 옛 전달 호출을 제거했다. 같은 service 실제 실행은 종료값0이었다.
+- Exdigm의5개 자료 처리 스크립트는 자신의127.0.0.1과 `/mnt/pgdata/exdigm/worker`를 사용한다. 기존 작업 결과50파일·429,550,291bytes를 전용 서버로 옮겨 source bytes와 대조했다. 실제 native 관리 명령 help와 대기 작업 없는 finish를 확인했으며 유료 추출은 실행하지 않았다. 소스851382afac9c8b6a00b401bfb4a2ba2e54a75514를 origin/main에 저장했다.
+- RNDLOG 견적서 등 참조 원본16파일·3,236,305bytes는 Main `/mnt/data/files/rndlog-assets`에 보관하며 조정실 스킬도 이 실제 위치를 사용한다. 고객별 실제 작업 자료와 DB 백업의 구분은20절을 유지한다.
+
+옛 DB49.247.45.243·Coconut49.247.38.186·RNDLOG49.247.207.147·CEO Loan49.247.205.170은 현재 실행 컨테이너0·배치 대상 cron0·남은 제품 Swarm replicas0이다. HTTPS/SQL 호환 전달, GBrain 전달, DB tunnel, 옛 인증서 timer를 종료했다. 미사용 Claude Max와 Portainer도 종료하고 재시작을 해제했다. 옛 DB의 정리/prune 예약도 해제해 보관 자료가 자동 삭제되지 않게 했다. 기존 읽기 전용 저장 fence는 유지한다. 관리 SSH·원본 보관 자료와 서버 자체는 삭제하지 않았다.
+
+Main에서 이 네 서버의 공개·내부 주소8개로 나가는 OUTPUT/Docker 통신을 실제 임시 차단한 동안에도 공식 main verify의 선택 PG/MySQL identity·제품5개·CEO Loan 원본 읽기·RNDLOG 자료 접근, 원본/정책 GBrain 조회가 통과했다. 자체 차단 규칙은 시험 후 제거했다. 이 결과를 DNS 확인만으로 대신하지 않는다.
+
+### Hermes는3사용자의 기존 구조·인증을 보존
+
+Main 실제 사용자 chaconne(1001), ceo-agent(1002), cmo-agent(1003)는 각각 `/home/<사용자>/.hermes`, 그 아래 `hermes-agent`, 자신의 `~/.local/bin/hermes` 및 user `hermes-gateway.service`를 사용한다. UID/GID·파일 권한·기억·세션·skills·SOUL·cron·Telegram identity를 보존했다. ceo/cmo는 잠긴 로그인 암호를 유지하며 sudo/docker 권한을 추가하지 않았다. 보관 디스크의 실제 파일은 storage.fstab의4개 native bind mount로 연결하고, 각 service는 해당 mount를 요구한다. 프로젝트 symlink는 만들지 않았다.
+
+공식 https://hermes-agent.nousresearch.com/install.sh를 각 사용자로 실제 실행해3회 모두 종료값0을 확인했다. 기존 운영 프로그램 버전을 유지하도록 `--commit`과 `--skip-setup`을 사용했다. chaconne 원본284d220ba48e25f2e3623b3afe72db8f24a4c2db, ceo/cmo 원본fa83af3f9a42790730b8966ff67e7d9fb627899f다. 설치 전후 config.yaml/.env/auth.json/SOUL.md bytes를 확인했다. 설치 로그의 선택 Browser Use CLI 설치 경고는 남으며, 그 선택 도구의 실제 동작은 이번에 검증하지 않았다.
+
+세 사용자의 모델은 `gpt-5.6-sol`, provider는 `openai-codex`, 요청 주소는 `https://chatgpt.com/backend-api/codex`다. ceo/cmo의 남아 있던 OpenRouter base_url 한 필드만 이 주소로 맞췄다. 각자의 기존 device-code ChatGPT 구독 인증인 `/home/<사용자>/.hermes/auth.json`을 사용한다. 세 refresh token은 서로 다르고 Main chaconne 일반 Codex의 인증과도 다르다. Main `/root/.codex/auth.json`은 없으며 루트 인증을 공용 연결하거나 기존 인증을 재발급하지 않았다. 현재 codex_responses 방식은 Codex CLI 공용 인증이나 app-server를 필요로 하지 않는다.
+
+각 실제 gateway의 provider 선택 경로와 자신의 구독 usage 조회 HTTP200을 확인했다. 원래 bot sam1065_bot/aishift_com_bot/aishift_cmo_bot은 Main에서 각각 연결됐으며 새 로그에서 Telegram 중복 poller 충돌은0이었다. 옛 RNDLOG3서비스를 먼저 disable/stop해 PID0을 확인한 뒤 신규3개를 enabled/active로 시작했다. AI 응답 생성이나 시험 메시지 발송은 하지 않았다. 공식 설치 전 private 원본 snapshot은 `/mnt/data/archive/hermes-migration-20260918/official-before`에 보존한다.
+
+### 옛 서버와 독립된 복구 보관
+
+옛 DB의 기존 암호화 복구 묶음15파일·15,646,350,079bytes와5개 keyring 파일을 Windows `C:\Users\chaconne\.consolidation-recovery\20260918`로 직접 옮겼다. 해당 private 폴더는 현재 Windows 사용자·SYSTEM·Administrators만 접근하도록 보호한다. 원본15파일의 크기·SHA를 전부 대조했고, 옛 서버에 접속하지 않은 Windows GPG로 실제 최신 묶음1개를 복호화해 tar 내용을 읽었다. 같은 서버의 `/mnt/data`만으로 서버 소실에 대비했다고 표현하지 않는다. 최신 연결·Hermes 설정 추가 묶음은 실제 암호화 및 독립 복호화 영수증을 마감 보고서에 기록한다. 정기 서버 외부 백업 자동화를 새로 만든 결과는 아니다.
+
+기존 일일 DB 백업은03:40·최근3일·`/mnt/data/backups/daily`이며20·22절의 전체 복원·누락디스크 거부 증거를 유지한다. 다음 날짜의 예약 결과·주간 Kakao 결과와 실제 Main 재부팅은 이번 점검에서 아직 관측하지 않았다. 옛 서버의 운영 종료와 물리 서버/보관 자료 삭제를 구분한다. 최신 증거는 outputs `운영서버_옛연결종료_Hermes이전_20260918.md/.json`을 따른다.

@@ -18,7 +18,7 @@
 
 ## 정본
 
-2026-09-17 22:33 KST 실제 인계 이후의 운영 주소는 `chaconne@49.247.192.127`입니다. 2026-09-18 00:35 KST 공개 DNS 원본 14개 이름 모두 새 main이고 가비아 권한 서버 3곳 및 Google/Cloudflare에서 이를 확인했습니다. DNS 캐시의 옛 공개 입구와 SQL/CLI/자료 호환 주소는 새 main으로 전달합니다. 옛 서버의 호환 전달·별도 복구 백업·제외 서비스 의존성은 남아 있으므로 DNS 변경만으로 해지/삭제하지 않습니다. 최신 운영 상태·복구 경로는 현재 조정실 루트의 `.controlroom/docs/production-server-consolidation-20260916.md` 최신 절과 main `/srv/consolidation/infra/README.md`를 먼저 확인합니다. 과거 GBrain 프로젝트 맥락이나 고유 스킬에 남은 옛 서버·Swarm 배포 명령보다 이 현행 주소를 우선합니다. 옛 운영 writer는 정지·읽기 전용이므로 그 서버에서 배포하거나 DB/자료를 쓰지 않습니다.
+2026-09-17 22:33 KST 실제 인계 이후의 운영 주소는 `chaconne@49.247.192.127`입니다. 2026-09-18 00:35 KST 공개 DNS 원본 14개 이름 모두 새 main이고 가비아 권한 서버 3곳 및 Google/Cloudflare에서 이를 확인했습니다. 2026-09-18 잔여 정리로 옛 공개 입구·SQL/CLI/자료 전달과 인증서 전달을 중지했습니다. 현행 운영 연결은 main을 직접 사용하며 Hermes 세 사용자도 main에서만 실행합니다. 별도 복구 암호문과 복호화 키는 조정실의 접근 제한 폴더로 보존·검증했습니다. 옛 서버는 정지 보관 상태이며 삭제/해지는 별도 지시로 처리합니다. 최신 운영 상태·복구 경로는 현재 조정실 원본의 `.controlroom/docs/production-server-consolidation-20260916.md` 최신 절과 main `/srv/consolidation/infra/README.md`를 먼저 확인합니다. 과거 GBrain 프로젝트 맥락이나 고유 스킬에 남은 옛 서버·Swarm 배포 명령보다 이 현행 주소를 우선합니다. 옛 운영 writer는 정지·읽기 전용이므로 그 서버에서 배포하거나 DB/자료를 쓰지 않습니다.
 
 | 항목 | 값 |
 |---|---|
@@ -35,7 +35,7 @@
 | 운영 서비스 | `production-rndlog-web-1`, `production-rndlog-nginx-1` |
 | 운영 도메인 | `https://rndlog.kr` |
 | 운영 DB | main `migration-replicas-postgres-1` / `company_main` / 앱망 `172.30.40.10:5432` |
-| 옛 공개 입구 | `49.247.207.147` → main 전달; 옛 `Rndnote` Swarm writer는 정지 |
+| 옛 공개 입구 | `49.247.207.147` 정지; 옛 `Rndnote` Swarm writer는 정지 |
 
 현재 코드·서버와 이 문서가 다르면 실제 상태를 확인해 코드와 서버에 맞춰 이 문서와 GBrain을
 갱신합니다. `Rndnote`와 `rndnote.git`은 남아 있는 운영 식별자이며 제품 이름은 RNDLOG입니다.
@@ -66,7 +66,7 @@ git status --short
 
 ## 작업 전 GBrain
 
-GBrain 본체는 main에 있습니다. 로컬 카드의 기존 DB 주소 호환 CLI로 다음 공용 문서를 읽습니다. 회사별 제출·연구자료 저장 위치는 `project/rndlog-file-upload-storage`를 함께 확인합니다.
+GBrain 본체는 main에 있습니다. 로컬 카드의 main 직접 CLI로 다음 공용 문서를 읽습니다. 회사별 제출·연구자료 저장 위치는 `project/rndlog-file-upload-storage`를 함께 확인합니다.
 
 - `project/rndlog-operating-context`
 - 작업 기능명·화면명·모델명으로 찾은 관련 페이지

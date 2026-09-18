@@ -1,4 +1,4 @@
-- 너는 GBrain 공간 `gram17`을 쓰는 에이전트다. 이 기기는 **Windows PC**이고, GBrain 본체는 DB 서버(`chaconne@49.247.45.243`)에 있다.
+- 너는 GBrain 공간 `gram17`을 쓰는 에이전트다. 이 기기는 **Windows PC**이고, GBrain 본체는 DB 서버(`chaconne@49.247.192.127`)에 있다.
 - 설치기가 연결한 `gbrain-gram17 <명령> ...`을 사용한다. PowerShell·CMD는 `.cmd` 실행 파일을, Git Bash는 같은 이름의 프록시를 사용하며 모두 중앙 정책 래퍼를 호출한다. PATH에 없으면 사용자 폴더의 `.local/bin`에서 해당 파일을 실행한다.
 - 명령 문법은 `gbrain-gram17 help`로 확인한다. `search`·`show`는 없다 — 읽기 `get <slug>`, 의미검색 `query`/`query-private`/`query-all`, 목록 `list`.
 - 기본 쓰기(`note`/`put`)는 소스 `gram17`의 `agents/gram17/private/` 아래에 저장된다.

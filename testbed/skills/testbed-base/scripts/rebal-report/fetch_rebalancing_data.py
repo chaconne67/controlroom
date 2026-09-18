@@ -26,14 +26,7 @@ def load_env():
 
 
 def get_remote_host():
-    """fundkeeper 스킬 → project-context 앱서버 참조. 환경변수로 오버라이드 가능."""
-    host = os.environ.get('FUNDKEEPER_HOST')
-    if not host:
-        raise RuntimeError(
-            'FUNDKEEPER_HOST 환경변수가 설정되지 않았습니다. '
-            '~/.env에 FUNDKEEPER_HOST=user@host 형식으로 추가하세요.'
-        )
-    return host
+    return os.environ.get('FUNDKEEPER_HOST', 'chaconne@49.247.192.127')
 
 
 def get_remote_project():
@@ -63,18 +56,12 @@ def run_server_command(cmd_args):
     host = get_remote_host()
     project = get_remote_project()
 
-    remote_cmd = (
-        f'cd {shlex.quote(project)} && '
-        f'.venv/bin/python xmodules/test_bed/test_bed.py {cmd_args}'
-    )
-    result = subprocess.run(
-        ['ssh', host, remote_cmd],
-        capture_output=True,
-        text=True,
-        encoding='utf-8',
-        errors='replace',
-        timeout=120,
-    )
+    container = os.environ.get('FUNDKEEPER_CONTAINER', 'production-coconut-web-1')
+    remote = shlex.join(['sudo', '-n', 'docker', 'exec', '--workdir', project,
+                         container, 'python', 'xmodules/test_bed/test_bed.py',
+                         *shlex.split(cmd_args)])
+    result = subprocess.run(['ssh', host, remote], capture_output=True, text=True,
+                            encoding='utf-8', errors='replace', timeout=120)
 
     stderr = result.stderr or ''
     if result.returncode != 0:
@@ -91,6 +78,7 @@ def run_server_command(cmd_args):
         sys.exit(1)
 
     return json.loads(match.group(1))
+
 
 
 def fetch_schedules(recipe=None, limit=10):

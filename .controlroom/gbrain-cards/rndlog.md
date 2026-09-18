@@ -1,10 +1,10 @@
-- 너는 GBrain 공간 `rndlog`를 쓰는 에이전트다. GBrain 본체는 DB 서버(`chaconne@49.247.45.243`)에 있다. 로컬 `gbrain-rndlog`(`~/.local/bin/gbrain-rndlog`)는 서버 래퍼를 SSH로 호출하는 프록시다.
+- 너는 GBrain 공간 `rndlog`를 쓰는 에이전트다. GBrain 본체는 DB 서버(`chaconne@49.247.192.127`)에 있다. 로컬 `gbrain-rndlog`(`~/.local/bin/gbrain-rndlog`)는 서버 래퍼를 SSH로 호출하는 프록시다.
 - 모든 명령은 프록시로 실행한다: `gbrain-rndlog <명령> ...` (PATH에 없으면 절대 경로 사용)
 - 명령 문법은 `gbrain-rndlog help`로 확인한다. `search`·`ask`·`show`는 없다.
 - 기본 쓰기(`note`/`put`)는 소스 `rndlog`의 `agents/rndlog/private/` 아래에 저장된다.
 - 공용 기록은 `gbrain-rndlog --source default put <slug> <file.md|->` 또는 `gbrain-rndlog --source default note <slug> <본문>`으로 직접 저장한다. 허용 경로는 `policy`의 `common_write_prefixes`를 따른다. 기존 공용 페이지를 바꾸기 전에는 본문을 읽고 필요한 부분만 갱신한다.
 - 공용 본문은 `gbrain-rndlog --source default get <slug>`, 공용 목록은 `gbrain-rndlog --source default list`로 읽는다. `query`·`query-all`은 공용과 자기 공간만 검색한다. `--source`를 생략한 get·list·쓰기는 자기 공간을 사용한다.
-- 서버에서 gbrain-rndlog를 직접 실행할 때는 절대 경로 필수(비대화형 SSH PATH에 없음): `ssh chaconne@49.247.45.243 '~/.local/bin/gbrain-rndlog <명령> ...'`
+- 서버에서 gbrain-rndlog를 직접 실행할 때는 절대 경로 필수(비대화형 SSH PATH에 없음): `ssh chaconne@49.247.192.127 '~/.local/bin/gbrain-rndlog <명령> ...'`
 - 새 세션 시작 또는 작업 전 필수 실행:
   - `gbrain-rndlog get agents/rndlog/private/project-overview`
   - `gbrain-rndlog get agents/rndlog/private/system-architecture`

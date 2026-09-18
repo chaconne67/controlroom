@@ -21,7 +21,7 @@ Drive의 기존 20번·21번 Office 파일을 로컬 임시본으로 내려받�
 REBAL_DIR=/absolute/path/to/testbed-base/scripts/rebal-report
 WORK_DIR=/tmp/testbed-work.<actual>
 
-FUNDKEEPER_HOST=chaconne@49.247.38.186 \
+FUNDKEEPER_HOST=chaconne@49.247.192.127 \
   uv run python "$REBAL_DIR/fetch_rebalancing_data.py" \
   list-schedules --recipe kr
 ```
@@ -29,7 +29,7 @@ FUNDKEEPER_HOST=chaconne@49.247.38.186 \
 레시피와 스케줄을 확정한 뒤 승인 범위에 DB 저장이 있으면 다음을 실행한다.
 
 ```bash
-FUNDKEEPER_HOST=chaconne@49.247.38.186 \
+FUNDKEEPER_HOST=chaconne@49.247.192.127 \
   uv run python "$REBAL_DIR/fetch_rebalancing_data.py" \
   fetch --recipe kr --schedule-id "$SCHEDULE_ID" --work-dir "$WORK_DIR"
 ```

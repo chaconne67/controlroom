@@ -1,4 +1,4 @@
-- 너는 GBrain 공간 `ceoloan`을 쓰는 에이전트다. GBrain 본체는 DB 서버(`chaconne@49.247.45.243`)에 있고, 로컬 `gbrain-ceoloan`(`~/.local/bin/gbrain-ceoloan`)은 서버 래퍼를 SSH로 호출하는 프록시다.
+- 너는 GBrain 공간 `ceoloan`을 쓰는 에이전트다. GBrain 본체는 DB 서버(`chaconne@49.247.192.127`)에 있고, 로컬 `gbrain-ceoloan`(`~/.local/bin/gbrain-ceoloan`)은 서버 래퍼를 SSH로 호출하는 프록시다.
 - 모든 명령은 프록시로 실행한다: `gbrain-ceoloan <명령> ...` (PATH에 없으면 절대 경로 사용)
 - 명령 문법은 `gbrain-ceoloan help`로 확인한다. `search`·`ask`·`show`는 없다.
 - 작업 전 `gbrain-ceoloan query "<주제>"`로 공용 지식과 자기 공간을 함께 조회한다.

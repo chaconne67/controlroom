@@ -5,7 +5,7 @@ description: Run reproducible heavy repository commands on a remote server for d
 
 # Remote Execute
 
-Use this skill to run heavy repository commands over SSH. Follow the project's official source host and checkout; use `chaconne@49.247.45.243` when the project authorizes a separate heavy-job worker. Transfer source state through Git commits and branches; transfer large generated artifacts with `rsync`/`scp`, not Git.
+Use this skill to run heavy repository commands over SSH. Follow the project's official source host and checkout; use `chaconne@49.247.192.127` when the project authorizes a separate heavy-job worker. Transfer source state through Git commits and branches; transfer large generated artifacts with `rsync`/`scp`, not Git.
 
 ## Core Rule
 
@@ -90,7 +90,7 @@ Remote execution is an artifact generator, not a DB worker:
 
 Terminology rule:
 
-- `remote worker` means `chaconne@49.247.45.243`.
+- `remote worker` means `chaconne@49.247.192.127`.
 - `Gemini Batch` means an external Gemini API batch job submitted from the local/operational server.
 - Do not call Gemini Batch "remote execution" or "remote processing". Its request, polling, result download, ingest, and DB save are local/operational responsibilities unless the user gives fresh approval for remote credentials and external API side effects.
 - `reconcile` has two separate meanings: `batch_txt_to_db --reconcile` reconciles Gemini Batch jobs locally; `remote_structured_json_classification.sh reconcile` reconciles remote worker artifacts locally. Always name the command when saying "reconcile".
@@ -107,7 +107,7 @@ Record artifact paths and a compact manifest in the remote result commit or fina
 
 ```bash
 rsync -av --progress \
-  chaconne@49.247.45.243:~/remote-exec/artifacts/exdigm/<job-id>/manifest.json \
+  chaconne@49.247.192.127:~/remote-exec/artifacts/exdigm/<job-id>/manifest.json \
   ./artifacts/<job-id>/
 ```
 
@@ -116,7 +116,7 @@ For directories, prefer resumable `rsync` with include/exclude filters over Git:
 ```bash
 rsync -av --partial --progress \
   --include='*/' --include='*.json' --include='*.jsonl' --exclude='*' \
-  chaconne@49.247.45.243:~/remote-exec/artifacts/exdigm/<job-id>/ \
+  chaconne@49.247.192.127:~/remote-exec/artifacts/exdigm/<job-id>/ \
   ./artifacts/<job-id>/
 ```
 
@@ -157,7 +157,7 @@ scripts/remote_structured_json_classification.sh reconcile
 
 `submit` must be run manually after the local code is clean, committed, and pushed. `reconcile` is the cron-safe operation and uses a lock so overlapping cron runs exit without doing duplicate work.
 
-Keep local and remote executable paths separate. The local `UV_BIN` may be `/home/chaconne/.local/bin/uv`, while the remote worker currently resolves `uv` as `/usr/local/bin/uv`. Remote commands must use `REMOTE_UV_BIN` or `command -v uv` on the remote host; do not pass a local absolute `uv` path into the remote shell. Preflight should fail before backgrounding if the remote executable is missing.
+Resolve executable paths on the selected host before starting a job. Use the existing `REMOTE_UV_BIN` option or verify `command -v uv`; the local `UV_BIN` path is not evidence of the remote path. Exdigm uses its own verified `/home/chaconne/.local/bin/uv` for self-hosted workers. Stop preflight before backgrounding if the required executable is missing.
 
 For large imports, keep local DB pressure bounded. `remote_structured_json_classification.sh reconcile` imports completed JSONL in chunks (`IMPORT_CHUNK_SIZE`, default 500) and sleeps between chunks (`IMPORT_SLEEP_SECONDS`, default 2). Do not replace this with a one-shot import for large files unless memory, DB lock time, and rollback size have been considered.
 
@@ -230,7 +230,7 @@ Use `rsync` for large outputs. It is resumable, can filter paths, and avoids blo
 Before downloading, inspect remote size:
 
 ```bash
-ssh chaconne@49.247.45.243 'du -sh ~/remote-exec/artifacts/exdigm/<job-id> && find ~/remote-exec/artifacts/exdigm/<job-id> -maxdepth 2 -type f | head -50'
+ssh chaconne@49.247.192.127 'du -sh ~/remote-exec/artifacts/exdigm/<job-id> && find ~/remote-exec/artifacts/exdigm/<job-id> -maxdepth 2 -type f | head -50'
 ```
 
 Download choices:
@@ -243,7 +243,9 @@ Never put downloaded bulk artifacts under tracked repo paths unless the project 
 
 ## Troubleshooting
 
-- If SSH fails, run `ssh -T chaconne@49.247.45.243 'hostname && git --version'`.
+- If SSH fails, run `ssh -T chaconne@49.247.192.127 'hostname && git --version'`.
 - If GitHub fetch/push fails on remote, verify the remote worker's GitHub key and repo access.
 - If the remote command leaves uncommitted changes, inspect on the remote path and commit there before pushing.
 - If local worktree is dirty, commit only the intended state or use a temporary local branch.
+
+Exdigm의 현행 사진·인벤토리 스크립트는 전용 서버 안의 SSH 루프백 작업 경로(`chaconne@127.0.0.1`)를 사용한다. Exdigm 코드·운영을 main에 복제하지 않는다. 마운트 디스크의 별도 worker 경로에 산출물을 만들고 기존 manifest·DB 편입 경계를 유지한다.
