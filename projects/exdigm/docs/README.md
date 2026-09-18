@@ -8,6 +8,8 @@
 
 ## 진행 중 작업
 
+- [운영 실패 분류·사용자 확인·Codex 자동 수정 방침 — 현행 구조 확인·계획 작성, 구현 전](operational-error-triage-repair-policy-20260918.md)
+
 - [이력서 검수 마크다운 표시 — 개발 수정·실제 화면·보호 검사 완료, 운영 배포 승인 대기](markdown-display-fix-20260918.md)
 
 - [학력 선택 정책 — 운영 반영·실패 개인 이력서 4건 재처리·실제 저장 및 중요 표시 확인 완료](resume-optional-education-20260917.md)
