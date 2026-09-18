@@ -17,7 +17,7 @@ import tempfile
 import uuid
 import zipfile
 
-ORIGIN = 'https://github.com/chaconne67/controlroom.git'
+ORIGIN = 'git@github.com:chaconne67/controlroom.git'
 CENTRAL = {'main', 'windows-control'}
 TOOLKIT = '.controlroom'
 MEMORY_TASK = 'GBrain-Controlroom-Memory-Distill'
@@ -347,9 +347,9 @@ def repositories(root):
         if not re.fullmatch(r'[A-Za-z0-9_-]+', name):
             raise RuntimeError('Invalid project directory')
         if kind == 'git':
-            if not re.fullmatch(r'https://github\.com/[^/]+/[^/]+\.git', target):
+            if not re.fullmatch(r'(?:https://github\.com/|git@github\.com:|ssh://git@github\.com/)[^/]+/[^/]+\.git', target):
                 raise RuntimeError('Invalid project origin')
-            yield name, target
+            yield name, f'git@github.com:{github_repository(target)}.git'
         elif kind != 'profile':
             raise RuntimeError('Invalid project kind')
 
@@ -367,10 +367,6 @@ def clone(url, destination, existing=None):
         for key, value in config(existing):
             if key.startswith('url.') and key.endswith('.insteadof'):
                 args.extend(['-c', f'{key}={value}'])
-    if existing and (existing / '.git').exists():
-        configured = git(existing, 'config', '--get', 'remote.origin.url', check=False).stdout.strip()
-        if github_repository(configured) == github_repository(url):
-            url = configured
     args.extend(['clone', '--no-hardlinks', '--branch', 'main', '--single-branch', url, str(destination)])
     run(*args)
 
@@ -644,9 +640,7 @@ def apply(source, home, agent, products, preserve_config=None, legacy_cleanup=Tr
                     git(workspace, 'config', '--local', '--unset-all', key, check=False)
                     restored_keys.add(key)
                 git(workspace, 'config', '--local', '--add', key, value)
-        configured = next((value for key, value in old_config if key == 'remote.origin.url'), '')
-        origin = configured if github_repository(configured) == github_repository(ORIGIN) else ORIGIN
-        git(workspace, 'remote', 'set-url', 'origin', origin)
+        git(workspace, 'remote', 'set-url', 'origin', ORIGIN)
         git(workspace, 'config', '--local', 'controlroom.agent', agent)
         installed_profiles = dict(data['profiles'], projects=installed_projects, hermes=hermes_owned)
         git(workspace, 'config', '--local', 'controlroom.installedProfiles', json.dumps(installed_profiles, ensure_ascii=False))
@@ -821,11 +815,16 @@ def github_repository(url):
     return None
 
 
-def check_origin(root, expected):
+def prepare_push(root, expected):
     urls = [git(root, 'config', '--get', 'remote.origin.url').stdout.strip()]
     urls += git(root, 'config', '--get-all', 'remote.origin.pushurl', check=False).stdout.splitlines()
     if any(github_repository(url) != github_repository(expected) for url in urls):
         raise RuntimeError(f'origin or push destination is not the registered repository: {root}')
+    check_main(root)
+    # Migrate only this registered repository; never rewrite keys or global Git auth.
+    git(root, 'remote', 'set-url', 'origin', expected)
+    if len(urls) > 1:
+        git(root, 'config', '--local', '--replace-all', 'remote.origin.pushurl', expected)
 
 
 def check_main(root):
@@ -849,8 +848,7 @@ def allowed(path, role, projects):
 def push(home, message, workspace=None, project_root=None):
     root = workspace or home / 'projects'
     role = agent_for(root)
-    check_origin(root, ORIGIN)
-    check_main(root)
+    prepare_push(root, ORIGIN)
     data = validate(root)
     projects = {p.name for p in root.iterdir() if p.is_dir() and not p.name.startswith('.') and p.name != 'venture'}
     git(root, 'fetch', '--quiet', '--prune', 'origin')
@@ -878,8 +876,7 @@ def push(home, message, workspace=None, project_root=None):
     if role in CENTRAL and project_root is None:
         for name, expected in repositories(root):
             product = root / name
-            check_origin(product, expected)
-            check_main(product)
+            prepare_push(product, expected)
             git(product, 'fetch', '--quiet', '--prune', 'origin')
             behind = int(git(product, 'rev-list', '--count', 'HEAD..origin/main').stdout)
             if behind and git(product, 'status', '--porcelain').stdout:

@@ -1,5 +1,13 @@
 # controlroom 저장소 통합
 
+## SSH 접속 통일 — 2026-09-19 후속 지시
+
+인증은 주인님이 준비하고 모든 설치·`kitpull`·`kitpush`의 GitHub 접속은 SSH 키를 사용한다. README와 장비 준비 문서는 OS·셸별 Git SSH 한 줄만 안내하며 `gh`·HTTP 토큰 설치 경로는 제거한다. Windows는 받은 설치기를 현재 PowerShell에서 호출하고 Bash는 설치 성공 후 기존 명령 등록 파일을 읽어 같은 터미널에서 두 명령을 사용한다. 후속 요청에 따라 CMD 한 줄도 같은 PowerShell 설치기를 호출한 뒤 현재 CMD의 PATH에 명령 폴더를 추가한다. 기존 `kitpull.cmd`·`kitpush.cmd`를 재사용하므로 사용자는 확장자 없이 같은 이름을 입력한다.
+
+수정 없는 12023c7을 기준으로 기존 Windows 설치·실패 복구 4개, main 모드와 SSH 동기화 4개 검사를 먼저 통과했다. 기존 설치기·동기화·백업을 재사용하며 키·SSH 신뢰·인증 설정은 바꾸지 않는다. 일반 설치의 Controlroom·Venture 원격만 SSH 주소로 통일하고, 기존 HTTPS 원격으로 시작한 갱신·전송도 SSH로 연결한다. 다른 저장소로 지정된 push 주소는 이전처럼 전송 전에 거절한다. main 모드는 별도 Controlroom 원본만 이 규칙을 적용하고 운영 제품 Git은 그대로 보존한다.
+
+수정 후 격리 환경에서 Windows 문서·PowerShell·CMD 검사 7개와 통합 동기화 검사 21개, Ubuntu 설치·명령 검사 16개와 통합 동기화 검사 21개가 통과했다. 실제 CMD의 다운로드·설치·즉시 명령 사용, 공백/한글 경로, 두 조정실 사이의 pull/push, SSH 전환, 백업·실패 복구와 main 제품 보존을 확인했다. code-review-loop에서 승인 finding과 열린 계약 질문은 없다. 실제 키로 게시본을 받는 후속 검증 결과는 공용 GBrain의 `reference/controlroom-one-line-install`에 기록한다.
+
 ## 동기화 명령 통일 — 2026-09-18 후속 지시
 
 사용자 명령은 `kitpull`과 `kitpush`로 통일한다. 확인은 `kitpull --verify`, 백업 복구는 `kitpull --restore <ZIP>`로 같은 명령에서 실행한다. 설치기는 이전 `controlroom` 실행 파일을 압축 백업한 뒤 제거하며 셸 등록과 도움말도 두 명령으로 맞춘다. 아래 과거 실행 기록의 이전 명령 이름은 당시 상태를 설명한다.

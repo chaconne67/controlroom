@@ -88,6 +88,40 @@ class WorkspaceSyncTests(unittest.TestCase):
                              f'git@github.com:chaconne67/{name}.git')
         self.command(home, 'kitpull --verify')
 
+    def test_pull_migrates_existing_https_origins_without_http_access(self):
+        home, repo = self.device()
+        for target, name in [(repo, 'controlroom'), (repo / 'venture', 'venture')]:
+            run('git', 'remote', 'set-url', 'origin', f'https://github.com/chaconne67/{name}.git', cwd=target)
+        self.command(home)
+        for target, name in [(repo, 'controlroom'), (repo / 'venture', 'venture')]:
+            self.assertEqual(run('git', 'config', '--get', 'remote.origin.url', cwd=target).stdout.strip(),
+                             f'git@github.com:chaconne67/{name}.git')
+        self.command(home, 'kitpull --verify')
+
+    def test_push_migrates_https_origins_and_push_urls_without_http_access(self):
+        home, repo = self.device()
+        for target, name in [(repo, 'controlroom'), (repo / 'venture', 'venture')]:
+            url = f'https://github.com/chaconne67/{name}.git'
+            run('git', 'remote', 'set-url', 'origin', url, cwd=target)
+            run('git', 'config', 'remote.origin.pushurl', url, cwd=target)
+        # Old installed manifests must also route their registered product through SSH.
+        manifest = repo / '.controlroom/manifests/windows-control-projects.tsv'
+        manifest.write_text(manifest.read_text().replace('git@github.com:', 'https://github.com/'))
+        (repo / '.controlroom/common.txt').write_text('SSH publication\n')
+        (repo / 'venture/app.py').write_text('reviewed SSH code\n')
+        run('git', 'add', 'app.py', cwd=repo / 'venture')
+        run('git', 'commit', '-m', 'reviewed SSH code', cwd=repo / 'venture')
+        self.command(home, 'kitpush "SSH publication"')
+        for target, name in [(repo, 'controlroom'), (repo / 'venture', 'venture')]:
+            for key in ('remote.origin.url', 'remote.origin.pushurl'):
+                self.assertEqual(run('git', 'config', '--get-all', key, cwd=target).stdout.strip(),
+                                 f'git@github.com:chaconne67/{name}.git')
+        self.assertEqual(run('git', '--git-dir', self.fixture.remote, 'show',
+                             'main:.controlroom/common.txt').stdout, 'SSH publication\n')
+        self.assertEqual(run('git', '--git-dir', self.fixture.product_remote, 'show',
+                             'main:app.py').stdout, 'reviewed SSH code\n')
+        self.command(home, 'kitpull --verify')
+
     def test_two_devices_round_trip_tools_planning_and_code(self):
         a, ra = self.device(True)
         b, rb = self.device()

@@ -4,4 +4,4 @@ exdigm	profile	exdigm
 fundkeeper	profile	fundkeeper
 rndlog	profile	rndlog
 ziin	profile	ziin
-venture	git	https://github.com/chaconne67/venture.git
+venture	git	git@github.com:chaconne67/venture.git

@@ -144,7 +144,7 @@ class KitFixture:
                     'depends_on': {'rndlog-example': ['example']}}
         (toolkit / 'manifests').mkdir()
         (toolkit / 'manifests/skills.json').write_text(json.dumps(manifest), encoding='utf-8')
-        (toolkit / 'manifests/windows-control-projects.tsv').write_text('rndlog\tprofile\trndlog\nventure\tgit\thttps://github.com/chaconne67/venture.git\n')
+        (toolkit / 'manifests/windows-control-projects.tsv').write_text('rndlog\tprofile\trndlog\nventure\tgit\tgit@github.com:chaconne67/venture.git\n')
         self.commit_seed('baseline')
         run('git', 'clone', '--bare', self.seed, self.remote)
         run('git', 'remote', 'add', 'origin', self.remote, cwd=self.seed)
@@ -183,9 +183,9 @@ class KitFixture:
                    GIT_TERMINAL_PROMPT='0', GIT_ALLOW_PROTOCOL='file',
                    GIT_CONFIG_NOSYSTEM='1', GIT_CONFIG_GLOBAL=os.devnull, GIT_CONFIG_COUNT='2',
                    GIT_CONFIG_KEY_0=f'url.{self.remote.as_uri()}.insteadOf',
-                   GIT_CONFIG_VALUE_0='https://github.com/chaconne67/controlroom.git',
+                   GIT_CONFIG_VALUE_0='git@github.com:chaconne67/controlroom.git',
                    GIT_CONFIG_KEY_1=f'url.{self.product_remote.as_uri()}.insteadOf',
-                   GIT_CONFIG_VALUE_1='https://github.com/chaconne67/venture.git',
+                   GIT_CONFIG_VALUE_1='git@github.com:chaconne67/venture.git',
                    PYTHONUTF8='1')
         env['PATH'] = str(home / '.local/bin') + os.pathsep + env['PATH']
         return env
@@ -389,6 +389,9 @@ class EntryPointDocumentationTests(unittest.TestCase):
             self.assertIn('~/projects', text)
             self.assertIn('kitpull', text)
             self.assertIn('kitpush', text)
+            self.assertNotIn('gh auth', text)
+            self.assertNotIn('curl ', text)
+            self.assertNotIn('Invoke-RestMethod', text)
             for action in ('pull', 'push', 'verify', 'restore'):
                 self.assertNotIn('controlroom ' + action, text)
         self.assertEqual((ROOT / 'manifests/windows-control-projects.tsv').read_text().count('venture\tgit\t'), 1)
@@ -399,6 +402,55 @@ class WindowsInstallerTests(unittest.TestCase):
     def setUp(self):
         self.fixture = KitFixture()
         self.addCleanup(self.fixture.close)
+
+    def test_readme_ssh_one_liner_without_gh_in_current_shell(self):
+        home = self.fixture.new_home(True)
+        env = self.fixture.env(home)
+        env['PATH'] = os.pathsep.join(p for p in env['PATH'].split(os.pathsep)[1:]
+                                      if not (Path(p) / 'gh.exe').is_file())
+        for key in ('GH_TOKEN', 'GITHUB_TOKEN', 'GH_ENTERPRISE_TOKEN', 'GITHUB_ENTERPRISE_TOKEN'):
+            env.pop(key, None)
+        readme = (ROOT.parent / 'README.md').read_text(encoding='utf-8')
+        command = re.search(r'```powershell\n([^\n]+)\n```', readme)[1]
+        self.assertIn(command, (ROOT / 'docs/onboarding-new-server.md').read_text(encoding='utf-8'))
+        verify = r'''
+foreach ($name in @('kitpull', 'kitpush')) {
+    $expected = Join-Path $env:USERPROFILE ('.local\bin\' + $name + '.cmd')
+    if ((Get-Command $name).Source -ne $expected) { throw 'Wrong command path' }
+}
+kitpull --verify
+if ($LASTEXITCODE) { throw 'Verification failed' }
+kitpush --help
+if ($LASTEXITCODE) { throw 'Command dispatch failed' }
+'''
+        result = run('powershell.exe', '-NoProfile', '-Command',
+                     "$ErrorActionPreference='Stop'; if (Get-Command gh -ErrorAction SilentlyContinue) { throw 'gh must be absent' }; "
+                     + command + '\n' + verify + command + '\n' + verify, env=env)
+        self.assertEqual(result.stdout.count('Physical layout and installed contents verified.'), 2)
+        self.assertEqual(result.stdout.count('usage: kitpush'), 2)
+
+        failed_home = self.fixture.new_home()
+        # No rewrite is available and file is the only allowed transport: clone must fail.
+        failed_env = self.fixture.env(failed_home) | {'GIT_CONFIG_COUNT': '0'}
+        result = run('powershell.exe', '-NoProfile', '-Command', command, env=failed_env, check=False)
+        self.assertNotEqual(result.returncode, 0)
+        for relative in ('projects', '.codex', 'backups'):
+            self.assertFalse((failed_home / relative).exists())
+
+    def test_readme_cmd_one_liner_registers_commands_in_current_cmd(self):
+        home = self.fixture.new_home(True)
+        env = self.fixture.env(home)
+        env['PATH'] = os.pathsep.join(p for p in env['PATH'].split(os.pathsep)[1:]
+                                      if not (Path(p) / 'gh.exe').is_file())
+        readme = (ROOT.parent / 'README.md').read_text(encoding='utf-8')
+        command = re.search(r'```cmd\n([^\n]+)\n```', readme)[1]
+        self.assertIn(command, (ROOT / 'docs/onboarding-new-server.md').read_text(encoding='utf-8'))
+        result = run('cmd.exe', '/d', '/c', command
+                     + ' && where kitpull && where kitpush && kitpull --verify && kitpush --help', env=env)
+        self.assertIn(str(home / '.local/bin/kitpull.cmd'), result.stdout)
+        self.assertIn(str(home / '.local/bin/kitpush.cmd'), result.stdout)
+        self.assertIn('Physical layout and installed contents verified.', result.stdout)
+        self.assertIn('usage: kitpush', result.stdout)
 
     def test_downloaded_powershell_installer_exposes_commands_in_current_shell(self):
         home = self.fixture.new_home(True)
@@ -488,12 +540,10 @@ class PosixControlRoomInstallerTests(unittest.TestCase):
         env = fixture.env(home)
         env['PATH'] = os.pathsep.join(env['PATH'].split(os.pathsep)[1:])
         readme = (ROOT.parent / 'README.md').read_text(encoding='utf-8')
-        command = next(line for line in readme.splitlines() if line.startswith('(set -e;'))
-        # Substitute only the download URL; exercise the exact shell command and installer.
-        command = re.sub(r'https://api\.github\.com/[^" ]+/install\.sh\?ref=main',
-                         (fixture.seed / '.controlroom/install.sh').as_uri(), command)
-        command = 'gh() { printf test-token; }; ' + command
-        command += '; test "$(type -t kitpull)" = function && kitpull --verify && kitpush --help'
+        command = next(line for line in readme.splitlines() if line.startswith('d=') and '--main-server' not in line)
+        self.assertIn(command, (ROOT / 'docs/onboarding-new-server.md').read_text(encoding='utf-8'))
+        command += ' && test "$(type -t kitpull)" = function && kitpull --verify && kitpush --help'
+        command = 'gh() { echo "gh must not run" >&2; return 99; }; ' + command
         result = run(BASH, '--noprofile', '--norc', '-c', command, env=env)
         self.assertIn('Physical layout and installed contents verified.', result.stdout)
         self.assertIn('usage: kitpush', result.stdout)

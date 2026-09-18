@@ -39,7 +39,7 @@ if [ -z "$source_file" ] || [ ! -f "$repo_dir/scripts/controlroom.py" ]; then
     case "$bootstrap_dir" in "$bootstrap_parent"/controlroom-*) rm -rf -- "$bootstrap_dir" ;; *) die 'Unsafe temporary directory.' ;; esac
   }
   trap cleanup_bootstrap EXIT
-  git clone --branch main --single-branch https://github.com/chaconne67/controlroom.git "$bootstrap_dir/incoming"
+  git clone --branch main --single-branch git@github.com:chaconne67/controlroom.git "$bootstrap_dir/incoming"
   repo_dir="$bootstrap_dir/incoming/.controlroom"
   core install "${1:-windows-control}" --source "$bootstrap_dir/incoming"
   exit $?

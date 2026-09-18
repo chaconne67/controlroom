@@ -4,27 +4,28 @@
 
 ## 처음 설치하거나 최신본 적용
 
-Git, Python 3.12 이상과 비공개 Controlroom 저장소의 읽기 권한을 준비합니다. 아래 HTTP 다운로드 명령은 [GitHub CLI (`gh`)](https://cli.github.com/) 인증을 사용합니다. GitHub SSH 인증이 있는 Ubuntu main 서버는 아래 SSH 설치 명령을 사용하며 `gh`가 필요 없습니다. PC·노트북의 일반 설치에는 Venture 저장소 읽기 권한도 필요합니다. Windows는 Git for Windows와 PowerShell, Linux·macOS는 Bash를 사용하고 HTTP 다운로드에는 curl도 필요합니다.
+Git, Python 3.12 이상과 GitHub SSH 키 인증을 준비합니다. 인증은 사용자가 설정하며, 설치기는 키나 인증 설정을 변경하지 않습니다. Controlroom 저장소의 읽기 권한이 필요하고 PC·노트북의 일반 설치에는 Venture 저장소 읽기 권한도 필요합니다. Windows는 Git for Windows와 PowerShell, Linux·macOS는 Bash를 사용합니다.
 
-HTTP 다운로드를 사용할 새 장비에서는 `gh` 설치 후 인증을 한 번 설정합니다. 아래 두 명령은 두 OS에서 같습니다. main 서버의 SSH 설치에는 이 설정이 필요 없습니다.
-
-```text
-gh auth login --hostname github.com --git-protocol https
-gh auth setup-git --hostname github.com
-```
-
-이후 OS에 맞는 **한 줄만 실행하면 다운로드부터 설치까지 진행**합니다. 비공개 저장소이므로 GitHub 인증을 사용해 설치 스크립트를 받습니다. 인증이나 다운로드가 실패하면 설치를 시작하지 않습니다.
+**설치·`kitpull`·`kitpush` 모두 Git SSH를 사용합니다.** `gh`나 HTTP 토큰은 필요 없습니다. OS에 맞는 **한 줄만 실행하면 다운로드부터 설치와 명령 등록까지 진행**합니다. 인증이나 다운로드가 실패하면 설치를 시작하지 않습니다.
 
 ### Windows — PowerShell
 
 ```powershell
-& ([scriptblock]::Create((Invoke-RestMethod -Headers @{Authorization=('Bearer ' + (gh auth token --hostname github.com)); Accept='application/vnd.github.raw+json'} -Uri 'https://api.github.com/repos/chaconne67/controlroom/contents/.controlroom/install.ps1?ref=main' -ErrorAction Stop).TrimStart([char]0xFEFF))) -Agent windows-control
+$d="$env:USERPROFILE\.local\share\controlroom\source"; if (!(Test-Path "$d\.git")) { git clone git@github.com:chaconne67/controlroom.git $d; if ($LASTEXITCODE) { throw 'Download failed' } }; & "$d\.controlroom\install.ps1"
+```
+
+### Windows — 명령 프롬프트(CMD)
+
+CMD에서는 이 한 줄을 사용합니다. 같은 설치기를 호출하고 현재 CMD에도 명령 경로를 등록하므로, 완료 직후 `kitpull`·`kitpush`를 그대로 입력합니다. `.cmd` 확장자를 붙이지 않아도 됩니다.
+
+```cmd
+powershell -NoProfile -Command "$d=$env:USERPROFILE+'\.local\share\controlroom\source'; if (!(Test-Path ($d+'\.git'))) { git clone git@github.com:chaconne67/controlroom.git $d; if ($LASTEXITCODE) { exit $LASTEXITCODE } }; & ($d+'\.controlroom\install.ps1')" && set "PATH=%USERPROFILE%\.local\bin;%PATH%"
 ```
 
 ### PC·노트북의 macOS·Linux — Bash
 
 ```bash
-(set -e; installer="$(mktemp)"; trap 'rm -f "$installer"' EXIT; curl -fsSL -H "Authorization: Bearer $(gh auth token --hostname github.com)" -H "Accept: application/vnd.github.raw+json" "https://api.github.com/repos/chaconne67/controlroom/contents/.controlroom/install.sh?ref=main" -o "$installer"; bash "$installer" windows-control) && . "$HOME/projects/.controlroom/shell/kit-aliases.sh"
+d=~/.local/share/controlroom/source; { [ -d "$d/.git" ] || git clone git@github.com:chaconne67/controlroom.git "$d"; } && bash "$d/.controlroom/install.sh" && . "$HOME/projects/.controlroom/shell/kit-aliases.sh"
 ```
 
 설치기는 최신본을 먼저 받아 확인하고 기존 대상을 압축 백업한 뒤 적용합니다. 한 줄 명령이 끝나면 같은 터미널에서 바로 `kitpull`과 `kitpush`를 사용할 수 있습니다. `kitpull --verify`로 설치 상태를 확인합니다. PC·노트북의 최종 저장 위치는 `~/projects`이며 별도의 `~/controlroom` 체크아웃은 필요하지 않습니다. 이미 설치한 장비에서 다시 실행해도 최신본을 적용합니다.
@@ -39,19 +40,13 @@ d=~/.local/share/controlroom/source; { [ -d "$d/.git" ] || git clone git@github.
 
 한 줄 명령이 끝나면 같은 터미널에서 바로 `kitpull`과 `kitpush`를 사용합니다. 기존 설치나 미완료 설치가 있어도 같은 한 줄을 다시 실행할 수 있습니다. 이후 갱신은 `kitpull`을 사용합니다.
 
-이미 `gh`를 설치하고 위 HTTP 인증 설정을 마친 장비에서는 curl로도 설치할 수 있습니다. `gh`가 없으면 이 명령을 사용하지 않습니다.
-
-```bash
-script=$(curl -fsSL -H "Authorization: Bearer $(gh auth token)" https://raw.githubusercontent.com/chaconne67/controlroom/main/.controlroom/install.sh) && bash -c "$script" -- --main-server && . "$HOME/.local/share/controlroom/source/.controlroom/shell/kit-aliases.sh"
-```
-
 - 공통 원본·도구는 `~/.local/share/controlroom/source`에 보관합니다. 기존 프로젝트 폴더는 그대로 사용합니다.
 - 실제 Git 저장소가 있는 프로젝트만 선택해 `AGENTS.md`·`CLAUDE.md`의 관리 구역과 `.agents/skills`, `.claude/skills`를 갱신합니다. 기존 지침 본문과 개인 스킬은 보존합니다.
 - 프로젝트별 manifest의 스킬과 해당 코드 저장소의 원본 `skills`를 사용합니다. 같은 이름이면 프로젝트 원본을 우선합니다.
 - 제품의 `.git`, 브랜치·원격, 코드, `docs`, 원본 `skills`, 환경·고객 자료는 변경하지 않습니다. Venture를 포함해 제품 저장소를 clone·pull·push하지 않습니다.
 - 이후 `kitpull`과 `kitpush`는 이 모드를 유지합니다. `kitpush`는 별도 Controlroom 원본만 전송하며 제품 코드나 로컬 프로젝트 지침 본문을 수집하지 않습니다.
 
-프로젝트 루트가 다르면 명령 끝에 `--workspace "$HOME/operating-projects"`를 붙입니다. 사용자 HOME 안의 기존 실제 폴더를 지정합니다. 역할명은 기본값 `windows-control`을 사용하므로 입력하지 않아도 됩니다. 에이전트 앱 로그인과 프로젝트 서버 SSH 접근은 각 장비에서 준비합니다. 이 옵션은 에이전트 프로그램 자체를 설치하거나 자동 실행을 활성화하지 않습니다.
+프로젝트 루트가 다르면 위 명령의 `--main-server` 바로 뒤에 `--workspace "$HOME/operating-projects"`를 붙입니다. 사용자 HOME 안의 기존 실제 폴더를 지정합니다. 역할명은 기본값 `windows-control`을 사용하므로 입력하지 않아도 됩니다. 에이전트 앱 로그인과 프로젝트 서버 SSH 접근은 각 장비에서 준비합니다. 이 옵션은 에이전트 프로그램 자체를 설치하거나 자동 실행을 활성화하지 않습니다.
 
 ## 일상 동기화
 

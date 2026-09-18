@@ -23,7 +23,7 @@ try {
         $cachePath = Join-Path $env:USERPROFILE '.local\share\controlroom\tmp'
         New-Item -ItemType Directory -Path $cachePath -Force | Out-Null
         $bootstrapPath = Join-Path $cachePath ('bootstrap-' + [guid]::NewGuid().ToString('N'))
-        & $git.Source clone --branch main --single-branch https://github.com/chaconne67/controlroom.git $bootstrapPath
+        & $git.Source clone --branch main --single-branch git@github.com:chaconne67/controlroom.git $bootstrapPath
         if ($LASTEXITCODE -ne 0) { throw 'Controlroom download failed.' }
         $corePath = Join-Path $bootstrapPath '.controlroom\scripts\controlroom.py'
         $coreArgs += @('--source', $bootstrapPath)
