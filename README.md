@@ -44,6 +44,8 @@ controlroom push "변경 설명"
 
 개발 에이전트는 조정실에서 실행합니다. 원격 프로젝트의 코드·Git·데이터·미디어·빌드·테스트·배포는 기존 서버와 각 프로젝트의 공식 절차를 사용합니다. Venture는 조정실의 별도 로컬 코드 프로젝트입니다. Git/SSH 인증, 앱 로그인, 대화 세션과 기기 고유 기능은 해당 장비에서 관리합니다.
 
+사용자 조정실은 로컬 데스크탑이며 main 서버에는 자동 수정용 조정실을 함께 둘 수 있습니다. 같은 저장소와 설치·동기화 명령을 사용하되, main의 기존 운영 코드 폴더와 조정실 프로젝트 폴더는 별도로 등록합니다. Exdigm은 main의 Codex에서도 SSH로 전용 서버의 debug worktree에 접근합니다. 실제 설치 위치·인증·검증 상태는 [자동 수정 방침](projects/exdigm/docs/operational-error-triage-repair-policy-20260918.md)을 확인합니다.
+
 Venture 업무용 스킬의 원본은 Venture 저장소의 `skills`입니다. 설치와 일상 동기화는 이를 Venture의 `.claude/skills`와 `.agents/skills`에 연결하고 검증합니다. 프로젝트 지침과 고객 자료는 그대로 보존하며, 생성되는 스킬 연결 폴더는 Venture의 `.gitignore`로 제외합니다.
 
 ## 보존과 실패 처리
