@@ -60,6 +60,11 @@ class WorkspaceSyncTests(unittest.TestCase):
             'windows-control', env=self.fixture.env(home))
         self.command(home, 'kitpull')
         self.assertEqual(self.plan(workspace).read_bytes(), b'server plan\n')
+        for tool in ('.agents', '.claude'):
+            skill = workspace / 'venture' / tool / 'skills/venture-example'
+            self.assertFalse(checks.os.path.islink(skill))
+            self.assertEqual((skill / 'SKILL.md').read_bytes(), b'Venture workflow\n')
+            self.assertEqual((skill / 'references/detail.md').read_bytes(), b'Venture reference\n')
         for code, expected in baseline.items():
             self.assertEqual(((code / '.git/index').read_bytes(),
                               run('git', 'rev-parse', 'HEAD', cwd=code).stdout,

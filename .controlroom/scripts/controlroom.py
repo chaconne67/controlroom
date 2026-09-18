@@ -317,7 +317,7 @@ def validate(root):
         if not (root / TOOLKIT / relative).is_file():
             raise RuntimeError(f'Missing installation source: {relative}')
     actual = {p.parent.relative_to(root).as_posix() for p in (root / TOOLKIT / 'skills').glob('*/SKILL.md')}
-    actual |= {p.parent.relative_to(root).as_posix() for p in root.glob('*/skills/*/SKILL.md')}
+    actual |= {p.parent.relative_to(root).as_posix() for name in project_names(root, data) for p in (root / name / 'skills').glob('*/SKILL.md')}
     if actual != set(paths.values()):
         raise RuntimeError('Skill sources and manifest differ')
     for name, dependencies in data['depends_on'].items():
