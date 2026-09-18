@@ -1,5 +1,7 @@
 # CRETOP 회사별 저장과 중단 후 재개
 
+최종 상태(2026-09-18 23:38 KST): 승인된 원래 500개 모두 조회 결과를 보존했고 중앙 DB 저장까지 완료했습니다. 상세 265개 / 검색 결과 없음 235개, 상세 본문 2,120개, 품질 보류 0개입니다. 아래의 수집 중 기록은 당시 상태이며 최종 검증과 복구 경로는 마지막 절을 따릅니다.
+
 2026-09-18 주인님이 회사 한 개의 조회가 끝날 때마다 파일을 저장하고, 재시작하면 저장된 회사 다음부터 이어서 처리하도록 승인했습니다.
 
 ## 목적과 범위
@@ -50,3 +52,17 @@
 - 검증:수집기22개 검사와 기존 fetch의 품질 실패 보류·오류 중단 항목 보류·로컬 결과 재사용·원격 작업 정리 생략 검증. 실제 실행본 hash와 공식 CLI의 checkpoint를 적용 후 확인합니다.
 
 리뷰 관점은 변경 diff의 파일 보존·재개 위치·완료 판정, 직접 소비자의 결과 형식·품질검사입니다. 스타일·상위 구조 확대는 finding으로 취급하지 않습니다.
+
+## 2026-09-18 최종 500개 저장과 DB 회수 복구
+
+재개한 350개는 16:21:07에 수집을 마쳤습니다. 상세 179개 / 검색 결과 없음 171개, 오류 0개이며 상세 179개의 8개 화면, 총 1,432개 본문이 모두 파일에 보존됐습니다. 그러나 당시 저장 컨테이너에 `docs/cretop/schema/cretop_structured_schema_20260708.sql`이 없어 `remote-batch-fetch`가 중단됐습니다. 23:33 확인 때 DB는 기존 150개만 보존돼 있었고, 새 350개 저장은 0개였습니다. 원문과 정제 결과는 PC·main에 남아 있어 재조회가 필요하지 않았습니다.
+
+복구 전 기준선: 서버 main 062b42b의 추적 파일 변경 없음(별도 조정실 지침 폴더·파일의 미추적 상태는 보존), 기존 150개 조회 86 present / 64 absent·상세 86개·본문 688개, 새 350개 DB 저장 0개. 수집 원문·동결 payload·개인 Chrome·인증·운영 웹·Compose 정의·DB 권한을 보호합니다. 중앙 fetch·구조화 코드와 SQL은 5a17fc8 이후 변경되지 않았고, 실행 이미지의 중앙 두 모듈도 서버 source와 같은 hash입니다. 최소 구현 게이트 2단계: 기존 Compose 단발 작업과 `remote-batch-fetch`를 재사용합니다.
+
+`.dockerignore`는 `docs/`를 제외하며 운영 앱 이미지에도 SQL이 없습니다. 따라서 공식 경로는 기존 결과 정제·전송 → evidence 루트 bind → schema 디렉터리 읽기 전용 bind → 같은 run-id의 `remote-batch-fetch` → 읽기 전용 DB 검증입니다. 실행할 때 기존 세 Compose 정의의 `run --rm --no-deps -T --entrypoint python`을 쓰며 `-v /srv/consolidation/data/cretop/detail_collection:/app/docs/cretop/detail_collection`에 `-v /home/chaconne/projects/ceoloan/docs/cretop/schema:/app/docs/cretop/schema:ro`를 함께 지정합니다. 단발 환경의 `CRETOP_LOCAL_DB_HOST=postgres`, `CRETOP_LOCAL_DB_PORT=5432`를 유지합니다. 영구 환경·제품 배포·프로그램 코드·DB 구조는 이번 복구로 변경하지 않았습니다.
+
+저장 전 정제 결과와 main 결과 SHA256 `c25d2dca396dbf0594ebb25a6e555c3990aed1379c5d397e8d823f828cbeaf2a`, 350개 회사 목록 일치, 상세 179개 공식 품질검사 통과·보류 0개를 확인했습니다. 기존 SQL이 요구하는 28개 테이블 / 27개 인덱스 / 2개 추가 칼럼은 모두 DB에 이미 있었습니다. 저장 뒤 같은 결과 SHA와 company 구조 지문 `efae893f7a2a8f3548f998ac3f606b16974a6ae538bca7cf7d14f8b43e770d92`가 유지됐습니다.
+
+같은 run-id의 공식 fetch는 350개 저장·already_saved 0개·deferred 0개로 끝났습니다. main `company_main` primary에서 읽기 전용으로 기존 150개 보존, 새 350개 179 present / 171 absent·상세 179개·본문 1,432개·8개 화면 전체 존재를 확인했습니다. 승인 500개 전체는 265 present / 235 absent·상세 265개·본문 2,120개이며 대상별 중복 조회 기록 0개입니다. `remote-batch-fetch`의 fetch_summary는 main 기존 run 디렉터리에 남았습니다.
+
+현재 완료 상태 정본은 `C:\cretop-local\outbox\20260918_mortgage_detail_350_150806_background_status_db_recovery_20260918_233810.json`이며 기존 500개 index가 이를 가리킵니다. 이전 중단 상태·index·수집 원문·정제 결과는 보존했습니다. 23:38:40 Windows Codex 완료 알림 Show 호출이 정상 반환됐습니다(사용자의 실제 수신·열람은 확인하지 않음). 이 500개에는 추가 수집·재개 작업이 남아 있지 않습니다. 다음 새 배치는 새로운 수집 범위 승인과 동결 대상 선택을 따릅니다.
