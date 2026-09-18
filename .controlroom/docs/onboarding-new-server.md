@@ -11,7 +11,7 @@ gh auth login --hostname github.com --git-protocol https
 gh auth setup-git --hostname github.com
 ```
 
-이후 OS에 맞는 **한 줄만 실행하면 다운로드부터 설치까지 진행**합니다. 비공개 저장소이므로 인증 없는 raw 주소 대신 GitHub 인증을 사용하는 API에서 설치 스크립트를 받습니다. 인증이나 다운로드가 실패하면 설치를 시작하지 않습니다.
+이후 OS에 맞는 **한 줄만 실행하면 다운로드부터 설치까지 진행**합니다. 비공개 저장소이므로 GitHub 인증을 사용해 설치 스크립트를 받습니다. 인증이나 다운로드가 실패하면 설치를 시작하지 않습니다.
 
 새 기기의 앱 로그인·SSH 키·프로젝트 서버 접근은 해당 장비에서 준비합니다. 개발 에이전트는 조정실에서 실행하며 서버의 실제 제품 코드·데이터·배포 경로를 설치기로 옮기지 않습니다.
 
@@ -32,12 +32,12 @@ powershell -NoProfile -ExecutionPolicy Bypass -Command "& ([scriptblock]::Create
 기존 `~/projects/<프로젝트>`에 실제 코드 저장소가 있으면 다음 명령을 사용합니다.
 
 ```bash
-(set -e; installer="$(mktemp)"; trap 'rm -f "$installer"' EXIT; curl -fsSL -H "Authorization: Bearer $(gh auth token --hostname github.com)" -H "Accept: application/vnd.github.raw+json" "https://api.github.com/repos/chaconne67/controlroom/contents/.controlroom/install.sh?ref=main" -o "$installer"; bash "$installer" --main-server windows-control)
+script=$(curl -fsSL -H "Authorization: Bearer $(gh auth token)" https://raw.githubusercontent.com/chaconne67/controlroom/main/.controlroom/install.sh) && bash -c "$script" -- --main-server
 ```
 
 Controlroom 원본·도구는 `~/.local/share/controlroom/source`에 두며 제품 루트에 공통 `.git`을 만들지 않습니다. 실제로 존재하는 프로젝트 Git을 확인해 기존 `AGENTS.md`·`CLAUDE.md`에 관리 구역을 추가하고 `.agents/skills`, `.claude/skills`만 갱신합니다. manifest의 프로젝트 스킬과 제품의 자체 `skills`를 사용하고 동명 스킬은 프로젝트 원본을 우선합니다. 기존 지침 본문·개인 스킬과 코드·Git 전체·docs·원본 skills·환경·고객 자료는 보존합니다. 제품 Git은 clone·pull·push하지 않습니다.
 
-다른 프로젝트 루트는 마지막 실행 부분을 `bash "$installer" --main-server --workspace "$HOME/operating-projects" windows-control`로 바꿉니다. 사용자 HOME 안의 기존 실제 폴더를 지정합니다. 옵션은 저장되므로 이후 명령에 반복해서 입력하지 않습니다. main에 없는 프로젝트 저장소는 생성하지 않습니다. 기존 옛 조정실 폴더도 이동·삭제하지 않습니다. 이 옵션은 에이전트 프로그램 설치·로그인·예약 실행을 대신하지 않습니다.
+다른 프로젝트 루트는 명령 끝에 `--workspace "$HOME/operating-projects"`를 붙입니다. 사용자 HOME 안의 기존 실제 폴더를 지정합니다. 역할명은 기본값 `windows-control`을 사용하므로 입력하지 않아도 됩니다. 옵션은 저장되므로 이후 명령에 반복해서 입력하지 않습니다. main에 없는 프로젝트 저장소는 생성하지 않습니다. 기존 옛 조정실 폴더도 이동·삭제하지 않습니다. 이 옵션은 에이전트 프로그램 설치·로그인·예약 실행을 대신하지 않습니다.
 
 ## 설치 후
 

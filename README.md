@@ -13,7 +13,7 @@ gh auth login --hostname github.com --git-protocol https
 gh auth setup-git --hostname github.com
 ```
 
-이후 OS에 맞는 **한 줄만 실행하면 다운로드부터 설치까지 진행**합니다. 비공개 저장소이므로 인증 없는 raw 주소 대신 GitHub 인증을 사용하는 API에서 설치 스크립트를 받습니다. 인증이나 다운로드가 실패하면 설치를 시작하지 않습니다.
+이후 OS에 맞는 **한 줄만 실행하면 다운로드부터 설치까지 진행**합니다. 비공개 저장소이므로 GitHub 인증을 사용해 설치 스크립트를 받습니다. 인증이나 다운로드가 실패하면 설치를 시작하지 않습니다.
 
 ### Windows — PowerShell
 
@@ -34,7 +34,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -Command "& ([scriptblock]::Create
 기존 `~/projects/<프로젝트>`에서 코드가 운영되고 있으면 다음 한 줄을 실행합니다.
 
 ```bash
-(set -e; installer="$(mktemp)"; trap 'rm -f "$installer"' EXIT; curl -fsSL -H "Authorization: Bearer $(gh auth token --hostname github.com)" -H "Accept: application/vnd.github.raw+json" "https://api.github.com/repos/chaconne67/controlroom/contents/.controlroom/install.sh?ref=main" -o "$installer"; bash "$installer" --main-server windows-control)
+script=$(curl -fsSL -H "Authorization: Bearer $(gh auth token)" https://raw.githubusercontent.com/chaconne67/controlroom/main/.controlroom/install.sh) && bash -c "$script" -- --main-server
 ```
 
 - 공통 원본·도구는 `~/.local/share/controlroom/source`에 보관합니다. 기존 프로젝트 폴더는 그대로 사용합니다.
@@ -43,7 +43,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -Command "& ([scriptblock]::Create
 - 제품의 `.git`, 브랜치·원격, 코드, `docs`, 원본 `skills`, 환경·고객 자료는 변경하지 않습니다. Venture를 포함해 제품 저장소를 clone·pull·push하지 않습니다.
 - 이후 `controlroom pull`, `verify`, `push`는 이 모드를 유지합니다. push는 별도 Controlroom 원본만 전송하며 제품 코드나 로컬 프로젝트 지침 본문을 수집하지 않습니다.
 
-프로젝트 루트가 다르면 마지막 실행 부분을 `bash "$installer" --main-server --workspace "$HOME/operating-projects" windows-control`로 바꿉니다. 사용자 HOME 안의 기존 실제 폴더를 지정합니다. 에이전트 앱 로그인과 프로젝트 서버 SSH 접근은 각 장비에서 준비합니다. 이 옵션은 에이전트 프로그램 자체를 설치하거나 자동 실행을 활성화하지 않습니다.
+프로젝트 루트가 다르면 명령 끝에 `--workspace "$HOME/operating-projects"`를 붙입니다. 사용자 HOME 안의 기존 실제 폴더를 지정합니다. 역할명은 기본값 `windows-control`을 사용하므로 입력하지 않아도 됩니다. 에이전트 앱 로그인과 프로젝트 서버 SSH 접근은 각 장비에서 준비합니다. 이 옵션은 에이전트 프로그램 자체를 설치하거나 자동 실행을 활성화하지 않습니다.
 
 ## 일상 동기화
 

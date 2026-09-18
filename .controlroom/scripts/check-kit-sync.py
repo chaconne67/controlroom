@@ -434,6 +434,24 @@ class WindowsInstallerTests(unittest.TestCase):
 
 @unittest.skipIf(os.name == 'nt', 'Native POSIX installer contract')
 class PosixControlRoomInstallerTests(unittest.TestCase):
+    def test_downloaded_script_string_does_not_use_core_from_current_directory(self):
+        fixture = KitFixture()
+        self.addCleanup(fixture.close)
+        home = fixture.new_home(True)
+        project = home / 'projects/rndlog'
+        run('git', 'init', '--initial-branch=main', project)
+        (project / 'app.py').write_bytes(b'existing code\n')
+        decoy = fixture.root / 'old-toolkit'
+        (decoy / 'scripts').mkdir(parents=True)
+        (decoy / 'scripts/controlroom.py').write_text('raise SystemExit("Old local core must not run")\n')
+        script = (fixture.seed / '.controlroom/install.sh').read_text(encoding='utf-8')
+        run(BASH, '--noprofile', '--norc', '-c', script, '--', '--main-server',
+            cwd=decoy, env=fixture.env(home))
+        self.assertTrue((home / '.local/share/controlroom/source/.git').is_dir())
+        self.assertFalse((home / 'projects/.git').exists())
+        self.assertEqual((project / 'app.py').read_bytes(), b'existing code\n')
+        fixture.kit(home, 'controlroom verify')
+
     def test_control_room_replaces_docs_and_preserves_archived_work(self):
         fixture = KitFixture()
         self.addCleanup(fixture.close)
