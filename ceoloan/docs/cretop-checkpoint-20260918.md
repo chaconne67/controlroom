@@ -66,3 +66,61 @@
 같은 run-id의 공식 fetch는 350개 저장·already_saved 0개·deferred 0개로 끝났습니다. main `company_main` primary에서 읽기 전용으로 기존 150개 보존, 새 350개 179 present / 171 absent·상세 179개·본문 1,432개·8개 화면 전체 존재를 확인했습니다. 승인 500개 전체는 265 present / 235 absent·상세 265개·본문 2,120개이며 대상별 중복 조회 기록 0개입니다. `remote-batch-fetch`의 fetch_summary는 main 기존 run 디렉터리에 남았습니다.
 
 현재 완료 상태 정본은 `C:\cretop-local\outbox\20260918_mortgage_detail_350_150806_background_status_db_recovery_20260918_233810.json`이며 기존 500개 index가 이를 가리킵니다. 이전 중단 상태·index·수집 원문·정제 결과는 보존했습니다. 23:38:40 Windows Codex 완료 알림 Show 호출이 정상 반환됐습니다(사용자의 실제 수신·열람은 확인하지 않음). 이 500개에는 추가 수집·재개 작업이 남아 있지 않습니다. 다음 새 배치는 새로운 수집 범위 승인과 동결 대상 선택을 따릅니다.
+
+## 2026-09-19 텔레그램 알림 연결 변경 잠금
+
+주인님은 PC의 기존 봇 설정 C:\Users\chaconne\Desktop\.env를 사용해 알림이 오도록 수정하라고 승인했습니다. 원래 500개는 DB 저장 완료 상태이며 재조회·재저장하지 않습니다. main source base는 062b42be8e36ede479df3e5c489119971e1b715d입니다. 추적 파일 diff는 없고 .agents/, .claude/, AGENTS.md, CLAUDE.md 미추적 상태는 보존합니다. 조정실 controlroom의 기존 문서 변경 4개와 미추적 RNDLOG 계획도 보존합니다.
+
+원하는 결과는 PC 수집 오류 때 중단 알림, 중앙 품질검사와 회사별 DB 저장이 끝난 뒤 완료 알림, 원래 500개 완료 알림의 실제 전달입니다. 변경 범위는 scripts/cretop_agent.py, cretop_local.py, cretop_detail_collection.py 및 직접 관련 테스트입니다. 보호 불변조건은 원문 checkpoint·회사별 fsync 저장·재개 위치·8개 화면 품질검사·DB 저장 계약·legacy 원격 collect-batch 알림·개인 Chrome·계정·회사 데이터·DB 구조/역할·운영 웹·SMS·예약 작업입니다.
+
+공식 경로: PC collect → 회사별 checkpoint → 성공 시 기존 중앙 remote-batch-fetch → 품질검사 → 기존 save_result의 커밋 → 텔레그램 완료 알림과 별도 발송 기록. PC collect 오류/중앙 저장 오류에서는 보존된 회사 수와 중단 단계로 중단 알림을 보냅니다. 기존 send_telegram_batch_notification과 legacy 메시지는 재사용합니다. 동일한 성공 발송 기록이 있으면 API를 다시 호출하지 않고, 실패한 발송은 알림만 재시도하는 batch-notify에서 처리합니다. 이미 완료된 mortgage 묶음은 batch-notify에 동결 payload를 주고 읽기 전용 DB 조회로 대상·상태·8개 화면을 확인해 알립니다. 새 브라우저 runner·HTTP sender·감시 스케줄은 만들지 않습니다.
+
+최소 구현 게이트: 발송과 메시지는 2단계 기존 함수에서 멈춤. 별도 발송 기록은 3단계 표준 json/pathlib/os로 멈춤. 검색한 기존 JsonResult.write_atomic은 AgentPaths의 고정 outbox 경로와 여러 폴더 생성에 묶여 있고 fsync가 없으며, local.write_result는 도메인 수집 모듈의 책임이므로 shared sender에서 역참조하지 않습니다. 필요한 단일 원자적 발송 기록 기능만 추가하며 새로운 의존성은 없습니다.
+
+기준선 검증은 운영 DB·네트워크와 분리된 Python 3.13 앱 이미지에서 기존 검사 236개 통과(운영 DB용 1개 제외)입니다. 같은 검사와 Ruff를 수정 후 다시 실행합니다. 추가 성공조건은 DB 저장 전 완료 미발송, 중단·부분 DB 저장 보고, 품질검사 보류 시 완료 금지, 발송 성공 기록 재사용, 발송 실패 재시도, 비밀값 비노출, 알림 전용 명령의 DB 쓰기 금지입니다. PC 실행본 hash와 중앙 CLI의 실제 API 성공 응답 및 message_id를 확인합니다. 봇 설정 파일은 필요한 2개 키만 전용 비공개 경로로 전달하고 제품 .env는 바꾸지 않습니다. 중앙 운영 웹 이미지는 배포하지 않고 공식 단발 CLI에서 검증된 저장소를 읽기 전용으로 사용합니다.
+
+### 알림 변경 코드 리뷰 계약
+
+1. 원천: 이번 알림 수정 승인·기존 봇 파일 지정·프로젝트 지침·변경 전 수집/DB/legacy 발송 계약.
+2. 상위 목적: 사실 수집과 중앙 저장의 종료 상태를 기존 수신 대상에 전달; 회사 사실의 생성·판단은 기존 계층 유지.
+3. 경계: base 062b42b 대비 3개 스크립트와 직접 테스트 diff, collect CLI, fetch/notify CLI, sender/receipt 직접 소비자.
+4. 입력: 검증된 로컬 결과, 동결 payload, 기존 Telegram 키 2개; 비밀값은 출력·발송 기록에 넣지 않음.
+5. 절차: checkpoint 또는 DB 커밋 → 종료 상태 확정 → 발송 → 성공/실패 기록; 성공 기록 재사용, 오류 시 기존 예외/보존 상태 유지.
+6. 출력: 기존 수집/DB summary 형식 유지, notification 결과 추가; API 승인과 message_id 기록; DB 저장 성공과 발송 실패 구분.
+7. 보호: 위 보호 불변조건 및 기존 검사 기대값 유지.
+8. 비목표: 브라우저·회사 데이터·DB 구조·제품 배포·SMS·예약 작업 변경, 다른 봇/수신 대상 선택, 500개 재조회.
+9. 근거: 기존 236개 검사, 새 알림 계약 검사, Ruff, 실제 실행본 hash, 읽기 전용 500개 DB 확인, Telegram API 결과와 발송 기록.
+
+리뷰 관점은 변경 diff의 완료/중단 판정·발송 기록·예외, 직접 영향 범위의 checkpoint와 fetch summary·legacy sender·CLI 결과입니다. 상위 구조 개선이나 가상 미래 확장은 finding 범위가 아닙니다.
+
+## 2026-09-19 텔레그램 적용·검증과 재개 정보
+
+기존 설정 파일은 주인님이 지정한 Desktop/.env이며 원본은 수정하지 않았습니다. 필요한 TELEGRAM_BOT_TOKEN·TELEGRAM_CHAT_ID 두 값만 PC C:\cretop-agent\.telegram.env(사용자·SYSTEM·관리자만 허용, 상속 차단)와 main evidence 루트 /srv/consolidation/data/cretop/detail_collection/.telegram.env(0600)에 공급했습니다. 인증·제품 .env·Compose 정의·예약 작업은 변경하지 않았습니다.
+
+코드 base 062b42b → da34127, main ceoloan/main에 push했습니다. PC의 cretop_agent.py와 cretop_local.py 실행본을 같은 source hash로 교체했고 이전 두 파일은 .pre-telegram-20260919로 보존했습니다. 이미 끝난 350개의 공식 collect CLI를 적용 후 실행했을 때 1.17초·종료값0으로 checkpoint를 재사용했으며, 보호 파일7개 hash와 전면 창이 유지됐습니다. 회사 재조회·파일 덮어쓰기·추가 완료 알림은 없었습니다.
+
+기존 검사236개와 알림 계약 추가18개, 총254개 통과(운영 DB용 기존1개 제외), Ruff와 git diff --check 통과. 코드 리뷰 첫 라운드에서 비정상 checkpoint의 .get 호출이 원래 오류를 가릴 수 있는 결함과 fetch/읽기 전용 재알림의 파일 건수 표현 차이로 완료 알림이 중복될 수 있는 결함을 확인·수정했습니다. 해당 입력을 검사에 추가했고 마지막 전체 diff 리뷰에는 승인 finding·열린 계약 질문이 없습니다. 기존 legacy 원격 알림·checkpoint·품질검사·fetch 순서 검사도 유지됐습니다.
+
+실제 단발 CLI는 앱 Python 이미지와 기존 Compose jobs 환경을 사용하되, 저장소 전체를 /workspace/ceoloan에 읽기 전용 bind하고 --workdir를 동일하게 둡니다. /app을 덮으면 기존 운영용 media 볼륨 마운트 지점이 없어 시작되지 않았고, source에 evidence 디렉터리도 없었으므로 저장소의 gitignored docs/cretop/detail_collection 빈 마운트 지점을 만들었습니다. 두 실패는 컨테이너 시작 전이었고 Telegram API 발송은 없었습니다. 최종 경로는 /workspace/ceoloan/docs/cretop/detail_collection에 기존 evidence 루트를 별도 bind합니다. 운영 웹 이미지는 그대로이며, CLI는 전체 검증된 source를 읽으므로 알림 변경이 실제 적용됩니다. SQL 자료도 같은 source의 docs/cretop/schema에서 읽습니다.
+
+중앙 저장 시 사용 경로는 다음과 같습니다. 먼저 위 빈 마운트 지점이 있는지 확인합니다. 같은 이미지·검증 source hash를 사용하며 old Windows로 접속하지 않고 PC가 넘긴 local_uia 결과를 재사용합니다.
+
+```bash
+sudo -n docker compose \
+  -f /srv/consolidation/infra/compose.production.ceoloan.json \
+  -f /srv/consolidation/infra/compose.activate.ceoloan.json \
+  -f /srv/consolidation/infra/compose.jobs.ceoloan.json \
+  run --rm --no-deps -T --entrypoint python --workdir /workspace/ceoloan \
+  -e CRETOP_LOCAL_DB_HOST=postgres -e CRETOP_LOCAL_DB_PORT=5432 \
+  -v /home/chaconne/projects/ceoloan:/workspace/ceoloan:ro \
+  -v /srv/consolidation/data/cretop/detail_collection:/workspace/ceoloan/docs/cretop/detail_collection \
+  web -m scripts.cretop_detail_collection remote-batch-fetch --run-id <run-id>
+```
+
+완료 파일에는 회사별 저장을 먼저 확정하고 중앙 fetch가 DB 저장 후 자동으로 알림을 보냅니다. 수집 CLI는 성공 때 알림을 미리 보내지 않으며, 중단 때 원문과 별도 telegram_stopped 기록을 보존합니다. 중앙 fetch의 예외는 기존 예외를 그대로 유지하면서 이전 커밋 수를 중단 알림으로 보냅니다. 발송 실패는 DB 성공을 되돌리지 않고 notification.sent=false와 error_type으로 기록합니다. 알림 재시도는 위 동일 작업 환경에서 command만 batch-notify로 바꿉니다. --payload-file 없이 기존 fetch_summary를 사용하면 DB를 다시 저장하지 않습니다. 완료 mortgage 묶음은 --payload-file <동결 payload>를 주면 읽기 전용 DB로 대상·사업자번호·상태·8개 화면·중복을 확인합니다. 성공 발송 기록을 재사용하는 동작은 확인됐으며, Telegram 승인 직후 기록 저장 전에 프로세스가 강제 종료되는 구간까지 exactly-once를 보장하지는 않습니다.
+
+원래500개 대상은 기존 part001/002/003과 재개350 payload를 연결해 원래 baseline.selected_business_numbers 500개와 순서까지 일치함을 확인했습니다. 알림용 동결 payload SHA256 638c92aae67409729a9ba3c6a492d6e4bd49d4fc389803edd292063b2b8b09a1, 파일명 20260917_mortgage_detail_500_140241_notification_payload.json입니다. 공식 batch-notify에서 company_main을 read-only로 조회했고 저장500·present265·absent235·본문2120·중복0을 재확인했습니다. 회사 사실·DB 구조의 쓰기는 없었습니다.
+
+2026-09-19 01:24:03 KST 텔레그램 API가 sent=true·message_id=65로 완료 알림을 승인했습니다. 같은 공식 명령을 다시 실행했을 때 read-only 확인 후 reused=true·동일 message_id=65를 반환했고 추가 API 호출은 없었습니다. main의 원래500 run 디렉터리에서 telegram_completed.json을 보존하며, PC에도 C:\cretop-local\outbox\20260917_mortgage_detail_500_140241_telegram_completed.json으로 회수했습니다. 기존500 background_status index에 별도 Telegram 결과를 연결했고 이전 index는 background_status_before_telegram_20260919.json으로 보존했습니다. API 발송 승인까지 확인했으며 실제 사용자 기기의 표시·열람은 확인 대상이 아닙니다.
+
+현재 요청의 남은 변경·배치 실행·감시 작업은 없습니다. 새 수집은 다음 대상 범위를 승인받아 동결하고 기존 hidden browser/collect → 위 중앙 fetch 경로를 사용합니다. 알림 설정만 바뀐다면 주인님이 지정한 원본에서 두 실행 위치를 동기화하고 값을 로그·문서·Git에 쓰지 않습니다.
