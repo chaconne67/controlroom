@@ -2,11 +2,11 @@
 
 ## 동기화 명령의 현재 계약
 
-`controlroom pull`과 `kitpull`은 최신본 확보·검사 → 교체 대상 압축 백업·검사 → 적용·검증 순서입니다. 로컬 변경·미전송 커밋·다른 브랜치가 남아 있어도 백업 후 최신 main으로 갱신합니다. 공유할 변경은 먼저 검토하고 `controlroom push "변경 설명"`으로 저장합니다.
+`kitpull`은 최신본 확보·검사 → 교체 대상 압축 백업·검사 → 적용·검증 순서입니다. 로컬 변경·미전송 커밋·다른 브랜치가 남아 있어도 백업 후 최신 main으로 갱신합니다. 공유할 변경은 먼저 검토하고 `kitpush "변경 설명"`으로 저장합니다.
 
 ```bash
 git -C ~/projects status --short --branch
-controlroom verify
+kitpull --verify
 ```
 
 다운로드나 백업 확인에 실패하면 기존 설치가 유지됩니다. 적용 중 파일 잠금·권한 문제 등이 발생하면 이전 상태를 자동 복구하고 백업 경로를 표시합니다. 원인을 해결한 뒤 같은 설치기 또는 pull을 다시 실행합니다. 복구가 불완전하다고 표시되면 해당 ZIP과 실패 파일을 보존하고 그 원인을 먼저 확인합니다.
@@ -26,10 +26,20 @@ git -C ~/projects diff origin/main...main
 
 ```powershell
 & "$env:USERPROFILE\projects\.controlroom\install.ps1" -Agent windows-control
-Get-Command controlroom, kitpull, kitpush
+Get-Command kitpull, kitpush
 ```
 
 설치기는 기존 사용자 PATH 값을 유지하며 필요한 `.local\bin` 항목만 추가합니다. PowerShell·CMD·Git Bash 명령은 같은 Python 업데이트 경로를 사용합니다.
+
+## Ubuntu 설치 직후 명령이 보이지 않는 경우
+
+설치 전에 열어 둔 Bash 터미널에서는 새 명령 등록을 한 번 읽습니다.
+
+```bash
+source ~/.bashrc
+```
+
+이후 `kitpull`과 `kitpush`를 사용합니다. 새로 로그인한 터미널에는 자동 적용됩니다.
 
 ## Bun Install Fails Because unzip Is Missing
 

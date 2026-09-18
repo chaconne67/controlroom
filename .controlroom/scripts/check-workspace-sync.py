@@ -22,7 +22,7 @@ class WorkspaceSyncTests(unittest.TestCase):
         self.fixture = checks.KitFixture()
         self.addCleanup(self.fixture.close)
 
-    def command(self, home, command='controlroom pull', check=True):
+    def command(self, home, command='kitpull', check=True):
         return self.fixture.kit(home, command, check)
 
     def device(self, spaces=False):
@@ -51,9 +51,9 @@ class WorkspaceSyncTests(unittest.TestCase):
         self.assertTrue((workspace / '.git').is_dir())
         self.assertTrue((workspace / 'venture/.git').is_dir())
         self.assertFalse((home / 'projects/.git').exists())
-        self.command(home, 'controlroom verify')
+        self.command(home, 'kitpull --verify')
         self.plan(workspace).write_bytes(b'server plan\n')
-        self.command(home, 'controlroom push "server checkpoint"')
+        self.command(home, 'kitpush "server checkpoint"')
         self.fixture.install(home, bash=True, workspace=workspace)
         # An installed entrypoint also infers its physical root without flags.
         run(checks.BASH, '--noprofile', '--norc', workspace / '.controlroom/install.sh',
@@ -86,7 +86,7 @@ class WorkspaceSyncTests(unittest.TestCase):
         for target, name in [(repo, 'controlroom'), (repo / 'venture', 'venture')]:
             self.assertEqual(run('git', 'config', '--get', 'remote.origin.url', cwd=target).stdout.strip(),
                              f'git@github.com:chaconne67/{name}.git')
-        self.command(home, 'controlroom verify')
+        self.command(home, 'kitpull --verify')
 
     def test_two_devices_round_trip_tools_planning_and_code(self):
         a, ra = self.device(True)
@@ -97,7 +97,7 @@ class WorkspaceSyncTests(unittest.TestCase):
         (code / 'app.py').write_text('committed code\n')
         run('git', 'add', 'app.py', cwd=code)
         run('git', 'commit', '-m', 'code', cwd=code)
-        self.command(a, 'controlroom push "A checkpoint"')
+        self.command(a, 'kitpush "A checkpoint"')
         self.command(b)
         self.assertEqual(self.plan(ra).read_bytes(), self.plan(rb).read_bytes())
         self.assertEqual((rb / '.controlroom/common.txt').read_text(), 'new tools\n')
@@ -118,7 +118,7 @@ class WorkspaceSyncTests(unittest.TestCase):
         staged = run('git', 'diff', '--cached', '--binary', cwd=code).stdout
         self.plan(repo).write_bytes(b'saved plan\n')
         (repo / '.env').write_text('SYNTHETIC=value\n')
-        self.command(home, 'controlroom push')
+        self.command(home, 'kitpush')
         self.assertEqual(run('git', 'diff', '--cached', '--binary', cwd=code).stdout, staged)
         self.assertEqual((code / 'private.txt').read_text(), 'keep\n')
         self.assertEqual(run('git', '--git-dir', self.fixture.remote, 'show', 'main:rndlog/docs/plan.md').stdout, 'saved plan\n')
@@ -129,7 +129,7 @@ class WorkspaceSyncTests(unittest.TestCase):
         b, rb = self.device()
         (rb / '.controlroom/common.txt').write_text('remote tools\n')
         self.plan(rb).write_bytes(b'latest plan\n')
-        self.command(b, 'controlroom push')
+        self.command(b, 'kitpush')
         before = (ra / '.git/HEAD').read_bytes()
         self.plan(ra).write_bytes(b'local unfinished plan\r\n')
         unique = ra / 'rndlog/docs/.old-hidden'
@@ -147,9 +147,9 @@ class WorkspaceSyncTests(unittest.TestCase):
         a, ra = self.device()
         b, rb = self.device()
         self.plan(ra).write_bytes(b'A decision\n')
-        self.command(a, 'controlroom push')
+        self.command(a, 'kitpush')
         self.plan(rb).write_bytes(b'B decision\n')
-        self.assertNotEqual(self.command(b, 'controlroom push', False).returncode, 0)
+        self.assertNotEqual(self.command(b, 'kitpush', False).returncode, 0)
         self.assertEqual(self.plan(rb).read_bytes(), b'B decision\n')
         self.assertFalse((rb / '.git/rebase-merge').exists())
         self.assertEqual(run('git', 'rev-list', '--left-right', '--count', 'HEAD...origin/main', cwd=rb).stdout.strip(), '1\t1')
@@ -158,7 +158,7 @@ class WorkspaceSyncTests(unittest.TestCase):
         home, repo = self.device()
         self.plan(repo).write_bytes(b'private plan\n')
         run('git', 'remote', 'set-url', 'origin', 'https://github.com/chaconne67/kmh-agent-kit.git', cwd=repo)
-        self.assertNotEqual(self.command(home, 'controlroom push', False).returncode, 0)
+        self.assertNotEqual(self.command(home, 'kitpush', False).returncode, 0)
         self.assertEqual(self.plan(repo).read_bytes(), b'private plan\n')
         self.assertEqual(run('git', '--git-dir', self.fixture.remote, 'show', 'main:rndlog/docs/plan.md').stdout, 'first step\n')
 
@@ -167,7 +167,7 @@ class WorkspaceSyncTests(unittest.TestCase):
         self.plan(repo).write_bytes(b'private plan\n')
         before = run('git', 'rev-parse', 'HEAD', cwd=repo).stdout
         run('git', 'config', 'remote.origin.pushurl', 'https://github.com/unrelated/repo.git', cwd=repo)
-        self.assertNotEqual(self.command(home, 'controlroom push', False).returncode, 0)
+        self.assertNotEqual(self.command(home, 'kitpush', False).returncode, 0)
         self.assertEqual(run('git', 'rev-parse', 'HEAD', cwd=repo).stdout, before)
 
     def test_received_missing_source_fails_before_mutation(self):
@@ -184,7 +184,7 @@ class WorkspaceSyncTests(unittest.TestCase):
         home, repo = self.device()
         self.plan(repo).write_bytes(b'checkpoint\n')
         self.fixture.product_remote = self.fixture.root / 'missing.git'
-        self.assertNotEqual(self.command(home, 'controlroom push', False).returncode, 0)
+        self.assertNotEqual(self.command(home, 'kitpush', False).returncode, 0)
         self.assertEqual(run('git', '--git-dir', self.fixture.remote, 'show', 'main:rndlog/docs/plan.md').stdout, 'checkpoint\n')
 
     def test_other_product_branch_archived_and_latest_main_applied(self):
@@ -216,7 +216,7 @@ class WorkspaceSyncTests(unittest.TestCase):
         index = (repo / '.git/index').read_bytes()
         self.command(home)
         archive = self.fixture.archive(home)
-        self.command(home, f'controlroom restore "{archive}"')
+        self.command(home, f'kitpull --restore "{archive}"')
         self.assertEqual(plan.read_bytes(), b'old local state\r\n')
         self.assertEqual((repo / '.git/index').read_bytes(), index)
         if os.name != 'nt':
@@ -350,7 +350,7 @@ class MainServerTests(unittest.TestCase):
         self.assertTrue((home / 'projects/rndlog/AGENTS.md').read_bytes().startswith(original))
         self.assertEqual((home / 'projects/rndlog/.agents/skills/rndlog-example/SKILL.md').read_bytes(), b'project skill\n')
         self.assertEqual((home / 'projects/venture/.claude/skills/local-skill/SKILL.md').read_bytes(), b'local project skill\n')
-        self.fixture.kit(home, 'controlroom verify')
+        self.fixture.kit(home, 'kitpull --verify')
 
         # A profile/source removed upstream is pruned only from managed placements.
         manifest_path = self.fixture.seed / '.controlroom/manifests/skills.json'
@@ -361,13 +361,13 @@ class MainServerTests(unittest.TestCase):
         shutil.rmtree(self.fixture.seed / 'rndlog/skills/rndlog-example')
         manifest_path.write_text(json.dumps(data))
         self.fixture.commit_seed('remove centrally managed project skill', True)
-        self.fixture.kit(home, 'controlroom pull')
-        self.fixture.kit(home, 'controlroom verify')
+        self.fixture.kit(home, 'kitpull')
+        self.fixture.kit(home, 'kitpull --verify')
         self.assertFalse((home / 'projects/rndlog/.agents/skills/rndlog-example').exists())
         self.assertEqual((home / 'projects/rndlog/.agents/skills/user-skill/SKILL.md').read_bytes(), b'user-owned skill\n')
         self.assertEqual((home / 'projects/rndlog/AGENTS.md').read_bytes().count(b'<!-- controlroom:main-server:begin -->'), 1)
         (source / '.controlroom/common.txt').write_bytes(b'agent tool change\n')
-        self.fixture.kit(home, 'controlroom push "main agent assets"')
+        self.fixture.kit(home, 'kitpush "main agent assets"')
         self.assertEqual(self.protected(home), before)
         self.assertTrue((home / 'projects/rndlog/AGENTS.md').read_bytes().startswith(original))
         self.assertEqual(run('git', '--git-dir', self.fixture.remote, 'show', 'main:.controlroom/common.txt').stdout, 'agent tool change\n')
@@ -408,7 +408,7 @@ class MainServerTests(unittest.TestCase):
         source = home / '.local/share/controlroom/source'
         # Re-enter the installed core without mode/root flags, as an existing install does.
         run(sys.executable, source / '.controlroom/scripts/controlroom.py', 'install', env=self.fixture.env(home))
-        self.fixture.kit(home, 'controlroom verify')
+        self.fixture.kit(home, 'kitpull --verify')
         self.assertFalse((home / 'projects').exists())
         self.assertEqual(local.read_bytes(), b'project-owned override\n')
         for tool in ('.agents', '.claude'):

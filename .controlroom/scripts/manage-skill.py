@@ -44,7 +44,7 @@ def main():
         path.write_bytes(original)
         print(f'[error] {error}', file=sys.stderr)
         return 1
-    print('Manifest updated. Run check-skill-deps.py, then controlroom push.')
+    print('Manifest updated. Run check-skill-deps.py, then kitpush.')
     return 0
 
 

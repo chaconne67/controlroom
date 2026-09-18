@@ -1,10 +1,16 @@
 # controlroom 저장소 통합
 
+## 동기화 명령 통일 — 2026-09-18 후속 지시
+
+사용자 명령은 `kitpull`과 `kitpush`로 통일한다. 확인은 `kitpull --verify`, 백업 복구는 `kitpull --restore <ZIP>`로 같은 명령에서 실행한다. 설치기는 이전 `controlroom` 실행 파일을 압축 백업한 뒤 제거하며 셸 등록과 도움말도 두 명령으로 맞춘다. 아래 과거 실행 기록의 이전 명령 이름은 당시 상태를 설명한다.
+
+기준선은 수정 없는 5c88cd7과 main의 같은 설치 원본이다. 기존 동기화·백업·복구 코드를 재사용하며 코드·Git·개인 스킬 보존 검사를 유지한다. main 적용에서는 설치 원본·명령 등록·관리 지침의 명령 표기를 갱신한다. 사용자가 편집한 전역 지침의 내용, 프로젝트의 기존 지침 본문과 운영 코드·제품 Git은 보존한다. Bash 설치 직후에는 현재 터미널에서 `source ~/.bashrc`를 한 번 실행하거나 새 터미널을 연다.
+
 ## Main 서버의 에이전트 자산만 동기화 — 2026-09-18 후속 지시
 
 주인님은 Ubuntu main의 기존 제품 코드 저장소를 유지하면서 Codex·Claude Code 등에 필요한 지침과 스킬만 추가하는 설치 옵션을 요청했다. 이 설치 모드에서는 아래 과거 기록의 별도 조정실/Venture 이동을 수행하지 않는다. 실제 main 설치는 주인님이 실행하며 이번 작업은 옵션 구현·격리 검증·GitHub 안내 반영이다.
 
-- 진입점은 `install.sh --main-server windows-control`이다. 기본 프로젝트 루트는 `~/projects`이며 `--workspace`로 다른 기존 루트를 지정할 수 있다. 이후 `controlroom pull`, `verify`, `push`는 저장한 모드를 유지한다.
+- 진입점은 `install.sh --main-server windows-control`이다. 기본 프로젝트 루트는 `~/projects`이며 `--workspace`로 다른 기존 루트를 지정할 수 있다. 이후 `kitpull`과 `kitpush`는 저장한 모드를 유지한다.
 - Controlroom 원본과 도구는 `~/.local/share/controlroom/source`의 전용 Git 저장소에 둔다. 제품 루트에 공통 `.git`을 만들지 않는다. main의 기존 `~/controlroom`, `~/controlroom-workspaces`를 이동·삭제하지 않는다.
 - manifest와 실제 Git 저장소를 대조해 존재하는 프로젝트만 연결한다. main에서 직접 확인한 대상은 ceoloan, fundkeeper, rndlog, ziin, venture다. FundKeeper의 master, CEO Loan의 ceoloan 원격을 포함한 제품 Git 전체는 읽기 전용이다. 없는 제품 저장소를 clone하지 않는다.
 - 공통 앱 지침·스킬과 각 프로젝트의 `.agents/skills`, `.claude/skills`만 배치한다. 프로젝트 자체 `skills`가 있는 경우 그 원본도 사용하며 동명 스킬은 프로젝트 원본을 우선한다. 원본 `skills`와 `docs`, 코드·환경·고객 자료는 교체하지 않는다.
@@ -113,11 +119,11 @@ GitHub `chaconne67/controlroom` 저장소 루트를 각 조정실의 `~/projects
 - Venture 전체는 공통 Git의 추적·자동 stage 대상에서 제외하고 자체 원격 저장소로 동기화한다. 옛 공통 Git의 안내 README는 공통 운영 설명으로 보관한다. 기존 Venture 자료·코드·Git 소유권을 바꾸지 않는다.
 - 옛 `kmh-agent-kit` 프로젝트의 운영 계획은 `.controlroom/docs`로 정리한다. 완료된 과거 자료와 provenance는 이력으로 보존하고 새 경로를 안내한다.
 - 전환 완료 후 `~/controlroom`, `~/kmh-agent-kit`, `~/projects/_control-docs`를 활성 원본·호환 링크로 남기지 않는다. 예전 상태는 별도 압축 백업으로 보관한다.
-- 공식 명령은 `controlroom pull`과 `controlroom push`를 유지한다. 기존 `kitpull`/`kitpush` 호환 명령이 필요하면 같은 공식 구현을 호출하고 옛 저장소 디렉터리를 다시 찾는 분기를 두지 않는다.
+- 공식 명령은 `kitpull`과 `kitpush`로 통일한다. 두 명령은 같은 공식 구현을 호출하며 옛 저장소 디렉터리를 다시 찾는 분기를 두지 않는다.
 
 ### 설치·업데이트의 책임과 순서
 
-설치 진입점과 `controlroom pull`이 같은 업데이트 절차를 사용한다. 설치와 이후 갱신에서 기존 자료에 대한 정책이 달라지지 않도록 한다.
+설치 진입점과 `kitpull`이 같은 업데이트 절차를 사용한다. 설치와 이후 갱신에서 기존 자료에 대한 정책이 달라지지 않도록 한다.
 
 1. **확보:** 새 저장소/커밋과 필요한 설치 파일을 임시 위치에 먼저 확보한다. 예상 원격 주소·설치에 필요한 파일·설치기 문법·스킬 의존관계를 확인한 뒤 기존 대상을 변경한다.
 2. **백업:** 이번에 교체할 기존 디렉터리 전체와 설치기가 바꾸는 도구용 파일을 압축 보관한다. 숨김 파일, 미추적 파일, 로컬 변경과 미전송 커밋을 복구할 Git 상태도 포함한다. 백업은 동기화 루트 밖의 `~/backups/controlroom`에 두며 원격 Git에 올리지 않는다.
@@ -128,7 +134,7 @@ GitHub `chaconne67/controlroom` 저장소 루트를 각 조정실의 `~/projects
 
 다운로드·백업 생성·백업 검증이 실패했거나, 접근 권한·사용 중인 파일 때문에 정상 적용/복구가 불가능한 경우는 실제 실행 실패다. 그 경우 기존 상태를 보존하고 필요한 조치를 구체적으로 알린다. 기존 자료의 존재 자체는 실행 실패가 아니다.
 
-`controlroom push`는 검토한 공통 Git 변경과 Venture의 검토된 커밋을 전송하는 책임을 유지한다. pull/update가 오래된 로컬 자료를 최신 원본으로 되돌린다는 이유로 이를 자동 push하거나 강제 push하지 않는다.
+`kitpush`는 검토한 공통 Git 변경과 Venture의 검토된 커밋을 전송하는 책임을 유지한다. pull/update가 오래된 로컬 자료를 최신 원본으로 되돌린다는 이유로 이를 자동 push하거나 강제 push하지 않는다.
 
 교체 단위는 공통 관리 디렉터리, 각 프로젝트의 `docs`·원본 스킬·지침, 해당 도구용 배치 파일과 승인된 Git 추적 코드다. 이 단위의 기존 내용 전체를 압축한 후 최신 내용으로 갱신한다. `~/projects` 아래 모든 파일을 새 clone으로 밀어내는 방식은 사용하지 않는다. 같은 프로젝트 안의 고객 자료·인증·환경·별도 산출물은 기존 위치에서 계속 사용하게 보존한다.
 
@@ -152,7 +158,7 @@ GitHub `chaconne67/controlroom` 저장소 루트를 각 조정실의 `~/projects
 
 ### 실제 경로와 검증
 
-새 공식 경로: 사용자 설치 명령 또는 `controlroom pull` → `~/projects/.controlroom`의 기존 명령/설치기 → 최신 원본 확보 → 교체 대상 전체 압축 백업·확인 → 실제 파일 배치 → 공식 프로젝트 경로 검사 → 성공 또는 이전 상태 복구.
+새 공식 경로: 사용자 설치 명령 또는 `kitpull` → `~/projects/.controlroom`의 기존 명령/설치기 → 최신 원본 확보 → 교체 대상 전체 압축 백업·확인 → 실제 파일 배치 → 공식 프로젝트 경로 검사 → 성공 또는 이전 상태 복구.
 
 수정 전 확인 결과:
 

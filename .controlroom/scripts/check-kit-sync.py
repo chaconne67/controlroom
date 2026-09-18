@@ -251,7 +251,7 @@ class KitSyncTests(unittest.TestCase):
         self.fixture.kit(home, 'kitpull')
         self.assertEqual((repo / 'README.md').read_text(), 'remote update\n')
         self.assertEqual(run('git', 'rev-parse', '--abbrev-ref', '@{upstream}', cwd=repo).stdout.strip(), 'origin/main')
-        self.fixture.kit(home, 'controlroom verify')
+        self.fixture.kit(home, 'kitpull --verify')
 
     def test_standalone_commands_use_same_pull_and_push_paths(self):
         home, repo = self.fixture.clone(spaces=True)
@@ -259,7 +259,7 @@ class KitSyncTests(unittest.TestCase):
         self.fixture.kit(home, 'kitpush "standalone checkpoint"')
         self.fixture.kit(home, 'kitpull')
         self.assertEqual((repo / 'README.md').read_text(), 'standalone\n')
-        self.fixture.kit(home, 'controlroom verify')
+        self.fixture.kit(home, 'kitpull --verify')
 
     def test_raw_bash_installer_clones_then_runs_checked_out_installer(self):
         home = self.fixture.new_home()
@@ -267,17 +267,22 @@ class KitSyncTests(unittest.TestCase):
             input_text=(ROOT / 'install.sh').read_text(encoding='utf-8'))
         self.assertTrue((home / 'projects/.git').is_dir())
         self.assertEqual((home / '.gbrain-agent.md').read_text(), 'rndlog\n')
-        self.fixture.kit(home, 'controlroom verify')
+        self.fixture.kit(home, 'kitpull --verify')
 
     def test_git_bash_installer_uses_same_transaction_with_agent(self):
         home = self.fixture.new_home()
         self.fixture.install(home, 'gram17', bash=True)
         self.assertEqual((home / '.gbrain-agent.md').read_text(), 'gram17\n')
         self.assertTrue((home / '.local/bin/gbrain-gram17').is_file())
-        self.fixture.kit(home, 'controlroom verify')
+        self.fixture.kit(home, 'kitpull --verify')
 
     def test_installer_adds_global_commands_and_preserves_hermes_skills(self):
         home = self.fixture.new_home()
+        command_dir = home / '.local/bin'
+        command_dir.mkdir(parents=True)
+        retired = [command_dir / name for name in ('controlroom', 'controlroom.cmd')]
+        for path in retired:
+            path.write_bytes(b'previous managed command\n')
         foreign = home / '.hermes/skills/example/SKILL.md'
         foreign.parent.mkdir(parents=True)
         foreign.write_text('foreign Hermes skill\n')
@@ -288,7 +293,24 @@ class KitSyncTests(unittest.TestCase):
         self.assertEqual(foreign.read_text(), 'foreign Hermes skill\n')
         self.assertEqual(private.read_text(), 'private system skill\n')
         self.assertEqual((home / '.agents/skills/example/references/detail.md').read_text(), 'supporting file\n')
-        self.fixture.kit(home, 'controlroom verify')
+        for path in retired:
+            self.assertFalse(path.exists())
+            self.assertEqual(self.fixture.backed_up(home, path), b'previous managed command\n')
+        for name in ('kitpull', 'kitpush'):
+            self.assertIn(f'usage: {name}', self.fixture.kit(home, f'{name} --help').stdout)
+        archives = list((home / 'backups/controlroom').iterdir())
+        self.fixture.kit(home, 'kitpull --verify')
+        self.assertEqual(list((home / 'backups/controlroom').iterdir()), archives)
+        run(BASH, '--noprofile', '--norc', '-c',
+            'set -e; controlroom() { return 99; }; alias controlroom=false; '
+            '. "$HOME/projects/.controlroom/shell/kit-aliases.sh"; '
+            'kitpull --verify; ! declare -F controlroom; ! alias controlroom 2>/dev/null',
+            cwd=home, env=self.fixture.env(home))
+        if os.name == 'nt':
+            result = run('powershell.exe', '-NoProfile', '-Command',
+                         'kitpull --help; kitpush --help; exit $LASTEXITCODE', env=self.fixture.env(home))
+            self.assertIn('usage: kitpull', result.stdout)
+            self.assertIn('usage: kitpush', result.stdout)
 
     def test_push_rejects_detached_or_non_main_branch_pull_archives_and_updates(self):
         home, repo = self.fixture.clone()
@@ -329,8 +351,8 @@ class KitSyncTests(unittest.TestCase):
         b, rb = self.fixture.clone('rndlog')
         (ra / 'ceoloan/docs/plan.md').write_text('central plan\n')
         (ra / '.controlroom/common.txt').write_text('updated tool\n')
-        self.fixture.kit(a, 'controlroom push')
-        self.fixture.kit(b, 'controlroom pull')
+        self.fixture.kit(a, 'kitpush')
+        self.fixture.kit(b, 'kitpull')
         self.assertEqual((rb / 'ceoloan/docs/plan.md').read_text(), 'central plan\n')
         self.assertEqual((rb / '.controlroom/common.txt').read_text(), 'updated tool\n')
 
@@ -364,7 +386,10 @@ class EntryPointDocumentationTests(unittest.TestCase):
             self.assertIn('install.ps1', text)
             self.assertIn('install.sh', text)
             self.assertIn('~/projects', text)
-            self.assertIn('controlroom pull', text)
+            self.assertIn('kitpull', text)
+            self.assertIn('kitpush', text)
+            for action in ('pull', 'push', 'verify', 'restore'):
+                self.assertNotIn('controlroom ' + action, text)
         self.assertEqual((ROOT / 'manifests/windows-control-projects.tsv').read_text().count('venture\tgit\t'), 1)
 
 
@@ -395,7 +420,7 @@ class WindowsInstallerTests(unittest.TestCase):
         self.assertFalse(docs.is_junction())
         self.assertTrue((home / 'projects/.git').is_dir())
         self.assertTrue((home / '.bashrc').read_bytes().startswith(private_shell))
-        self.fixture.kit(home, 'controlroom verify')
+        self.fixture.kit(home, 'kitpull --verify')
         import winreg
         with winreg.OpenKey(winreg.HKEY_CURRENT_USER, 'Environment') as key:
             self.assertIn(str(home / '.local/bin'), winreg.QueryValueEx(key, 'Path')[0].split(';'))
@@ -421,7 +446,7 @@ class WindowsInstallerTests(unittest.TestCase):
             while not ready.exists() and time.monotonic() < deadline:
                 time.sleep(.1)
             self.assertTrue(ready.exists())
-            result = self.fixture.kit(home, 'controlroom pull', False)
+            result = self.fixture.kit(home, 'kitpull', False)
             self.assertNotEqual(result.returncode, 0)
             self.assertIn('Previous state restored', result.stdout)
             self.assertEqual(run('git', 'rev-parse', 'HEAD', cwd=repo).stdout, before)
@@ -450,7 +475,7 @@ class PosixControlRoomInstallerTests(unittest.TestCase):
         self.assertTrue((home / '.local/share/controlroom/source/.git').is_dir())
         self.assertFalse((home / 'projects/.git').exists())
         self.assertEqual((project / 'app.py').read_bytes(), b'existing code\n')
-        fixture.kit(home, 'controlroom verify')
+        fixture.kit(home, 'kitpull --verify')
 
     def test_control_room_replaces_docs_and_preserves_archived_work(self):
         fixture = KitFixture()
@@ -463,7 +488,7 @@ class PosixControlRoomInstallerTests(unittest.TestCase):
         self.assertEqual((docs / 'plan.md').read_bytes(), b'first step\r\n', result.stdout + result.stderr)
         self.assertEqual(fixture.backed_up(home, docs / 'plan.md'), b'old work\n')
         self.assertFalse(docs.is_symlink())
-        fixture.kit(home, 'controlroom verify')
+        fixture.kit(home, 'kitpull --verify')
 
 
 class GBrainAccessTests(unittest.TestCase):

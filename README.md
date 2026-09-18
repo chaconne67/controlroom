@@ -27,7 +27,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -Command "& ([scriptblock]::Create
 (set -e; installer="$(mktemp)"; trap 'rm -f "$installer"' EXIT; curl -fsSL -H "Authorization: Bearer $(gh auth token --hostname github.com)" -H "Accept: application/vnd.github.raw+json" "https://api.github.com/repos/chaconne67/controlroom/contents/.controlroom/install.sh?ref=main" -o "$installer"; bash "$installer" windows-control)
 ```
 
-설치기는 최신본을 먼저 받아 확인하고 기존 대상을 압축 백업한 뒤 적용합니다. 설치 후 새 터미널에서 `controlroom verify`로 확인합니다. PC·노트북의 최종 저장 위치는 `~/projects`이며 별도의 `~/controlroom` 체크아웃은 필요하지 않습니다. 이미 설치한 장비에서 다시 실행해도 최신본을 적용합니다.
+설치기는 최신본을 먼저 받아 확인하고 기존 대상을 압축 백업한 뒤 적용합니다. 설치 후 새 터미널에서 `kitpull --verify`로 확인합니다. PC·노트북의 최종 저장 위치는 `~/projects`이며 별도의 `~/controlroom` 체크아웃은 필요하지 않습니다. 이미 설치한 장비에서 다시 실행해도 최신본을 적용합니다.
 
 ### Ubuntu main 서버 — 코드 보존 설치
 
@@ -37,7 +37,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -Command "& ([scriptblock]::Create
 d=~/.local/share/controlroom/source; git clone git@github.com:chaconne67/controlroom.git "$d" && bash "$d/.controlroom/install.sh" --main-server
 ```
 
-이후 갱신은 `controlroom pull`을 사용합니다. 위 경로에 원본만 받아져 있고 설치를 마치지 못했다면 `bash ~/.local/share/controlroom/source/.controlroom/install.sh --main-server`로 이어서 설치합니다.
+설치가 끝나면 현재 Bash 터미널에서 `source ~/.bashrc`를 한 번 실행합니다. 이후 갱신은 `kitpull`을 사용합니다. 위 경로에 원본만 받아져 있고 설치를 마치지 못했다면 `bash ~/.local/share/controlroom/source/.controlroom/install.sh --main-server`로 이어서 설치합니다.
 
 이미 `gh`를 설치하고 위 HTTP 인증 설정을 마친 장비에서는 curl로도 설치할 수 있습니다. `gh`가 없으면 이 명령을 사용하지 않습니다.
 
@@ -49,22 +49,21 @@ script=$(curl -fsSL -H "Authorization: Bearer $(gh auth token)" https://raw.gith
 - 실제 Git 저장소가 있는 프로젝트만 선택해 `AGENTS.md`·`CLAUDE.md`의 관리 구역과 `.agents/skills`, `.claude/skills`를 갱신합니다. 기존 지침 본문과 개인 스킬은 보존합니다.
 - 프로젝트별 manifest의 스킬과 해당 코드 저장소의 원본 `skills`를 사용합니다. 같은 이름이면 프로젝트 원본을 우선합니다.
 - 제품의 `.git`, 브랜치·원격, 코드, `docs`, 원본 `skills`, 환경·고객 자료는 변경하지 않습니다. Venture를 포함해 제품 저장소를 clone·pull·push하지 않습니다.
-- 이후 `controlroom pull`, `verify`, `push`는 이 모드를 유지합니다. push는 별도 Controlroom 원본만 전송하며 제품 코드나 로컬 프로젝트 지침 본문을 수집하지 않습니다.
+- 이후 `kitpull`과 `kitpush`는 이 모드를 유지합니다. `kitpush`는 별도 Controlroom 원본만 전송하며 제품 코드나 로컬 프로젝트 지침 본문을 수집하지 않습니다.
 
 프로젝트 루트가 다르면 명령 끝에 `--workspace "$HOME/operating-projects"`를 붙입니다. 사용자 HOME 안의 기존 실제 폴더를 지정합니다. 역할명은 기본값 `windows-control`을 사용하므로 입력하지 않아도 됩니다. 에이전트 앱 로그인과 프로젝트 서버 SSH 접근은 각 장비에서 준비합니다. 이 옵션은 에이전트 프로그램 자체를 설치하거나 자동 실행을 활성화하지 않습니다.
 
 ## 일상 동기화
 
 ```bash
-controlroom pull
-controlroom push "변경 설명"
-controlroom verify
+kitpull
+kitpush "변경 설명"
 ```
 
-- `pull`: 일반 설치는 지침·도구·계획과 등록된 Venture 코드를 갱신합니다. main 서버 모드는 에이전트 자산만 갱신합니다. 교체 대상의 기존 내용은 먼저 압축 백업합니다.
-- `push`: 검토한 Controlroom 원본을 GitHub로 보내고 앱의 사본을 갱신합니다. 일반 설치는 Venture의 이미 만든 커밋도 전송하지만 main 서버 모드는 제품 Git을 변경하지 않습니다. 충돌하면 rebase를 취소해 로컬 커밋을 보존합니다.
-- `verify`: 실제 폴더 구조와 앱에서 읽는 지침·스킬의 내용이 원본과 같은지 확인합니다.
-- `kitpull`, `kitpush`는 같은 실행 경로를 사용하는 기존 명령입니다.
+- `kitpull`: 일반 설치는 지침·도구·계획과 등록된 Venture 코드를 갱신합니다. main 서버 모드는 에이전트 자산만 갱신합니다. 교체 대상의 기존 내용은 먼저 압축 백업합니다.
+- `kitpush`: 검토한 Controlroom 원본을 GitHub로 보내고 앱의 사본을 갱신합니다. 일반 설치는 Venture의 이미 만든 커밋도 전송하지만 main 서버 모드는 제품 Git을 변경하지 않습니다. 충돌하면 rebase를 취소해 로컬 커밋을 보존합니다.
+
+설치 상태만 확인하려면 `kitpull --verify`를 사용합니다. 파일을 갱신하지 않고 실제 폴더 구조와 앱에서 읽는 지침·스킬의 내용을 검사합니다. Windows·macOS·Linux 모두 같은 두 명령을 사용합니다.
 
 기기를 옮기기 전 현재 계획에 목표·승인 범위, 실제 서버/저장소·브랜치·커밋, 남은 변경, 마지막 검증 결과와 다음 행동을 기록하고 push합니다. 다음 장비에서는 pull 후 계획과 실제 서버 상태를 대조합니다.
 
@@ -95,7 +94,7 @@ main 서버 모드는 위 조정실 구조를 코드 루트에 덮어쓰지 않�
 일반 업데이트는 다운로드한 최신본을 적용하는 것이 목적입니다. 같은 이름의 옛 파일과 최신본에서 없어진 관리 파일은 교체·정리합니다. Venture의 환경 파일·고객 자료·독립 실행 자료, 플러그인·시스템·사용자 개인 스킬과 다른 Hermes의 기존 스킬은 유지합니다. 추가로 과거 상태를 직접 복원할 때:
 
 ```bash
-controlroom restore "백업 ZIP의 전체 경로"
+kitpull --restore "백업 ZIP의 전체 경로"
 ```
 
 복원은 설치기가 교체한 파일과 자신의 Git 상태를 업데이트 전으로 되돌립니다. main 서버 모드의 백업·복구는 제품 Git을 포함하지 않습니다. 일반 설치의 옛 `~/controlroom`, `~/kmh-agent-kit`, `~/projects/_control-docs`는 전환 후 정리하지만 main 서버 모드는 옛 조정실 폴더를 이동·삭제하지 않습니다. 복원 후 새 터미널에서 명령을 실행합니다. GBrain 역할명과 서버 런타임은 기존 운영 계약을 유지합니다.

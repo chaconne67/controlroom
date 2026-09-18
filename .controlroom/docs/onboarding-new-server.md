@@ -35,7 +35,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -Command "& ([scriptblock]::Create
 d=~/.local/share/controlroom/source; git clone git@github.com:chaconne67/controlroom.git "$d" && bash "$d/.controlroom/install.sh" --main-server
 ```
 
-이후 갱신은 `controlroom pull`을 사용합니다. 위 경로에 원본만 받아져 있고 설치를 마치지 못했다면 `bash ~/.local/share/controlroom/source/.controlroom/install.sh --main-server`로 이어서 설치합니다.
+설치가 끝나면 현재 Bash 터미널에서 `source ~/.bashrc`를 한 번 실행합니다. 이후 갱신은 `kitpull`을 사용합니다. 위 경로에 원본만 받아져 있고 설치를 마치지 못했다면 `bash ~/.local/share/controlroom/source/.controlroom/install.sh --main-server`로 이어서 설치합니다.
 
 이미 `gh`를 설치하고 위 HTTP 인증 설정을 마친 장비에서는 curl로도 설치할 수 있습니다. `gh`가 없으면 이 명령을 사용하지 않습니다.
 
@@ -49,13 +49,13 @@ Controlroom 원본·도구는 `~/.local/share/controlroom/source`에 두며 제�
 
 ## 설치 후
 
-새 터미널에서 `controlroom verify`를 실행합니다.
+새 터미널에서 `kitpull --verify`를 실행합니다.
 
 ```bash
-controlroom pull
-controlroom push "변경 설명"
+kitpull
+kitpush "변경 설명"
 ```
 
-설치기는 최신본을 먼저 확보한 뒤 교체할 에이전트 자산을 `~/backups/controlroom`에 압축 백업하고 적용합니다. 적용 실패 시 자동 복구합니다. main 모드의 pull·verify·push는 에이전트 자산만 다루며 제품 Git을 변경하지 않습니다. 프로젝트에서 추가한 지침 본문은 해당 제품 소유로 유지합니다. 공통 자산을 수정·전송하려면 별도 Controlroom 원본을 편집합니다.
+설치기는 최신본을 먼저 확보한 뒤 교체할 에이전트 자산을 `~/backups/controlroom`에 압축 백업하고 적용합니다. 적용 실패 시 자동 복구합니다. main 모드의 `kitpull`·`kitpush`는 에이전트 자산만 다루며 제품 Git을 변경하지 않습니다. 프로젝트에서 추가한 지침 본문은 해당 제품 소유로 유지합니다. 공통 자산을 수정·전송하려면 별도 Controlroom 원본을 편집합니다.
 
-이미 설치한 장비에서는 `controlroom pull`을 사용합니다. 일반 설치의 설치기는 `~/projects/.controlroom`, main 모드는 `~/.local/share/controlroom/source/.controlroom`에 있습니다. 기기를 옮기기 전 계획의 재개 정보를 갱신하고 검토한 변경을 push합니다.
+이미 설치한 장비에서는 `kitpull`을 사용합니다. 일반 설치의 설치기는 `~/projects/.controlroom`, main 모드는 `~/.local/share/controlroom/source/.controlroom`에 있습니다. 기기를 옮기기 전 계획의 재개 정보를 갱신하고 검토한 변경을 push합니다.

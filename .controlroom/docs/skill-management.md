@@ -10,10 +10,10 @@
 
 ```bash
 python ~/projects/.controlroom/scripts/check-skill-deps.py
-controlroom push "변경 이유"
+kitpush "변경 이유"
 ```
 
-push는 원본을 저장·전송하고 앱이 읽는 사본을 갱신합니다. 다른 장비에서는 `controlroom pull`이 백업 후 최신 원본·사본을 함께 갱신합니다. `.agents/skills`, `.claude/skills`, Hermes의 설치기 관리 항목은 실제 복사본이며 연결 폴더가 아닙니다. 시스템 스킬·플러그인·개인 스킬은 별도 소유로 유지합니다. 다른 Hermes가 이미 가진 동명 스킬은 가져오지 않습니다.
+push는 원본을 저장·전송하고 앱이 읽는 사본을 갱신합니다. 다른 장비에서는 `kitpull`이 백업 후 최신 원본·사본을 함께 갱신합니다. `.agents/skills`, `.claude/skills`, Hermes의 설치기 관리 항목은 실제 복사본이며 연결 폴더가 아닙니다. 시스템 스킬·플러그인·개인 스킬은 별도 소유로 유지합니다. 다른 Hermes가 이미 가진 동명 스킬은 가져오지 않습니다.
 
 main 서버 모드의 push 대상은 별도 공유 원본뿐입니다. 제품 저장소의 코드·원본 스킬·기존 지침 본문은 해당 제품의 Git 절차로 관리하며, Controlroom이 자동으로 수집하거나 전송하지 않습니다. 프로젝트 지침은 기존 본문을 유지하고 Controlroom 표시 구역만 갱신합니다.
 
@@ -26,7 +26,7 @@ python ~/projects/.controlroom/scripts/manage-skill.py add <이름> --global
 python ~/projects/.controlroom/scripts/manage-skill.py add <이름> --project <프로젝트>
 python ~/projects/.controlroom/scripts/manage-skill.py rm <이름> --project <프로젝트>
 python ~/projects/.controlroom/scripts/check-skill-deps.py
-controlroom push "배치 변경 이유"
+kitpush "배치 변경 이유"
 ```
 
 의존성·원본 범위를 만족하지 못하는 배치는 저장하지 않고 기존 목록을 복구합니다. 정상 업데이트는 목록에서 빠진 설치기 관리 항목도 백업 후 정리합니다. 코드·권한·실행 경로가 바뀌면 code-review-loop, 스킬 본문이 바뀌면 skill-review를 적용합니다.

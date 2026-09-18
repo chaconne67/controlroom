@@ -285,7 +285,7 @@ case "${1:-}" in
     else die 'Usage: install.sh --new <role> [--dry-run]'; fi ;;
   --register-agent) [ "$#" -eq 2 ] || die 'Expected one role'; register_agent_central "$2" ;;
   --gbrain) [ "$#" -eq 2 ] || die 'Expected one role'; core install "$2" ;;
-  --project) die 'Projects are physical folders under ~/projects. Use controlroom pull to update them.' ;;
+  --project) die 'Projects are physical folders under ~/projects. Use kitpull to update them.' ;;
   -h|--help) core install --help ;;
   '') core install ;;
   --*) die "Unknown option: $1" ;;

@@ -590,12 +590,13 @@ def apply(source, home, agent, products, preserve_config=None, legacy_cleanup=Tr
                 if owned_link(entry) and not any(destination == entry for _, destination in copies):
                     copies.append((None, entry))
     command_dir = home / '.local/bin'
-    command_names = ('controlroom', 'kitpull', 'kitpush')
+    command_names = ('kitpull', 'kitpush')
+    copies.extend((None, command_dir / name) for name in ('controlroom', 'controlroom.cmd'))
     files = dict(project_files)
     command_workspace = project_root if project_root is not None else workspace
     mode_arg = '--main-server ' if project_root is not None else ''
     for name in command_names:
-        action = 'pull ' if name == 'kitpull' else 'push ' if name == 'kitpush' else ''
+        action = 'pull ' if name == 'kitpull' else 'push '
         script = workspace / TOOLKIT / 'scripts/controlroom.py'
         if os.name == 'nt':
             files[command_dir / (name + '.cmd')] = f'@"{sys.executable}" -X utf8 "{script}" --home "{home}" {mode_arg}--workspace "{command_workspace}" {action}%*\r\n'
@@ -703,6 +704,7 @@ def apply(source, home, agent, products, preserve_config=None, legacy_cleanup=Tr
             raise RuntimeError(f'Rollback incomplete: {error}. Recovery archive: {tx.archive}') from error
         raise
     print(f'Applied and verified: {workspace}', flush=True)
+    print('Open a new terminal to use kitpull and kitpush.', flush=True)
 
 
 def verify_copy(source, target):
@@ -898,16 +900,25 @@ def main():
     parser.add_argument('--main-server', action='store_true', help='Sync only agent instructions and skills into existing project repositories')
     sub = parser.add_subparsers(dest='action', required=True)
     for action in ('install', 'pull'):
-        command = sub.add_parser(action)
+        command = sub.add_parser(action, prog='kitpull' if action == 'pull' else f'{parser.prog} install')
         command.add_argument('agent', nargs='?')
         if action == 'install':
             command.add_argument('--source', type=Path)
-    command = sub.add_parser('push')
+        else:
+            options = command.add_mutually_exclusive_group()
+            options.add_argument('--verify', action='store_true', help='Check installed files without updating them')
+            options.add_argument('--restore', type=Path, metavar='ARCHIVE', help='Restore an installation backup')
+    command = sub.add_parser('push', prog='kitpush')
     command.add_argument('message', nargs='?', default='')
     command = sub.add_parser('verify')
     command = sub.add_parser('restore')
     command.add_argument('archive', type=Path)
     args = parser.parse_args()
+    if args.action == 'pull':
+        if args.verify:
+            args.action = 'verify'
+        elif args.restore is not None:
+            args.action, args.archive = 'restore', args.restore
     home = Path(os.path.abspath(args.home))
     own_config = dict(config(own_workspace))
     installed = (own_workspace / '.git').is_dir() and bool(own_config.get('controlroom.installedprofiles'))
