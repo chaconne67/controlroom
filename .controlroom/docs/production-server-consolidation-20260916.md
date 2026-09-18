@@ -906,3 +906,19 @@ Main 실제 사용자 chaconne(1001), ceo-agent(1002), cmo-agent(1003)는 각각
 옛 DB의 기존 암호화 복구 묶음15파일·15,646,350,079bytes와5개 keyring 파일을 Windows `C:\Users\chaconne\.consolidation-recovery\20260918`로 직접 옮겼다. 해당 private 폴더는 현재 Windows 사용자·SYSTEM·Administrators만 접근하도록 보호한다. 원본15파일의 크기·SHA를 전부 대조했고, 옛 서버에 접속하지 않은 Windows GPG로 실제 최신 묶음1개를 복호화해 tar 내용을 읽었다. 같은 서버의 `/mnt/data`만으로 서버 소실에 대비했다고 표현하지 않는다. 최신 연결·Hermes 설정 추가 묶음은 실제 암호화 및 독립 복호화 영수증을 마감 보고서에 기록한다. 정기 서버 외부 백업 자동화를 새로 만든 결과는 아니다.
 
 기존 일일 DB 백업은03:40·최근3일·`/mnt/data/backups/daily`이며20·22절의 전체 복원·누락디스크 거부 증거를 유지한다. 다음 날짜의 예약 결과·주간 Kakao 결과와 실제 Main 재부팅은 이번 점검에서 아직 관측하지 않았다. 옛 서버의 운영 종료와 물리 서버/보관 자료 삭제를 구분한다. 최신 증거는 outputs `운영서버_옛연결종료_Hermes이전_20260918.md/.json`을 따른다.
+
+## 24. 2026-09-18 남은 검증용 복사본·Hermes 브라우저 정리
+
+현재 결과는 이 절이23절의 선택 브라우저 경고와 검증용 복사본 대기를 대체한다. 실제 확인은2026-09-18 22:53 KST다.
+
+Main `/mnt/data/archive/legacy-retirement-recovery-20260918/snapshot`의 생성된 평문 복사본1,526,263,140bytes는 독립 복원 성공 영수증과 암호문 SHA를 다시 대조한 뒤 정리했다. 최신 암호문 SHA256 `bab4e61ab9dbad07ddf6160789f9be43058243be514b3f5a446978302d447331`은 그대로이며 실제3Hermes 기록·인증·공식 설치 전 원본은 보존했다. Windows `C:\Users\chaconne\.consolidation-recovery\20260918\verify-latest-companion`의 생성된 검증 자료1,486,458,444bytes는 자동 승인 검토가 `blocked by policy`로 삭제를 거절해 남아 있다. 명령은 실행되지 않았으며 원래 접근 제한을 유지한다. 전체20260918폴더·offsite 암호문16개·recovery-keyring·복원 영수증은 삭제 대상이 아니다.
+
+chaconne의 관리 실행 링크는 기존 `~/.local/share/uv/tools/browser-use/bin`을 가리켰지만 실제 도구가 빠져 있었다. 공식 `uv tool install browser-use==0.13.7`은 기존 실행 링크 충돌로 종료2였고, 그 링크의 위치를 확인한 뒤 공식 `--force` 재설치로 종료0을 확인했다. Hermes 원본 버전과 config/auth/env/SOUL은 바꾸지 않았다.
+
+ceo-agent/cmo-agent의 원본 Hermes `fa83af3`은 설치된 Browser Use CLI를 자동 선택하지만 화면 없는 서버에서 Chromium을 직접 시작하는 연결이 없다. 두 사용자의 config.yaml에서 `browser.backend: 'off'`만 추가해 공식 내장 browser_* 도구를 선택했다. YAML의 off는 반드시 문자열로 저장한다. 이 값은 브라우저 기능 전체를 끄는 뜻이 아니다. 이미 설치된 원본 Chromium/agent-browser를 사용하며 앱 소스·버전·모델·인증·기억·SOUL은 그대로다. 두 user gateway만 재시작했다.
+
+공식 browser_exec(chaconne) 및 browser_navigate/browser_snapshot(ceo/cmo)에서 https://example.com 접속과 페이지 내용을 실제 확인했다. 시험 브라우저·이름이 정해진 시험 daemon은 종료했다.3gateway active/Result=success/자동 재시작0·Telegram 중복 충돌0, 각 기존 Codex 구독 usage HTTP200,3프로그램 Git clean/원본HEAD, auth/env/SOUL bytes와600권한을 다시 확인했다. 작업 시작의35개 컨테이너는 ID/StartedAt/image/state가 모두 그대로이며 공식 main verify도 종료0이다. 옛4곳은 실행 컨테이너0·제품 Swarm0이고 옛 Hermes3개는 disabled/PID0이다.
+
+추가 백업 암호문에는 이전 browser.backend 미지정 설정이 들어 있다. 해당 고정 버전으로 화면 없는 서버에 복원하면 ceo/cmo에 위 문자열 설정을 적용하며, chaconne의 관리 Browser Use 프로그램은 같은 공식 uv 명령으로 재구축한다. 현재 복구 README에도 이 차이를 기록한다. 암호문/복구 키를 다시 만들거나 인증을 공유하지 않는다.
+
+22:53 현재 시스템 디스크 사용59.87GB·여유147.19GB, 마운트 디스크 사용130.03GB·여유80.20GB다. 다음 실제 예약·주간 Kakao·Main 재부팅은 관측한 결과로 표현하지 않는다. 옛 VM/원본 삭제는 기존 보호 범위를 유지한다. 별도 진행 중인 조정실 설치/폴더 전환은 그 작업에서 다루며, 최신 갱신/업로드 명령은 주인님 결정에 따른 kitpull/kitpush다.
