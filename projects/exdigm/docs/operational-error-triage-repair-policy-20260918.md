@@ -1,6 +1,6 @@
 # 운영 실패 분류·사용자 확인·Codex 자동 수정 방침
 
-작성일: 2026-09-18 KST. 상태: 현행 코드·운영 DB 조회를 근거로 작성한 검토용 계획. 분류 확장, 자동 수정 실행기, 새 예약 실행은 아직 구현·활성화하지 않았다.
+작성일: 2026-09-18 KST. 상태: main 서버의 Codex/controlroom 기반 설치·SSH·공식 동기화 확인, Codex 계정 인증 대기. 분류 확장, 자동 수정 실행기, 새 예약 실행은 아직 구현·활성화하지 않았다.
 
 ## 최신 결정: main 서버의 자동 수정용 조정실 — 2026-09-18
 
@@ -8,15 +8,26 @@
 
 - 자동 수정 실행 장비: main `chaconne@49.247.192.127`. Exdigm 앱·코드는 기존 `chaconne@49.247.202.197`에 유지하며 main의 Codex가 SSH로 공식 debug worktree를 수정·검증한다. 운영 checkout 직접 수정과 검증 없는 배포는 허용하지 않는다.
 - 동기화 정본: 기존 `chaconne67/controlroom` Git과 공용 GBrain. 주소·경로·명령·지침을 다른 설정 묶음으로 복제하지 않는다. Git의 검토된 변경을 push/pull하며 실행 중인 작업에서 지침을 중간에 교체하지 않는다.
-- 설치 구상: main `~/controlroom`에 기존 저장소, `~/controlroom-workspaces/<프로젝트>`에 등록된 조정실 진입 폴더를 둔다. main의 `~/projects/<프로젝트>`는 이미 운영 코드이므로 설치기의 기본 조정실 프로젝트 경로와 충돌시키지 않는다. 기존 `kmh-agent-kit.project.<프로필>` 등록 기능으로 분리한다. 정확한 설치 결과는 아래 실행 기록으로 갱신한다.
+- 실제 설치 위치: main `~/controlroom`에 기존 저장소, `~/controlroom-workspaces/<프로젝트>`에 등록된 조정실 진입 폴더를 뒀다. main의 `~/projects/<프로젝트>`는 이미 운영 코드이므로 설치기의 기본 조정실 프로젝트 경로와 충돌시키지 않았다. 기존 `kmh-agent-kit.project.<프로필>` 등록 기능으로 분리했으며 설치 결과는 아래 실행 기록을 따른다.
 - 기존 `windows-control`은 OS 제한이 없는 설치 호환 등록명이다. GBrain 본체 서비스를 설치하는 기존 `main` 역할과 혼동하지 않는다. 기존 Linux 설치기와 `controlroom pull/push`를 재사용한다.
 - 새 장비의 Codex 로그인, SSH 키와 신뢰할 호스트 키, Git 인증은 파일 지침 동기화와 별개의 실제 접속 조건이다. 비밀값·대화·Windows 전용 설정 전체를 Git으로 동기화하지 않는다. main의 기존 Git/SSH 인증을 먼저 검증해 재사용한다.
 - 동시 수정은 중앙 DB의 작업 소유와 대상 worktree 잠금으로 방지한다. 로컬 사용자의 진행 중 수정이 있으면 서버 에이전트가 덮어쓰지 않고 작업 대기로 남긴다. 자동 실행기 구현 시 두 조정실 모두 같은 소유/잠금 계약을 사용해야 한다.
 - main에는 운영 서비스와 DB도 있으므로 같은 호스트 전체 장애까지 스스로 고칠 수 있는 구조는 아니다. 자동 수정의 시간·메모리·CPU·동시 실행 제한과 중단 지점을 실행기에서 정하고 운영 부하를 보호한다. main 장애의 복구는 로컬 조정실과 기존 외부 복구 경로를 유지한다.
 
-설치 전 직접 확인: main hostname·사용자·x86_64, Codex/controlroom 미설치, 메모리 31GiB 중 available 약 24GiB, 루트 디스크 여유 약 148GiB. 기존 main 제품 저장소는 clean이었다. GitHub controlroom SSH 읽기는 성공했다. main→Exdigm 및 GBrain 호환 SSH 주소는 신뢰 호스트 키가 없어 접속 검증에서 중단됐다. 대상 서버의 기존 신뢰된 연결로 호스트 공개키를 직접 조회해 대조한 뒤 등록하며 StrictHostKeyChecking을 끄지 않는다.
+설치 전 직접 확인: main hostname·사용자·x86_64, Codex/controlroom 미설치, 메모리 31GiB 중 available 약 24GiB, 루트 디스크 여유 약 148GiB. 기존 main 제품 저장소는 clean이었다. GitHub controlroom SSH 읽기는 성공했다. main→Exdigm 및 GBrain 호환 SSH 주소는 신뢰 호스트 키가 없어 처음 접속 검증에서 중단됐다. 대상 서버의 기존 신뢰된 연결로 호스트 공개키를 직접 조회해 대조한 뒤 등록하여 해소했으며 StrictHostKeyChecking을 유지했다.
 
 이번 추가 실행 범위는 조정실 기반 설치·동기화·접속 확인과 지침 정합성이다. 오류 분류/승인/자동 수리 실행기와 반복 예약의 실제 활성화는 앞선 구현 단계로 이어진다. 현재 plan과 다른 작업의 `docs/controlroom-unification.md` 변경은 별개이며 그 진행 중 내용을 보존한다.
+
+### main 설치와 현재 검증 상태
+
+- 공식 standalone 설치기로 로컬과 같은 Codex CLI `0.153.2`를 `/home/chaconne/.local/bin/codex`에 설치했다. Node.js나 제품 의존성은 설치하지 않았다. 새 Bash 로그인 셸에서 `codex`와 `controlroom` 명령이 해석되고 실제 버전·exec 도움말이 정상 반환된다.
+- `/home/chaconne/controlroom`을 기존 GitHub SSH 인증으로 clone하고 기존 Linux 설치기를 `windows-control` 등록으로 실행했다. main의 조정실 진입 폴더 5개는 `/home/chaconne/controlroom-workspaces/{ceoloan,exdigm,fundkeeper,rndlog,ziin}`이다. 설치 manifest가 요구하는 Venture 별도 Git도 `~/projects/venture`에 복원됐으며 실행·배포하지 않았다.
+- 전역 Codex 지침, GBrain 카드, Exdigm 프로젝트 지침·문서·스킬이 같은 controlroom 정본에 연결됐음을 확인했다. 로컬 PC의 공용 카드·Exdigm 지침 배치본도 수정한 정본과 해시가 같다. 상위 지침 변경은 main 역할과 SSH 경로에 한정했고 기존 문제해결·SSP·최소 구현·검증 규칙은 유지했다. 공용 50스킬/프로필 검사는 수정 전후 통과했으며 기존 FundKeeper/TestBed 관계 경고는 같다.
+- main→Exdigm은 기존 main SSH 키로 BatchMode·StrictHostKeyChecking 조건에서 성공했다. main에서 운영 clean main과 debug detached 상태를 읽었다. main→공용 GBrain도 같은 조건에서 운영 프로토콜 조회가 성공했다. 대상 서버의 신뢰된 기존 연결로 직접 확인한 호스트 공개키만 main known_hosts에 추가했으며 기존 내용과 접속 키를 보존했다.
+- main의 실제 `controlroom pull`과 clean 상태의 `controlroom push`가 성공하여 양방향 Git 접근, 설치기 재실행과 등록 경로 보존을 확인했다. main의 운영 코드 4개 저장소의 HEAD와 Git 상태는 설치 전과 같고 `.bashrc/.profile`의 기존 바이트 내용도 보존됐다. 새 연결은 기존 운영 코드의 지침·docs 경로를 덮어쓰지 않았다.
+- 설치 증거와 셸/known_hosts의 변경 전 사본은 main `/home/chaconne/.local/state/controlroom-bootstrap-20260918`에 있다. 이 폴더와 인증값은 공용 Git에 넣지 않는다. 원격 제품 서비스·DB·배포·재시작은 실행하지 않았다.
+- 공용 GBrain의 `project/windows-control-tower-operating-context`, `project/exdigm-operating-context`, `project/exdigm-operational-error-alerts`에 main 조정실의 장기 결정과 정본 문서 참조를 반영했다. 기록 직전 동시 변경이 없음을 확인했고 재조회한 본문이 추가한 내용 및 기존 원문과 정확히 일치함을 검증했다.
+- Codex `login status`는 미로그인이어서 공식 device 인증을 시작하고 주인님께 본인 인증을 요청했다. 인증값을 PC에서 임의 복사하지 않았다. 로그인 완료 후 실제 `codex exec`의 지침 적용·읽기 전용 진단을 검증해야 한다. 설치 파일과 지침 연결 확인은 LLM 실행 성공과 구분한다. 일회용 로그인 코드는 이 문서에 보관하지 않는다.
 
 ## 1. 목표와 이번 작업의 경계
 
@@ -121,7 +132,7 @@
 - 테스트 보호 기준, 자동 승인 정책, AGENTS·스킬, 실행 권한 변경.
 - 영향 범위가 불명확하거나 원래 성공을 검증할 수 없는 수정.
 
-`로컬 수정·검증·커밋`, `운영 배포`, `기존 실패 업무 재처리`의 권한을 구분한다. **초기 제안은 작은 변경의 debug 수정·검증·커밋까지 자동 허용하고, 운영 배포와 운영 데이터 재처리는 기존 승인 경계를 유지하는 것이다.** 자동 운영 반영까지 원하면 이 계획의 실행 정책에 배포 대상·검증·복구 범위를 함께 승인하여 포함할 수 있다. 이미 받은 유효한 승인은 다시 요구하지 않는다. 배포되지 않았거나 원래 업무가 여전히 실패하면 해당 건을 해결 완료로 표시하지 않는다.
+`debug 수정·검증·커밋`, `운영 배포`, `기존 실패 업무 재처리`의 권한을 구분한다. **초기 제안은 작은 변경의 debug 수정·검증·커밋까지 자동 허용하고, 운영 배포와 운영 데이터 재처리는 기존 승인 경계를 유지하는 것이다.** 자동 운영 반영까지 원하면 이 계획의 실행 정책에 배포 대상·검증·복구 범위를 함께 승인하여 포함할 수 있다. 이미 받은 유효한 승인은 다시 요구하지 않는다. 배포되지 않았거나 원래 업무가 여전히 실패하면 해당 건을 해결 완료로 표시하지 않는다.
 
 승인 요청은 “큰 변경입니다”만 남기지 않는다. 확인한 원인, 필요한 변경, 영향을 받는 기능·데이터, 가능한 대안, 하지 않았을 때의 영향, 검증·복구 방법을 검토 가능한 형태로 남긴다. 승인 범위는 건 번호·변경안 개정·기준 커밋·행동 종류에 연결한다. 내용이나 전제가 바뀌면 바뀐 영향만 재검토한다. 일괄 계획 승인이 있는 동일 범위의 구현·검증·리뷰·문서화·커밋마다 재승인하지 않는다.
 
@@ -148,11 +159,11 @@ flowchart TD
 
 ### 실행 위치와 재사용
 
-사용자와 대화하는 Codex는 로컬의 등록된 Exdigm 프로젝트 폴더에서 실행하고, 무인 자동 수정용 Codex는 main의 등록된 조정실 프로젝트 폴더에서 실행한다. 로컬 경로는 `C:\Users\chaconne\projects\exdigm`이며 main의 초기 등록 예정 경로는 `/home/chaconne/controlroom-workspaces/exdigm`이다. 같은 controlroom Git의 전역·프로젝트 지침과 공용·프로젝트 스킬을 사용한다. 각 장비의 실제 인증은 따로 검증한다. Exdigm 전용 서버에는 개발 에이전트를 설치하지 않으며 `/home/chaconne/exdigm-debug` 코드는 어느 조정실에서든 SSH로 수정·검증한다.
+사용자와 대화하는 Codex는 로컬의 등록된 Exdigm 프로젝트 폴더에서 실행하고, 무인 자동 수정용 Codex는 main의 등록된 조정실 프로젝트 폴더에서 실행한다. 로컬 경로는 `C:\Users\chaconne\projects\exdigm`이며 main의 실제 등록 경로는 `/home/chaconne/controlroom-workspaces/exdigm`이다. 같은 controlroom Git의 전역·프로젝트 지침과 공용·프로젝트 스킬을 사용한다. 각 장비의 실제 인증은 따로 검증한다. Exdigm 전용 서버에는 개발 에이전트를 설치하지 않으며 `/home/chaconne/exdigm-debug` 코드는 어느 조정실에서든 SSH로 수정·검증한다.
 
 로컬 `codex --version`은 `0.153.2`였다. `codex exec --help`에서 작업 폴더(`-C`), 비 Git 폴더 허용(`--skip-git-repo-check`), 표준입력, JSONL 이벤트(`--json`), 최종 결과 스키마(`--output-schema`), 마지막 응답 파일(`-o`)을 확인했다. 조정실 폴더는 소스 Git 저장소가 아니므로 해당 실행 옵션을 실제 무변경 시험에서 확인한다. 출력 스키마 지원은 [공식 비대화형 문서](https://developers.openai.com/ko-KR/docs/non-interactive-mode), 전역/프로젝트 지침과 스킬 탐색은 [공식 맞춤 설정 문서](https://developers.openai.com/ko-KR/docs/customization/overview)를 참고한다.
 
-특정 모델을 새로 고정하지 않고 승인된 현재 설정을 따른다. CLI의 로그인 상태·모델 실제 호출·SSH 명령 실행 및 스킬 본문 적용은 이번에 실행 검증하지 않았다. GUI에 지침이 보인다는 사실이나 `--help` 성공을 CLI 적용 증거로 쓰지 않는다. 무변경 사전 실행에서 실제로 읽은 지침·스킬과 적용할 검증 경로를 반환받아야 한다. CLI가 제공하지 않는 앱 도구에 의존하는 스킬은 공식 대체 경로를 확인한 뒤 사용한다.
+특정 모델을 새로 고정하지 않고 승인된 현재 설정을 따른다. main의 CLI 설치·명령 해석과 일반 SSH/GBrain 접근은 검증했으며 Codex 로그인이 남았다. 모델의 실제 호출, Codex 안에서의 SSH 명령 실행 및 스킬 본문 적용은 아직 검증하지 않았다. GUI에 지침이 보인다는 사실이나 `--help` 성공을 CLI 적용 증거로 쓰지 않는다. 무변경 사전 실행에서 실제로 읽은 지침·스킬과 적용할 검증 경로를 반환받아야 한다. CLI가 제공하지 않는 앱 도구에 의존하는 스킬은 공식 대체 경로를 확인한 뒤 사용한다.
 
 ### 문제해결·SSP·최소 구현 적용
 
@@ -172,7 +183,7 @@ main의 자동 수정 실행기는 대상 선택, 독점 처리, Codex 프로세
 
 원인 조회는 기존 조회 전용 DB 경로를 사용한다. 상태/승인/결과 쓰기는 기존 공식 기록 서비스를 확장한 제한된 명령을 사용하고 일반 ORM 쓰기는 열지 않는다. 자동 실행기의 쓰기는 허용된 기록 필드와 대상 번호로 제한한다. 사용자 승인 쓰기와 수리 결과 쓰기의 권한은 구별한다.
 
-**프롬프트만으로 권한을 제한했다고 주장하지 않는다.** 프로세스에 제공한 SSH/DB/파일 권한과 실행 도구 경계가 자동 허용 범위를 실제로 지켜야 한다. 특히 Windows의 파일 sandbox가 SSH 이후 원격 변경 범위를 자동으로 보장하지 않는다. 운영 배포·운영 DB 변경 권한이 진단 실행에 그대로 열리지 않도록 기존 통제를 확인하고 필요한 제한을 구현한다. 제한이 확인되지 않으면 무인 실행을 활성화하지 않는다. 권한 우회 옵션으로 자동화를 성립시키지 않는다.
+**프롬프트만으로 권한을 제한했다고 주장하지 않는다.** 프로세스에 제공한 SSH/DB/파일 권한과 실행 도구 경계가 자동 허용 범위를 실제로 지켜야 한다. 특히 조정실의 파일 sandbox가 SSH 이후 원격 변경 범위를 자동으로 보장하지 않는다. 운영 배포·운영 DB 변경 권한이 진단 실행에 그대로 열리지 않도록 기존 통제를 확인하고 필요한 제한을 구현한다. 제한이 확인되지 않으면 무인 실행을 활성화하지 않는다. 권한 우회 옵션으로 자동화를 성립시키지 않는다.
 
 ## 8. 중복 실행·중단·승인 재개
 
@@ -225,8 +236,10 @@ DB 장애 중에는 기존 오류 감지의 로컬 보존을 유지한다. 새 �
 ## 11. 검토와 재개 정보
 
 - 계획의 의도·현행 코드·권한 경계·성공 조건을 직접 대조했다. 자료 부족을 오류 수집에서 제외하는 현재 구조, 알림 성공/업무 완료의 차이, 기존 행 갱신 누락, 공유 worktree 충돌, 승인과 CLI 실제 권한의 차이를 계획에 반영했다.
-- 이번 확인: 현재 서버 Git·모델·수집/기록 함수·기존 보완 알림·관리 명령, 운영 read-only 집계, 설치된 전역/프로젝트 지침과 Codex CLI 도움말, 공식 OpenAI 문서. CLI 실행·자동 수정·운영 적용의 종단 검증은 아직 하지 않았다.
+- 이번 확인: 현재 서버 Git·모델·수집/기록 함수·기존 보완 알림·관리 명령, 운영 read-only 집계, 설치된 전역/프로젝트 지침과 Codex CLI 도움말, 공식 OpenAI 문서. 후속 지시로 main의 Codex/controlroom 설치·SSH/GBrain 접근·공식 pull/push·운영 코드 보존까지 확인했다. Codex 계정 인증과 실제 모델 실행은 남았으며 자동 수정·운영 적용의 종단 검증은 아직 하지 않았다.
 - 문서 검증: 참조한 세 계획 파일의 존재, 변경 diff의 공백 오류 없음, 기존 오류 문서의 원문 보존과 README의 다른 작업 링크 보존을 확인했다. 공용 GBrain `default:project/exdigm-operational-error-alerts`에 제안/미구현 상태를 기록하고 재조회하여 새 절과 이전 본문 보존을 확인했다.
 - 이번 파일 범위: 이 계획, `docs/README.md`의 링크, `operational-error-alerts-20260914.md`의 최신 방침 연결. CEO Loan의 기존 변경과 동시에 작성 중인 인크루트 계획/README 링크/서버 테스트 변경을 보존한다.
+- main 설치의 추가 파일 범위: controlroom `README.md`, `gbrain-cards/windows-control.md`, `projects/exdigm/AGENTS.md`의 역할·접속 경계와 이 계획의 설치 기록이다. 공통 게이트·설치기 코드는 변경하지 않았다. 별도 작업의 `docs/controlroom-unification.md` 변경을 보존하며 그 구상은 이번 설치에 적용하지 않았다.
 - 현재 미정: 자동 운영 배포까지 허용할 정책 범위, 외부 에이전트의 실제 읽기·승인 반환 경로, main 조정실의 구체적인 반복 호출 방식과 예산, 실제 CLI 권한 제한 방식. 실행 장비는 main으로 결정됐다. 각 조건에 의존하지 않는 분류·기록 구현은 먼저 진행할 수 있다.
 - 다음 구현 시작점: 최신 서버 상태와 진행 중 작업 재조회 → 이 계획의 실행 범위 고정 → 1단계 기준선 검사와 현재 스키마/소비자에 맞춘 필드 확정. 문서 저장을 기능 활성화나 주인님의 변경안 승인으로 해석하지 않는다.
+- 기반 설치의 재개: 주인님의 main Codex device 인증 → `codex login status` 확인 → 등록된 Exdigm 조정실 폴더의 실제 무변경 `codex exec` 검증. 인증 대기와 기능 구현·무인 활성화 대기를 구분한다.
