@@ -169,7 +169,19 @@ GitHub `chaconne67/controlroom` 저장소 루트를 각 조정실의 `~/projects
 완료는 계획 저장이나 코드 변경만으로 판정하지 않는다. 원격 저장소와 현재 PC에 새 실제 구조가 적용되고, 기존 자료가 있는 격리 장비에서 백업 후 갱신 및 실패 복구가 실제로 확인돼야 한다. 아직 접속/확인하지 않은 노트북까지 적용 완료로 보고하지 않는다. 일괄 승인 후 승인된 범위의 구현·검증·리뷰·문서화·커밋은 추가 승인 없이 진행한다.
 
 
-## 구현·검증 상태와 새 서버 의존성 — 2026-09-18
+## 최신 상태와 사용자 담당 변경 — 2026-09-18
+
+이 절의 최신 결정이 아래 이전 시점의 진행 기록보다 우선한다. 주인님은 main 서버에 Codex를 직접 설치했으며, main 조정실 설치도 수동으로 직접 하겠다고 지시했다. 이 작업은 main의 설치·폴더 전환·Venture 이동을 더 실행하지 않는다. PC·노트북의 기본 `~/projects`와 main의 조정실 `~/controlroom-workspaces` 예외, 동일한 내부 구조·압축 후 업데이트 계약은 유지한다.
+
+설치 프로그램은 GitHub 기본 main에 게시됐다. 최종 프로그램 코드 `48d7a22b7849fe3709ef79e126c7e3be613c52ed`의 [Windows·macOS·Linux 공식 경로 검사](https://github.com/chaconne67/controlroom/actions/runs/35321761796)가 모두 통과했다. PR #1은 병합됐다. 독립 Venture의 실제 스킬을 공통 manifest 검사에 잘못 포함하던 결함도 수정하고, 실제 제품 스킬·참조 파일을 포함한 기존 설치·왕복 동기화·복구 검사로 확인했다.
+
+앞선 main 전환 시도는 적용 후 검사 실패로 설치 및 Venture 위치를 자동 복구했다. 읽기 전용 재확인상 조정실 Git은 `/home/chaconne/controlroom`의 `258b25c`, Venture Git은 `/home/chaconne/projects/venture`의 `e06a85b`이며, `/home/chaconne/controlroom-workspaces/.git`은 없다. Codex는 `Logged in using ChatGPT`를 반환한다. 새 루트에 서버 설치를 완료했다고 보고하지 않는다.
+
+주인님 지시에 따라 다른 작업 `Fix Controlroom install commands`를 확인했다. 해당 작업은 비공개 저장소 인증을 사용하는 Linux curl·Windows PowerShell 다운로드/설치 명령과 README·onboarding 안내를 수정·검증 중이다. 현재 로컬 옛 저장소의 설치기는 루트 `install.sh`/`install.ps1`이지만 GitHub 최신본은 `.controlroom/install.sh`/`.controlroom/install.ps1`이므로 최종 명령은 새 경로와 main의 명시적인 workspace 예외로 검증해야 한다. main의 `~/projects` 운영 코드 루트에 기본 설치를 적용하지 않는다.
+
+현재 PC 실제 전환은 아직 실행하지 않았다. 옛 로컬 저장소에 다른 작업의 README/onboarding 및 GBrain 접속·설치기 변경이 생겨, 그 작성 중 상태를 보존하고 게시된 최종본을 통합해야 한다. 재개 순서는 다른 작업의 변경·HEAD/index 상태 재확인 → 새 레이아웃으로 반영된 원격 최신본 확인 → 기존 사용자 작업 전체 백업·보존 → 승인된 공식 PowerShell 설치 → 프로젝트/앱 사본·Git worktree·기억 작업 경로 및 보호 기준선 대조다. 노트북 실제 설치도 미확인이다.
+
+## 구현·검증 상태와 새 서버 의존성 — 2026-09-18 (이전 시점 기록)
 
 주인님은 전체 변경안의 구현·검증·리뷰·커밋·GitHub 반영과 현재 PC 전환을 일괄 승인했다. 격리 worktree의 새 실제 폴더 구조와 표준 Python 단일 설치/pull/push/verify/restore 구현은 GitHub `controlroom/structure-update-20260918` 브랜치에 저장했고, [검토용 PR #1](https://github.com/chaconne67/controlroom/pull/1)에 정리했다. 기본 main 브랜치 게시와 현재 PC 실제 전환은 아직 하지 않았다.
 
