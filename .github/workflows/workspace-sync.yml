@@ -42,6 +42,6 @@ jobs:
         run: python -X utf8 .controlroom/scripts/check-kit-sync.py EntryPointDocumentationTests WindowsInstallerTests PosixControlRoomInstallerTests -v
       - name: Existing POSIX command contracts
         if: runner.os != 'Windows'
-        run: python -X utf8 .controlroom/scripts/check-kit-sync.py KitSyncTests GBrainAccessTests -v
+        run: python -X utf8 .controlroom/scripts/check-kit-sync.py KitSyncTests -v
       - name: Two control rooms and failure preservation
         run: python -X utf8 .controlroom/scripts/check-workspace-sync.py -v

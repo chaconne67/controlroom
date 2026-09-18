@@ -417,7 +417,7 @@ def replace(source, destination, home):
 
 
 def shell_content(path, marker, line):
-    content = path.read_text(encoding='utf-8') if path.is_file() else ''
+    content = path.read_bytes().decode('utf-8') if path.is_file() else ''
     # Replace only our installer block, keeping other shell configuration.
     content = re.sub(r'(?m)^# kmh-agent-kit aliases\r?\n[^\r\n]*\r?\n?', '', content)
     pattern = r'(?m)^# ' + re.escape(marker) + r'\r?\n[^\r\n]*'

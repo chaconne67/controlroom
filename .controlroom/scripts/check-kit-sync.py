@@ -377,14 +377,15 @@ class WindowsInstallerTests(unittest.TestCase):
         docs.mkdir(parents=True)
         (docs / 'plan.md').write_text('old local plan\n')
         (docs / 'old-only.txt').write_bytes(b'unique old data\n')
-        (home / '.bashrc').write_text('# private shell config\nexport EXAMPLE=1\n')
+        private_shell = b'# private shell config\r\nexport EXAMPLE=1\r\n'
+        (home / '.bashrc').write_bytes(private_shell)
         self.fixture.install(home, standalone=True)
         self.assertEqual((docs / 'plan.md').read_bytes(), b'first step\r\n')
         self.assertFalse((docs / 'old-only.txt').exists())
         self.assertEqual(self.fixture.backed_up(home, docs / 'old-only.txt'), b'unique old data\n')
         self.assertFalse(docs.is_junction())
         self.assertTrue((home / 'projects/.git').is_dir())
-        self.assertIn('# private shell config', (home / '.bashrc').read_text())
+        self.assertTrue((home / '.bashrc').read_bytes().startswith(private_shell))
         self.fixture.kit(home, 'controlroom verify')
         import winreg
         with winreg.OpenKey(winreg.HKEY_CURRENT_USER, 'Environment') as key:
@@ -431,8 +432,8 @@ class PosixControlRoomInstallerTests(unittest.TestCase):
         docs = home / 'projects/rndlog/docs'
         docs.mkdir(parents=True)
         (docs / 'plan.md').write_text('old work\n')
-        fixture.install(home, standalone=True)
-        self.assertEqual((docs / 'plan.md').read_bytes(), b'first step\r\n')
+        result = fixture.install(home, standalone=True)
+        self.assertEqual((docs / 'plan.md').read_bytes(), b'first step\r\n', result.stdout + result.stderr)
         self.assertEqual(fixture.backed_up(home, docs / 'plan.md'), b'old work\n')
         self.assertFalse(docs.is_symlink())
         fixture.kit(home, 'controlroom verify')
