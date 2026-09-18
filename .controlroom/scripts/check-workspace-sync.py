@@ -49,7 +49,8 @@ class WorkspaceSyncTests(unittest.TestCase):
         self.fixture.install(home, standalone=True, workspace=workspace)
         self.fixture._configure(workspace)
         self.assertTrue((workspace / '.git').is_dir())
-        self.assertTrue((workspace / 'venture/.git').is_dir())
+        self.assertFalse((workspace / 'venture/.git').exists())
+        self.assertEqual(Path(run('git', 'rev-parse', '--show-toplevel', cwd=workspace / 'venture').stdout.strip()), workspace)
         self.assertFalse((home / 'projects/.git').exists())
         self.command(home, 'kitpull --verify')
         self.plan(workspace).write_bytes(b'server plan\n')
@@ -74,8 +75,7 @@ class WorkspaceSyncTests(unittest.TestCase):
 
     def test_pull_uses_existing_same_repository_ssh_authentication(self):
         home, repo = self.device()
-        for target, remote, name in [(repo, self.fixture.remote, 'controlroom'),
-                                      (repo / 'venture', self.fixture.product_remote, 'venture')]:
+        for target, remote, name in [(repo, self.fixture.remote, 'controlroom')]:
             origin = f'git@github.com:chaconne67/{name}.git'
             run('git', 'remote', 'set-url', 'origin', origin, cwd=target)
             run('git', 'config', f'url.{remote.as_uri()}.insteadOf', origin, cwd=target)
@@ -83,43 +83,40 @@ class WorkspaceSyncTests(unittest.TestCase):
         self.fixture.commit_seed('SSH update', True)
         self.command(home)
         self.assertEqual((repo / '.controlroom/common.txt').read_bytes(), b'updated through SSH\n')
-        for target, name in [(repo, 'controlroom'), (repo / 'venture', 'venture')]:
+        for target, name in [(repo, 'controlroom')]:
             self.assertEqual(run('git', 'config', '--get', 'remote.origin.url', cwd=target).stdout.strip(),
                              f'git@github.com:chaconne67/{name}.git')
         self.command(home, 'kitpull --verify')
 
     def test_pull_migrates_existing_https_origins_without_http_access(self):
         home, repo = self.device()
-        for target, name in [(repo, 'controlroom'), (repo / 'venture', 'venture')]:
+        for target, name in [(repo, 'controlroom')]:
             run('git', 'remote', 'set-url', 'origin', f'https://github.com/chaconne67/{name}.git', cwd=target)
         self.command(home)
-        for target, name in [(repo, 'controlroom'), (repo / 'venture', 'venture')]:
+        for target, name in [(repo, 'controlroom')]:
             self.assertEqual(run('git', 'config', '--get', 'remote.origin.url', cwd=target).stdout.strip(),
                              f'git@github.com:chaconne67/{name}.git')
         self.command(home, 'kitpull --verify')
 
     def test_push_migrates_https_origins_and_push_urls_without_http_access(self):
         home, repo = self.device()
-        for target, name in [(repo, 'controlroom'), (repo / 'venture', 'venture')]:
+        for target, name in [(repo, 'controlroom')]:
             url = f'https://github.com/chaconne67/{name}.git'
             run('git', 'remote', 'set-url', 'origin', url, cwd=target)
             run('git', 'config', 'remote.origin.pushurl', url, cwd=target)
-        # Old installed manifests must also route their registered product through SSH.
-        manifest = repo / '.controlroom/manifests/windows-control-projects.tsv'
-        manifest.write_text(manifest.read_text().replace('git@github.com:', 'https://github.com/'))
         (repo / '.controlroom/common.txt').write_text('SSH publication\n')
         (repo / 'venture/app.py').write_text('reviewed SSH code\n')
         run('git', 'add', 'app.py', cwd=repo / 'venture')
         run('git', 'commit', '-m', 'reviewed SSH code', cwd=repo / 'venture')
         self.command(home, 'kitpush "SSH publication"')
-        for target, name in [(repo, 'controlroom'), (repo / 'venture', 'venture')]:
+        for target, name in [(repo, 'controlroom')]:
             for key in ('remote.origin.url', 'remote.origin.pushurl'):
                 self.assertEqual(run('git', 'config', '--get-all', key, cwd=target).stdout.strip(),
                                  f'git@github.com:chaconne67/{name}.git')
         self.assertEqual(run('git', '--git-dir', self.fixture.remote, 'show',
                              'main:.controlroom/common.txt').stdout, 'SSH publication\n')
-        self.assertEqual(run('git', '--git-dir', self.fixture.product_remote, 'show',
-                             'main:app.py').stdout, 'reviewed SSH code\n')
+        self.assertEqual(run('git', '--git-dir', self.fixture.remote, 'show',
+                             'main:venture/app.py').stdout, 'reviewed SSH code\n')
         self.command(home, 'kitpull --verify')
 
     def test_two_devices_round_trip_tools_planning_and_code(self):
@@ -127,7 +124,7 @@ class WorkspaceSyncTests(unittest.TestCase):
         b, rb = self.device()
         self.plan(ra).write_bytes('다음 단계\r\n검증\n'.encode())
         (ra / '.controlroom/common.txt').write_text('new tools\n')
-        code = a / 'projects/venture'
+        code = a / 'controlroom/venture'
         (code / 'app.py').write_text('committed code\n')
         run('git', 'add', 'app.py', cwd=code)
         run('git', 'commit', '-m', 'code', cwd=code)
@@ -135,7 +132,7 @@ class WorkspaceSyncTests(unittest.TestCase):
         self.command(b)
         self.assertEqual(self.plan(ra).read_bytes(), self.plan(rb).read_bytes())
         self.assertEqual((rb / '.controlroom/common.txt').read_text(), 'new tools\n')
-        self.assertEqual((b / 'projects/venture/app.py').read_text(), 'committed code\n')
+        self.assertEqual((b / 'controlroom/venture/app.py').read_text(), 'committed code\n')
         self.plan(rb).write_bytes(b'B next step\n')
         self.command(b, 'kitpush "compatibility alias"')
         self.command(a, 'kitpull')
@@ -143,18 +140,21 @@ class WorkspaceSyncTests(unittest.TestCase):
         for repo in (ra, rb):
             self.assertEqual(run('git', 'status', '--porcelain', cwd=repo).stdout, '')
 
-    def test_dirty_product_code_preserved_and_planning_saved(self):
+    def test_code_and_planning_published_together_private_data_preserved(self):
         home, repo = self.device()
         code = repo / 'venture'
         (code / 'app.py').write_text('unfinished\n')
-        (code / 'private.txt').write_text('keep\n')
+        (code / 'companies').mkdir()
+        (code / 'companies/private.txt').write_text('keep\n')
         run('git', 'add', 'app.py', cwd=code)
-        staged = run('git', 'diff', '--cached', '--binary', cwd=code).stdout
         self.plan(repo).write_bytes(b'saved plan\n')
         (repo / '.env').write_text('SYNTHETIC=value\n')
         self.command(home, 'kitpush')
-        self.assertEqual(run('git', 'diff', '--cached', '--binary', cwd=code).stdout, staged)
-        self.assertEqual((code / 'private.txt').read_text(), 'keep\n')
+        self.assertEqual(run('git', 'diff', '--cached', '--binary', cwd=code).stdout, '')
+        self.assertEqual((code / 'companies/private.txt').read_text(), 'keep\n')
+        self.assertEqual(run('git', '--git-dir', self.fixture.remote, 'show', 'main:venture/app.py').stdout, 'unfinished\n')
+        tracked = run('git', '--git-dir', self.fixture.remote, 'ls-tree', '-r', '--name-only', 'main').stdout
+        self.assertNotIn('companies/private.txt', tracked)
         self.assertEqual(run('git', '--git-dir', self.fixture.remote, 'show', 'main:rndlog/docs/plan.md').stdout, 'saved plan\n')
         self.assertNotIn('.env', run('git', '--git-dir', self.fixture.remote, 'ls-tree', '--name-only', 'main').stdout.splitlines())
 
@@ -176,6 +176,17 @@ class WorkspaceSyncTests(unittest.TestCase):
         for path, expected in [(self.plan(ra), b'local unfinished plan\r\n'), (unique, b'hidden local work\0'), (ra / '.git/HEAD', before), (ra / '.git/index', index)]:
             self.assertEqual(self.fixture.backed_up(a, path), expected)
         self.assertEqual((ra / '.controlroom/common.txt').read_text(), 'remote tools\n')
+
+    def test_venture_added_and_deleted_code_round_trip_in_single_repository(self):
+        a, ra = self.device()
+        b, rb = self.device()
+        (ra / 'venture/app.py').unlink()
+        (ra / 'venture/replacement.py').write_bytes(b'replacement code\n')
+        self.command(a, 'kitpush "replace Venture code"')
+        self.command(b)
+        self.assertFalse((rb / 'venture/app.py').exists())
+        self.assertEqual((rb / 'venture/replacement.py').read_bytes(), b'replacement code\n')
+        self.assertFalse((rb / 'venture/.git').exists())
 
     def test_plan_conflict_aborts_and_preserves_both_commits(self):
         a, ra = self.device()
@@ -214,11 +225,13 @@ class WorkspaceSyncTests(unittest.TestCase):
         self.assertIn('Invalid physical skill source', result.stderr)
         self.assertEqual(run('git', 'rev-parse', 'HEAD', cwd=repo).stdout, before)
 
-    def test_unavailable_product_remote_keeps_published_planning(self):
+    def test_retired_product_remote_is_never_contacted(self):
         home, repo = self.device()
         self.plan(repo).write_bytes(b'checkpoint\n')
         self.fixture.product_remote = self.fixture.root / 'missing.git'
-        self.assertNotEqual(self.command(home, 'kitpush', False).returncode, 0)
+        self.command(home, 'kitpush')
+        self.command(home, 'kitpull')
+        self.assertFalse((repo / 'venture/.git').exists())
         self.assertEqual(run('git', '--git-dir', self.fixture.remote, 'show', 'main:rndlog/docs/plan.md').stdout, 'checkpoint\n')
 
     def test_other_product_branch_archived_and_latest_main_applied(self):
@@ -229,12 +242,12 @@ class WorkspaceSyncTests(unittest.TestCase):
         (code / '.env').write_text('SYNTHETIC=keep\n')
         (code / 'local-runtime.txt').write_text('local runtime\n')
         run('git', 'config', 'credential.helper', 'synthetic-helper', cwd=code)
-        old_head = (code / '.git/HEAD').read_bytes()
+        old_head = (repo / '.git/HEAD').read_bytes()
         self.command(home)
         self.assertEqual(run('git', 'branch', '--show-current', cwd=code).stdout.strip(), 'main')
         self.assertEqual((code / 'app.py').read_text(), 'initial\n')
         self.assertEqual(self.fixture.backed_up(home, code / 'app.py'), b'unfinished code\n')
-        self.assertEqual(self.fixture.backed_up(home, code / '.git/HEAD'), old_head)
+        self.assertEqual(self.fixture.backed_up(home, repo / '.git/HEAD'), old_head)
         self.assertEqual((code / '.env').read_text(), 'SYNTHETIC=keep\n')
         self.assertEqual((code / 'local-runtime.txt').read_text(), 'local runtime\n')
         self.assertEqual(run('git', 'config', 'credential.helper', cwd=code).stdout.strip(), 'synthetic-helper')
@@ -257,11 +270,11 @@ class WorkspaceSyncTests(unittest.TestCase):
             self.assertEqual((repo / 'rndlog/docs').stat().st_mode & 0o777, 0o700)
             self.assertEqual((repo / '.controlroom/common.txt').stat().st_mode & 0o777, 0o444)
 
-    def test_product_failure_before_backup_preserves_all_local_state(self):
+    def test_download_failure_before_backup_preserves_all_local_state(self):
         home, repo = self.device()
         self.plan(repo).write_bytes(b'ongoing local plan\n')
         before = run('git', 'rev-parse', 'HEAD', cwd=repo).stdout
-        self.fixture.product_remote = self.fixture.root / 'missing.git'
+        self.fixture.remote = self.fixture.root / 'missing.git'
         result = self.command(home, check=False)
         self.assertNotEqual(result.returncode, 0)
         self.assertEqual(self.plan(repo).read_bytes(), b'ongoing local plan\n')
@@ -295,8 +308,8 @@ class WorkspaceSyncTests(unittest.TestCase):
         repo.rename(legacy)
         run('git', 'worktree', 'repair', cwd=legacy)
         self.fixture.install(home, 'rndlog')
-        self.assertFalse(legacy.exists())
-        self.assertIn('/projects/.git/worktrees/', (worktree / '.git').read_text().replace(chr(92), '/'))
+        self.assertTrue(legacy.is_dir())
+        self.assertIn('/controlroom/.git/worktrees/', (worktree / '.git').read_text().replace(chr(92), '/'))
         self.assertEqual(run('git', 'branch', '--show-current', cwd=worktree).stdout.strip(), 'unfinished')
         self.assertEqual(run('git', 'diff', '--cached', '--binary', cwd=worktree).stdout, before)
         self.assertEqual(run('git', 'show', ':rndlog/docs/plan.md', cwd=worktree).stdout, staged)
@@ -320,6 +333,54 @@ class WorkspaceSyncTests(unittest.TestCase):
             self.assertEqual(core.main(), 1)
         self.assertEqual(runtime.read_bytes(), b'written by another process during apply\n')
         self.assertEqual(self.fixture.backed_up(home, runtime), b'before backup\n')
+
+    def test_linked_controlroom_becomes_physical_and_restore_recovers_link(self):
+        home, repo = self.device(True)
+        legacy = home / 'kmh-agent-kit'
+        repo.rename(legacy)
+        (legacy / 'rndlog/docs/plan.md').write_bytes(b'old uncommitted work\n')
+        if os.name == 'nt':
+            run('cmd.exe', '/d', '/c', f'mklink /J "{repo}" "{legacy}"')
+        else:
+            repo.symlink_to(legacy, target_is_directory=True)
+        self.fixture.install(home, standalone=True)
+        self.assertFalse(repo.is_symlink())
+        if hasattr(repo, 'is_junction'):
+            self.assertFalse(repo.is_junction())
+        self.assertEqual((repo / 'rndlog/docs/plan.md').read_bytes(), b'first step\r\n')
+        self.assertEqual((legacy / 'rndlog/docs/plan.md').read_bytes(), b'old uncommitted work\n')
+        archive = self.fixture.archive(home)
+        self.assertEqual(self.fixture.backed_up(home, legacy / 'rndlog/docs/plan.md', archive), b'old uncommitted work\n')
+        self.command(home, f'kitpull --restore "{archive}"')
+        self.assertEqual(repo.resolve(), legacy.resolve())
+        self.assertEqual((repo / 'rndlog/docs/plan.md').read_bytes(), b'old uncommitted work\n')
+
+    def test_nested_venture_git_is_archived_and_single_git_remains(self):
+        home, repo = self.device()
+        code = repo / 'venture'
+        run('git', 'init', '--initial-branch=main', code)
+        self.fixture._configure(code)
+        (code / 'obsolete.py').write_bytes(b'old code\n')
+        run('git', 'add', '-A', cwd=code)
+        run('git', 'commit', '-m', 'legacy Venture repository', cwd=code)
+        head = (code / '.git/HEAD').read_bytes()
+        (code / 'companies').mkdir()
+        (code / 'companies/customer.txt').write_bytes(b'private data\n')
+        self.command(home)
+        self.assertFalse((code / '.git').exists())
+        self.assertFalse((code / 'obsolete.py').exists())
+        self.assertEqual(Path(run('git', 'rev-parse', '--show-toplevel', cwd=code).stdout.strip()), repo)
+        self.assertEqual(self.fixture.backed_up(home, code / '.git/HEAD'), head)
+        self.assertEqual((code / 'companies/customer.txt').read_bytes(), b'private data\n')
+
+    def test_pull_executes_newly_downloaded_installer(self):
+        home, repo = self.device()
+        core = self.fixture.seed / '.controlroom/scripts/controlroom.py'
+        core.write_text(core.read_text() + '\n# New installer revision\n', encoding='utf-8')
+        self.fixture.commit_seed('new installer revision', True)
+        self.command(home)
+        self.assertIn('# New installer revision', (repo / '.controlroom/scripts/controlroom.py').read_text())
+        self.command(home, 'kitpull --verify')
 
 
 class MainServerTests(unittest.TestCase):
@@ -355,8 +416,7 @@ class MainServerTests(unittest.TestCase):
             private.write_bytes(b'user-owned skill\n')
         (home / 'controlroom').mkdir()
         (home / 'controlroom/keep.txt').write_bytes(b'legacy work\n')
-        # Main mode must not contact the Venture product remote, even on push.
-        self.fixture.product_remote = self.fixture.root / 'unavailable-product.git'
+        # The existing operating repositories keep their unreachable product remotes.
         return home
 
     def protected(self, home):
@@ -374,11 +434,17 @@ class MainServerTests(unittest.TestCase):
         before = self.protected(home)
         original = (home / 'projects/rndlog/AGENTS.md').read_bytes()
         self.fixture.install(home, standalone=True, main_server=True)
-        source = home / '.local/share/controlroom/source'
+        source = home / 'controlroom'
         self.fixture._configure(source)
         self.assertTrue((source / '.git').is_dir())
         self.assertFalse((home / 'projects/.git').exists())
         self.assertFalse((source / 'venture/.git').exists())
+        self.assertEqual(Path(run('git', 'rev-parse', '--show-toplevel', cwd=source / 'venture').stdout.strip()), source)
+        self.assertFalse((home / 'projects/exdigm').exists())
+        self.assertEqual((source / 'exdigm/.agents/skills/exdigm-example/SKILL.md').read_bytes(), b'Exdigm skill\n')
+        self.assertEqual((source / 'exdigm/AGENTS.md').read_bytes(), b'remote Exdigm instructions\n')
+        self.assertEqual((source / 'exdigm/docs/README.md').read_bytes(), b'remote project documentation\n')
+        self.assertFalse((source / 'exdigm/docs').is_symlink())
         self.assertEqual(self.protected(home), before)
         self.assertEqual((home / 'controlroom/keep.txt').read_bytes(), b'legacy work\n')
         self.assertTrue((home / 'projects/rndlog/AGENTS.md').read_bytes().startswith(original))
@@ -439,7 +505,7 @@ class MainServerTests(unittest.TestCase):
         if os.name != 'nt':
             (project_root / 'venture/.agents/skills/local-skill').symlink_to('../../skills/local-skill', target_is_directory=True)
         self.fixture.install(home, standalone=True, workspace=project_root, main_server=True)
-        source = home / '.local/share/controlroom/source'
+        source = home / 'controlroom'
         # Re-enter the installed core without mode/root flags, as an existing install does.
         run(sys.executable, source / '.controlroom/scripts/controlroom.py', 'install', env=self.fixture.env(home))
         self.fixture.kit(home, 'kitpull --verify')

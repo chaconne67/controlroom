@@ -99,7 +99,18 @@
     "testbed-base": "testbed/skills/testbed-base",
     "testbed-etf": "testbed/skills/testbed-etf",
     "testbed-rebal-report": "testbed/skills/testbed-rebal-report",
-    "testbed": "testbed/skills/testbed"
+    "testbed": "testbed/skills/testbed",
+    "venture": "venture/skills/venture",
+    "venture-phase1-bootstrap": "venture/skills/venture-phase1-bootstrap",
+    "venture-phase10-portal-save": "venture/skills/venture-phase10-portal-save",
+    "venture-phase2-raw-data": "venture/skills/venture-phase2-raw-data",
+    "venture-phase3-distillation": "venture/skills/venture-phase3-distillation",
+    "venture-phase4-values": "venture/skills/venture-phase4-values",
+    "venture-phase5-problemsolve": "venture/skills/venture-phase5-problemsolve",
+    "venture-phase6-market": "venture/skills/venture-phase6-market",
+    "venture-phase7-startup": "venture/skills/venture-phase7-startup",
+    "venture-phase8-business-summary": "venture/skills/venture-phase8-business-summary",
+    "venture-phase9-portal-ready": "venture/skills/venture-phase9-portal-ready"
   },
   "profiles": {
     "global": [
@@ -159,6 +170,8 @@
         "testbed-etf",
         "testbed-rebal-report"
       ],
+      "gbrain": [],
+      "im-not-ai": [],
       "rndlog": [
         "rndlog",
         "rndlog-design-system"
@@ -169,7 +182,21 @@
         "testbed-base",
         "testbed-etf",
         "testbed-rebal-report"
-      ]
+      ],
+      "venture": [
+        "venture",
+        "venture-phase1-bootstrap",
+        "venture-phase10-portal-save",
+        "venture-phase2-raw-data",
+        "venture-phase3-distillation",
+        "venture-phase4-values",
+        "venture-phase5-problemsolve",
+        "venture-phase6-market",
+        "venture-phase7-startup",
+        "venture-phase8-business-summary",
+        "venture-phase9-portal-ready"
+      ],
+      "ziin": []
     }
   }
 }

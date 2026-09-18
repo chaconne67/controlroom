@@ -105,6 +105,9 @@ def preserve_windows_installer_path(home: Path):
                     winreg.DeleteValue(key, "Path")
                 else:
                     winreg.SetValueEx(key, "Path", 0, value_type, restored)
+                import ctypes
+                ctypes.windll.user32.SendMessageTimeoutW(0xFFFF, 0x1A, 0,
+                    ctypes.c_wchar_p('Environment'), 0x02, 1000, None)
 
 
 class KitFixture:
@@ -124,42 +127,40 @@ class KitFixture:
             destination = toolkit / relative
             destination.parent.mkdir(parents=True, exist_ok=True)
             shutil.copy2(ROOT / relative, destination)
-        contents = {'README.md': 'baseline\n', '.gitignore': '.env*\n*.pem\n/venture/\n**/.agents/\n**/.claude/\n',
+        contents = {'README.md': 'baseline\n', '.gitignore': '/*\n!/.controlroom/\n!/README.md\n!/.gitignore\n!/.gitattributes\n!/rndlog/\n!/ceoloan/\n!/exdigm/\n!/venture/\n.env*\n*.pem\n**/.agents/\n**/.claude/\n',
                     '.gitattributes': '**/docs/** -text\n', '.controlroom/common.txt': 'base\n',
                     '.controlroom/codex/AGENTS.md': 'codex\n', '.controlroom/claude/CLAUDE.md': 'claude\n',
                     'rndlog/AGENTS.md': 'rndlog instructions\n', 'rndlog/CLAUDE.md': 'rndlog instructions\n',
                     'ceoloan/AGENTS.md': 'ceoloan instructions\n',
+                    'exdigm/AGENTS.md': 'remote Exdigm instructions\n', 'exdigm/CLAUDE.md': '@AGENTS.md\n',
+                    'exdigm/docs/README.md': 'remote project documentation\n',
+                    'exdigm/skills/exdigm-example/SKILL.md': 'Exdigm skill\n',
                     'rndlog/docs/plan.md': 'first step\r\n', 'ceoloan/docs/plan.md': 'ceoloan\n',
                     '.controlroom/skills/example/SKILL.md': 'common skill\n',
                     '.controlroom/skills/example/references/detail.md': 'supporting file\n',
-                    'rndlog/skills/rndlog-example/SKILL.md': 'project skill\n'}
+                    'rndlog/skills/rndlog-example/SKILL.md': 'project skill\n',
+                    'venture/app.py': 'initial\n',
+                    'venture/.gitignore': '.env*\ncompanies/\n.agents/\n.claude/\n',
+                    'venture/AGENTS.md': 'Venture instructions\n', 'venture/CLAUDE.md': '@AGENTS.md\n',
+                    'venture/skills/venture-example/SKILL.md': 'Venture workflow\n',
+                    'venture/skills/venture-example/references/detail.md': 'Venture reference\n'}
         for agent in ['main', 'windows-control', 'rndlog', 'gram17']:
             contents[f'.controlroom/gbrain-cards/{agent}.md'] = agent + '\n'
         for relative, content in contents.items():
             path = self.seed / relative
             path.parent.mkdir(parents=True, exist_ok=True)
             path.write_bytes(content.encode('utf-8'))
-        manifest = {'sources': {'example': '.controlroom/skills/example', 'rndlog-example': 'rndlog/skills/rndlog-example'},
-                    'profiles': {'global': ['example'], 'projects': {'rndlog': ['rndlog-example']}},
+        manifest = {'sources': {'example': '.controlroom/skills/example', 'rndlog-example': 'rndlog/skills/rndlog-example', 'exdigm-example': 'exdigm/skills/exdigm-example', 'venture-example': 'venture/skills/venture-example'},
+                    'profiles': {'global': ['example'], 'projects': {'rndlog': ['rndlog-example'], 'exdigm': ['exdigm-example'], 'venture': ['venture-example']}},
                     'depends_on': {'rndlog-example': ['example']}}
         (toolkit / 'manifests').mkdir()
         (toolkit / 'manifests/skills.json').write_text(json.dumps(manifest), encoding='utf-8')
-        (toolkit / 'manifests/windows-control-projects.tsv').write_text('rndlog\tprofile\trndlog\nventure\tgit\tgit@github.com:chaconne67/venture.git\n')
+        (toolkit / 'manifests/windows-control-projects.tsv').write_text('rndlog\tprofile\trndlog\nventure\tcode\tventure\n')
         self.commit_seed('baseline')
         run('git', 'clone', '--bare', self.seed, self.remote)
         run('git', 'remote', 'add', 'origin', self.remote, cwd=self.seed)
         run('git', 'branch', '--set-upstream-to=origin/main', 'main', cwd=self.seed, check=False)
-        product = self.root / 'product-seed'
-        run('git', 'init', '--initial-branch=main', product)
-        self._configure(product)
-        (product / 'app.py').write_text('initial\n')
-        (product / '.gitignore').write_text('.env*\ncompanies/\n.agents/\n.claude/\n')
-        (product / 'skills/venture-example/references').mkdir(parents=True)
-        (product / 'skills/venture-example/SKILL.md').write_bytes(b'Venture workflow\n')
-        (product / 'skills/venture-example/references/detail.md').write_bytes(b'Venture reference\n')
-        run('git', 'add', '-A', cwd=product)
-        run('git', 'commit', '-m', 'baseline', cwd=product)
-        run('git', 'clone', '--bare', product, self.product_remote)
+        # The retired Venture remote deliberately does not exist.
 
     def close(self):
         self.cleanups.close()
@@ -186,7 +187,7 @@ class KitFixture:
                    GIT_CONFIG_VALUE_0='git@github.com:chaconne67/controlroom.git',
                    GIT_CONFIG_KEY_1=f'url.{self.product_remote.as_uri()}.insteadOf',
                    GIT_CONFIG_VALUE_1='git@github.com:chaconne67/venture.git',
-                   PYTHONUTF8='1')
+                   PYTHONUTF8='1', TEMP=str(home / '.tmp'), TMPDIR=(home / '.tmp').as_posix())
         env['PATH'] = str(home / '.local/bin') + os.pathsep + env['PATH']
         return env
 
@@ -194,6 +195,7 @@ class KitFixture:
         self.clone_count += 1
         home = self.root / (f'home-{self.clone_count}' + (' Korean 조정실' if spaces else ''))
         home.mkdir()
+        (home / '.tmp').mkdir()
         if os.name == 'nt':
             self.cleanups.enter_context(preserve_windows_installer_path(home))
         return home
@@ -217,7 +219,7 @@ class KitFixture:
     def clone(self, agent='main', spaces=False):
         home = self.new_home(spaces)
         self.install(home, agent)
-        repo = home / 'projects'
+        repo = home / 'controlroom'
         self._configure(repo)
         if (repo / 'venture/.git').is_dir():
             self._configure(repo / 'venture')
@@ -266,7 +268,7 @@ class KitSyncTests(unittest.TestCase):
         home = self.fixture.new_home()
         run(BASH, '--noprofile', '--norc', '-s', '--', 'rndlog', env=self.fixture.env(home),
             input_text=(ROOT / 'install.sh').read_text(encoding='utf-8'))
-        self.assertTrue((home / 'projects/.git').is_dir())
+        self.assertTrue((home / 'controlroom/.git').is_dir())
         self.assertEqual((home / '.gbrain-agent.md').read_text(), 'rndlog\n')
         self.fixture.kit(home, 'kitpull --verify')
 
@@ -304,7 +306,7 @@ class KitSyncTests(unittest.TestCase):
         self.assertEqual(list((home / 'backups/controlroom').iterdir()), archives)
         run(BASH, '--noprofile', '--norc', '-c',
             'set -e; controlroom() { return 99; }; alias controlroom=false; '
-            '. "$HOME/projects/.controlroom/shell/kit-aliases.sh"; '
+            '. "$HOME/controlroom/.controlroom/shell/kit-aliases.sh"; '
             'kitpull --verify; ! declare -F controlroom; ! alias controlroom 2>/dev/null',
             cwd=home, env=self.fixture.env(home))
         if os.name == 'nt':
@@ -386,7 +388,7 @@ class EntryPointDocumentationTests(unittest.TestCase):
         for text in (readme, onboarding):
             self.assertIn('install.ps1', text)
             self.assertIn('install.sh', text)
-            self.assertIn('~/projects', text)
+            self.assertIn('~/controlroom', text)
             self.assertIn('kitpull', text)
             self.assertIn('kitpush', text)
             self.assertNotIn('gh auth', text)
@@ -394,7 +396,7 @@ class EntryPointDocumentationTests(unittest.TestCase):
             self.assertNotIn('Invoke-RestMethod', text)
             for action in ('pull', 'push', 'verify', 'restore'):
                 self.assertNotIn('controlroom ' + action, text)
-        self.assertEqual((ROOT / 'manifests/windows-control-projects.tsv').read_text().count('venture\tgit\t'), 1)
+        self.assertEqual((ROOT / 'manifests/windows-control-projects.tsv').read_text().count('venture\tcode\tventure'), 1)
 
 
 @unittest.skipUnless(os.name == 'nt', 'Native PowerShell installer contract')
@@ -434,22 +436,21 @@ if ($LASTEXITCODE) { throw 'Command dispatch failed' }
         failed_env = self.fixture.env(failed_home) | {'GIT_CONFIG_COUNT': '0'}
         result = run('powershell.exe', '-NoProfile', '-Command', command, env=failed_env, check=False)
         self.assertNotEqual(result.returncode, 0)
-        for relative in ('projects', '.codex', 'backups'):
+        for relative in ('controlroom', '.codex', 'backups'):
             self.assertFalse((failed_home / relative).exists())
 
-    def test_readme_cmd_one_liner_registers_commands_in_current_cmd(self):
+    def test_powershell_install_registers_commands_for_native_cmd(self):
         home = self.fixture.new_home(True)
         env = self.fixture.env(home)
-        env['PATH'] = os.pathsep.join(p for p in env['PATH'].split(os.pathsep)[1:]
-                                      if not (Path(p) / 'gh.exe').is_file())
+        env['PATH'] = os.pathsep.join(env['PATH'].split(os.pathsep)[1:])
         readme = (ROOT.parent / 'README.md').read_text(encoding='utf-8')
-        command = re.search(r'```cmd\n([^\n]+)\n```', readme)[1]
-        self.assertIn(command, (ROOT / 'docs/onboarding-new-server.md').read_text(encoding='utf-8'))
-        result = run('cmd.exe', '/d', '/c', command
-                     + ' && where kitpull && where kitpush && kitpull --verify && kitpush --help', env=env)
-        resolved_commands = {Path(line).resolve() for line in result.stdout.splitlines() if line.endswith('.cmd')}
-        self.assertIn((home / '.local/bin/kitpull.cmd').resolve(), resolved_commands)
-        self.assertIn((home / '.local/bin/kitpush.cmd').resolve(), resolved_commands)
+        command = re.search(r'```powershell\n([^\n]+)\n```', readme)[1]
+        result = run('powershell.exe', '-NoProfile', '-Command', command +
+                     '; cmd.exe /d /c "where kitpull && where kitpush && kitpull --verify && kitpush --help"; '
+                     'if ($LASTEXITCODE) { throw "CMD commands failed" }', env=env)
+        resolved = {Path(line).resolve() for line in result.stdout.splitlines() if line.endswith('.cmd')}
+        self.assertIn((home / '.local/bin/kitpull.cmd').resolve(), resolved)
+        self.assertIn((home / '.local/bin/kitpush.cmd').resolve(), resolved)
         self.assertIn('Physical layout and installed contents verified.', result.stdout)
         self.assertIn('usage: kitpush', result.stdout)
 
@@ -482,7 +483,7 @@ Write-Output 'CURRENT_SHELL_COMMANDS_READY'
 
     def test_windows_control_restores_project_entrypoints_and_preserves_existing_work(self):
         home = self.fixture.new_home(True)
-        docs = home / 'projects/rndlog/docs'
+        docs = home / 'controlroom/rndlog/docs'
         docs.mkdir(parents=True)
         (docs / 'plan.md').write_text('old local plan\n')
         (docs / 'old-only.txt').write_bytes(b'unique old data\n')
@@ -493,7 +494,7 @@ Write-Output 'CURRENT_SHELL_COMMANDS_READY'
         self.assertFalse((docs / 'old-only.txt').exists())
         self.assertEqual(self.fixture.backed_up(home, docs / 'old-only.txt'), b'unique old data\n')
         self.assertFalse(docs.is_junction())
-        self.assertTrue((home / 'projects/.git').is_dir())
+        self.assertTrue((home / 'controlroom/.git').is_dir())
         self.assertTrue((home / '.bashrc').read_bytes().startswith(private_shell))
         self.fixture.kit(home, 'kitpull --verify')
         import winreg
@@ -562,7 +563,7 @@ class PosixControlRoomInstallerTests(unittest.TestCase):
         script = (fixture.seed / '.controlroom/install.sh').read_text(encoding='utf-8')
         run(BASH, '--noprofile', '--norc', '-c', script, '--', '--main-server',
             cwd=decoy, env=fixture.env(home))
-        self.assertTrue((home / '.local/share/controlroom/source/.git').is_dir())
+        self.assertTrue((home / 'controlroom/.git').is_dir())
         self.assertFalse((home / 'projects/.git').exists())
         self.assertEqual((project / 'app.py').read_bytes(), b'existing code\n')
         fixture.kit(home, 'kitpull --verify')
@@ -571,7 +572,7 @@ class PosixControlRoomInstallerTests(unittest.TestCase):
         fixture = KitFixture()
         self.addCleanup(fixture.close)
         home = fixture.new_home(True)
-        docs = home / 'projects/rndlog/docs'
+        docs = home / 'controlroom/rndlog/docs'
         docs.mkdir(parents=True)
         (docs / 'plan.md').write_text('old work\n')
         result = fixture.install(home, standalone=True)

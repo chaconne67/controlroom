@@ -2,7 +2,7 @@
 
 ## 조정실
 
-- 작업 위치는 현재 조정실 루트의 실제 `ceoloan` 폴더입니다. PC·노트북은 `~/projects/ceoloan`, main 서버 조정실은 `~/controlroom-workspaces/ceoloan`입니다. `~`는 Windows의 `USERPROFILE`, macOS·Linux의 `HOME`입니다.
+- 작업 위치는 현재 조정실 루트의 실제 `ceoloan` 폴더입니다. 모든 OS의 PC·노트북·main 서버 조정실은 `~/controlroom/ceoloan`입니다. `~`는 Windows의 `USERPROFILE`, macOS·Linux의 `HOME`입니다.
 - 개발 에이전트는 선택한 조정실 장비에서만 실행합니다. 아래 서버의 코드·Git·검증·배포 경로는 SSH로 사용하며 제품 기능의 기존 AI·LLM 실행은 보존합니다.
 - 새 세션은 `~/.gbrain-agent.md`를 읽고, 공용 최신 `project/windows-control-tower-operating-context`와 `project/ceoloan-operating-context`를 확인합니다.
 - 아래 Linux 경로와 명령은 명시된 원격 호스트의 셸에서 실행합니다. 조정실 OS에 맞춰 서버 경로를 바꾸거나 운영 코드를 조정실에 복제하지 않습니다.
@@ -47,7 +47,7 @@
 
 ## 서버 코드 작업
 
-- 조정실 진입 폴더는 `C:\Users\chaconne\projects\ceoloan`, main 코드 저장소는 `/home/chaconne/projects/ceoloan`입니다. main의 서버 조정실 진입 폴더는 `/home/chaconne/controlroom-workspaces/ceoloan`입니다. 조정실은 지침·스킬·기획의 진입점이고 서버 폴더는 실제 `.git`과 코드를 가진 독립 저장소입니다.
+- 조정실 진입 폴더는 `C:\Users\chaconne\controlroom\ceoloan`, main 코드 저장소는 `/home/chaconne/projects/ceoloan`입니다. main의 서버 조정실 진입 폴더는 `/home/chaconne/controlroom/ceoloan`입니다. 조정실은 지침·스킬·기획의 진입점이고 서버 폴더는 실제 `.git`과 코드를 가진 독립 저장소입니다.
 - main의 이 폴더에서 해당 프로젝트의 코드를 수정·검증하고, 이번 변경 파일만 커밋한 뒤 기존 `ceoloan`의 `main` 브랜치로 푸시합니다. 경로 이동을 이유로 Git 저장소·브랜치·원격을 다시 만들지 않습니다.
 
 ```text

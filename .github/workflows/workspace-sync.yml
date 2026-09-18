@@ -5,6 +5,7 @@ on:
     paths:
       - '.github/workflows/workspace-sync.yml'
       - '.controlroom/**'
+      - 'venture/**'
       - '*/docs/**'
       - '*/skills/**'
       - '*/AGENTS.md'

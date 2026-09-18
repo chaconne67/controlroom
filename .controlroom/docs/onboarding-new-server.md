@@ -1,56 +1,44 @@
-# Controlroom 장비 준비
+# 새 조정실 설치
 
-PC·노트북의 조정실 루트는 `~/projects`이며 공통 도구는 `~/projects/.controlroom`에 둡니다. Ubuntu main 서버는 아래 `--main-server` 옵션으로 기존 코드 저장소에 지침·스킬만 추가합니다. Windows의 `~`는 USERPROFILE, macOS·Linux는 HOME입니다.
+모든 조정실을 사용자 폴더 아래 **`controlroom/<프로젝트>`**에 설치합니다. Windows는 `%USERPROFILE%\controlroom`, macOS·Linux·Ubuntu main은 `~/controlroom`입니다. 각 프로젝트의 지침·스킬·문서는 실제 폴더에 있고 GitHub와 같은 상대경로를 사용합니다.
 
-Git, Python 3.12 이상과 GitHub SSH 키 인증을 준비합니다. 인증은 사용자가 설정하며, 설치기는 키나 인증 설정을 변경하지 않습니다. Controlroom 저장소의 읽기 권한이 필요하고 PC·노트북의 일반 설치에는 Venture 저장소 읽기 권한도 필요합니다. Windows는 Git for Windows와 PowerShell, Linux·macOS는 Bash를 사용합니다.
+## 한 줄 설치
 
-**설치·`kitpull`·`kitpush` 모두 Git SSH를 사용합니다.** `gh`나 HTTP 토큰은 필요 없습니다. OS에 맞는 **한 줄만 실행하면 다운로드부터 설치와 명령 등록까지 진행**합니다. 인증이나 다운로드가 실패하면 설치를 시작하지 않습니다.
+Git, Python 3.12 이상, GitHub SSH 키 접근을 준비합니다. 인증은 사용자가 관리합니다. Controlroom 저장소의 읽기 권한이 필요하며, `kitpush`에는 해당 저장소의 쓰기 권한이 필요합니다.
 
-새 기기의 앱 로그인·SSH 키·프로젝트 서버 접근은 해당 장비에서 준비합니다. 개발 에이전트는 조정실에서 실행하며 서버의 실제 제품 코드·데이터·배포 경로를 설치기로 옮기지 않습니다.
+### Windows — PowerShell
 
-## Windows PowerShell
+PowerShell에서 다음 한 줄을 실행합니다. 설치 직후 같은 PowerShell과 새 명령 프롬프트(CMD)에서 `kitpull`, `kitpush`를 사용합니다.
 
 ```powershell
-$d="$env:USERPROFILE\.local\share\controlroom\source"; if (!(Test-Path "$d\.git")) { git clone git@github.com:chaconne67/controlroom.git $d; if ($LASTEXITCODE) { throw 'Download failed' } }; & "$d\.controlroom\install.ps1"
+$d=Join-Path $env:TEMP ([guid]::NewGuid()); git clone git@github.com:chaconne67/controlroom.git $d; if($LASTEXITCODE){throw 'Controlroom download failed'}; & "$d\.controlroom\install.ps1"
 ```
 
-## Windows 명령 프롬프트(CMD)
-
-CMD에서는 이 한 줄을 사용합니다. 같은 설치기를 호출하고 현재 CMD에도 명령 경로를 등록하므로, 완료 직후 `kitpull`·`kitpush`를 그대로 입력합니다. `.cmd` 확장자를 붙이지 않아도 됩니다.
-
-```cmd
-powershell -NoProfile -Command "$d=$env:USERPROFILE+'\.local\share\controlroom\source'; if (!(Test-Path ($d+'\.git'))) { git clone git@github.com:chaconne67/controlroom.git $d; if ($LASTEXITCODE) { exit $LASTEXITCODE } }; & ($d+'\.controlroom\install.ps1')" && set "PATH=%USERPROFILE%\.local\bin;%PATH%"
-```
-
-## PC·노트북의 macOS·Linux Bash
+### macOS·Linux — Bash/Zsh
 
 ```bash
-d=~/.local/share/controlroom/source; { [ -d "$d/.git" ] || git clone git@github.com:chaconne67/controlroom.git "$d"; } && bash "$d/.controlroom/install.sh" && . "$HOME/projects/.controlroom/shell/kit-aliases.sh"
+d=$(mktemp -d) && git clone git@github.com:chaconne67/controlroom.git "$d" && bash "$d/.controlroom/install.sh" && . "$HOME/controlroom/.controlroom/shell/kit-aliases.sh"
 ```
 
-## Ubuntu main 서버
+### Ubuntu main — 기존 운영 코드 보존
 
-기존 `~/projects/<프로젝트>`에 실제 코드 저장소가 있고 GitHub SSH 인증이 되어 있으면 다음 한 줄로 처음 설치합니다. `gh` 설치나 토큰 입력은 필요 없습니다.
+조정실은 똑같이 `~/controlroom`에 설치합니다. `--main-server`는 기존 `~/projects/<프로젝트>` 코드 폴더에 에이전트 지침·스킬을 추가로 배치합니다.
 
 ```bash
-d=~/.local/share/controlroom/source; { [ -d "$d/.git" ] || git clone git@github.com:chaconne67/controlroom.git "$d"; } && bash "$d/.controlroom/install.sh" --main-server && . "$d/.controlroom/shell/kit-aliases.sh"
+d=$(mktemp -d) && git clone git@github.com:chaconne67/controlroom.git "$d" && bash "$d/.controlroom/install.sh" --main-server && . "$HOME/controlroom/.controlroom/shell/kit-aliases.sh"
 ```
 
-한 줄 명령이 끝나면 같은 터미널에서 바로 `kitpull`과 `kitpush`를 사용합니다. 기존 설치나 미완료 설치가 있어도 같은 한 줄을 다시 실행할 수 있습니다. 이후 갱신은 `kitpull`을 사용합니다.
+다른 운영 코드 루트는 `--main-server` 뒤에 `--workspace "$HOME/operating-projects"`를 붙입니다. 기존 실제 폴더를 지정합니다. 제품 코드·`.git`·브랜치·원격·제품 문서·원본 스킬·환경·고객 자료는 그대로 보존하며, 지침의 기존 본문도 유지합니다. Exdigm처럼 코드가 다른 서버에 있어도 `~/controlroom/exdigm`의 지침·문서·스킬은 항상 설치합니다.
 
-Controlroom 원본·도구는 `~/.local/share/controlroom/source`에 두며 제품 루트에 공통 `.git`을 만들지 않습니다. 실제로 존재하는 프로젝트 Git을 확인해 기존 `AGENTS.md`·`CLAUDE.md`에 관리 구역을 추가하고 `.agents/skills`, `.claude/skills`만 갱신합니다. manifest의 프로젝트 스킬과 제품의 자체 `skills`를 사용하고 동명 스킬은 프로젝트 원본을 우선합니다. 기존 지침 본문·개인 스킬과 코드·Git 전체·docs·원본 skills·환경·고객 자료는 보존합니다. 제품 Git은 clone·pull·push하지 않습니다.
+Venture 코드·지침·스킬·문서는 Controlroom Git의 `venture/`에 통합합니다. `controlroom/venture`에 별도 `.git`을 만들지 않으며 설치·동기화는 Controlroom 저장소 한 곳만 사용합니다. main의 기존 `~/projects/venture`와는 다른 작업 폴더입니다. 설치기는 에이전트 앱 로그인이나 프로젝트의 실행 환경·고객 자료를 대신 준비하지 않습니다.
 
-다른 프로젝트 루트는 위 명령의 `--main-server` 바로 뒤에 `--workspace "$HOME/operating-projects"`를 붙입니다. 사용자 HOME 안의 기존 실제 폴더를 지정합니다. 역할명은 기본값 `windows-control`을 사용하므로 입력하지 않아도 됩니다. 옵션은 저장되므로 이후 명령에 반복해서 입력하지 않습니다. main에 없는 프로젝트 저장소는 생성하지 않습니다. 기존 옛 조정실 폴더도 이동·삭제하지 않습니다. 이 옵션은 에이전트 프로그램 설치·로그인·예약 실행을 대신하지 않습니다.
 
-## 설치 후
-
-한 줄 명령을 실행한 같은 터미널에서 `kitpull --verify`로 확인합니다. 터미널을 다시 열거나 별도 등록 명령을 실행할 필요가 없습니다.
+설치 후 각 `~/controlroom/<프로젝트>/AGENTS.md`에서 실제 서버·DB·코드·저장소 위치를 확인합니다. 기본 역할명 `windows-control`은 모든 OS에서 공통으로 사용합니다.
 
 ```bash
 kitpull
-kitpush "변경 설명"
+kitpull --verify
+kitpush "변경 내용"
 ```
 
-설치기는 최신본을 먼저 확보한 뒤 교체할 에이전트 자산을 `~/backups/controlroom`에 압축 백업하고 적용합니다. 적용 실패 시 자동 복구합니다. main 모드의 `kitpull`·`kitpush`는 에이전트 자산만 다루며 제품 Git을 변경하지 않습니다. 프로젝트에서 추가한 지침 본문은 해당 제품 소유로 유지합니다. 공통 자산을 수정·전송하려면 별도 Controlroom 원본을 편집합니다.
-
-이미 설치한 장비에서는 `kitpull`을 사용합니다. 일반 설치의 설치기는 `~/projects/.controlroom`, main 모드는 `~/.local/share/controlroom/source/.controlroom`에 있습니다. 기기를 옮기기 전 계획의 재개 정보를 갱신하고 검토한 변경을 push합니다.
+공유 원본·백업·복구와 기존 장비 전환 조건은 [저장소 README](../../README.md)를 따릅니다. 기존 코드 루트 `~/projects`는 조정실 원본과 구별합니다.

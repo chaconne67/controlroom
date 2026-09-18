@@ -1,5 +1,25 @@
 # controlroom 저장소 통합
 
+## 현행 승인 계약 — 2026-09-19 모든 OS 경로와 Venture 통합
+
+이 절이 아래의 과거 경로·Venture 별도 Git·main 캐시 설치 기록보다 우선한다. 사용자는 모든 OS의 폴더명을 `controlroom`으로 통일하고 Venture 코드·지침·스킬·문서를 같은 Git에 통합하도록 지시했다. 실제 데스크탑과 Ubuntu main의 전환 테스트는 사용자가 직접 실행한다.
+
+- Windows는 `%USERPROFILE%\controlroom\<프로젝트>`, macOS·Linux·main은 `~/controlroom/<프로젝트>`다. 공유 도구는 `.controlroom`, 실제 Git은 루트 하나다.
+- `venture/`는 Controlroom의 추적 파일이다. 별도 clone·중첩 `.git`·Venture 원격 push를 없앤다. 원래 Venture Git 이력은 기존 비공개 저장소와 전환 전 로컬 백업에 보존한다. 가져온 커밋과 제외 범위는 `../history/venture-import-20260919.json`에 기록한다.
+- Exdigm을 포함한 모든 프로젝트의 지침·문서·스킬은 실제 코드가 해당 장비에 있는지와 관계없이 설치한다. main 옵션은 기존 `~/projects` 또는 지정된 운영 코드 루트의 지침 표시 구역과 앱 스킬만 추가·갱신한다. 운영 코드·Git·브랜치·원격·docs·원본 skills·고객 자료·기존 지침 본문은 보존한다.
+- 공식 경로는 README의 SSH 한 줄 → 최신 설치기 → 같은 Python 설치·동기화 코어 → 변경 대상의 압축 백업/내용 검증 → 실제 폴더 배치 → 내용 검증이다. 실패하면 선언된 변경 대상만 복구한다. 키·인증·로그인 설정은 사용자가 관리한다.
+- 명령은 `kitpull`, `kitpush`다. Windows의 설치 진입점은 PowerShell이며 설치 후 PowerShell·CMD에서 같은 두 이름을 사용한다. pull은 관리 파일의 미전송 변경도 백업 후 최신 버전으로 교체한다. push는 공유 자산과 Venture 코드 변경을 한 커밋으로 저장·전송한다.
+- `.env`, 회사 자료, 브라우저 상태·개인 실행 파일은 공유 Git에 넣지 않는다. Venture의 회사 자료 283개는 통합에서 제외했으며 기존 저장소와 로컬 백업에 보존한다. 다른 장비의 로그인·실행 의존성·고객 자료는 해당 장비에서 준비한다.
+- 기존 `controlroom` 연결 폴더는 원본과 연결을 백업한 뒤 실제 폴더로 만든다. 기존 물리 `kmh-agent-kit`과 별도 `projects`는 삭제하지 않는다. 옛 controlroom 루트의 관리 파일은 백업 후 새 구조로 전환한다.
+
+기준선은 `5e72587024701edf0a456f09db9d5311ce7b6c07`이다. 기존 데스크탑은 `controlroom → kmh-agent-kit` 연결, 실제 프로젝트는 `C:\Users\chaconne\projects`에 있으며 Venture는 기존 별도 Git의 clean `e06a85b7`이었다. 기존 공용 문서의 미전송 작업은 원본에서 보존하고 필요한 RNDLOG 재개 계획을 통합본에도 복사한다. 실제 장비의 폴더·Git·등록 경로는 이번 준비 작업에서 전환하지 않는다.
+
+최소 구현 게이트는 2단계다. 기존 manifest·Transaction·OS 설치기·명령 등록·Git 동기화를 재사용하고 별도 Venture 전송 단계를 제거한다. 검증은 같은 공식 설치기와 kit 명령에서 최초/반복 설치, Windows 두 셸, 두 장비 간 코드·문서 왕복, SSH 실패, 백업·복구, 연결 폴더 전환, main 운영 파일의 전후 바이트 보존으로 판정한다. 프로그램은 code-review-loop, 새로 배치한 스킬은 skill-review, 지침은 prompt-guide·skill-writing-guide와 이 변경 관리 계약으로 검토한다.
+
+게시 전 검증: Ubuntu 41개, Windows 32개 고유 설치·동기화 검사와 Windows PATH 알림·실패 복구 재검사 2개를 통과했다. 공통 28개를 포함한 물리 스킬 원본 61개와 Venture 11개 스킬 형식을 확인했다. Venture 가져오기 83개 중 실행 코드·스킬·자료 80개는 원래 Git 내용과 일치하고 진입 지침·README 3개만 통합 경로에 맞췄다. 코드 리뷰에서 발견한 Venture 파일 삭제 후 push 거절을 수정하고 추가·삭제의 두 장비 왕복을 검증했다. 마지막 리뷰에 승인된 finding과 열린 계약 질문은 없다. 게시 직전 추가된 CEO Loan CRETOP 기록 `af7f188`도 원문 그대로 포함했다. 이 결과는 격리 검증이며 실제 데스크탑·main 설치는 사용자 시험 전이다.
+
+## 과거 변경 기록
+
 ## SSH 접속 통일 — 2026-09-19 후속 지시
 
 인증은 주인님이 준비하고 모든 설치·`kitpull`·`kitpush`의 GitHub 접속은 SSH 키를 사용한다. README와 장비 준비 문서는 OS·셸별 Git SSH 한 줄만 안내하며 `gh`·HTTP 토큰 설치 경로는 제거한다. Windows는 받은 설치기를 현재 PowerShell에서 호출하고 Bash는 설치 성공 후 기존 명령 등록 파일을 읽어 같은 터미널에서 두 명령을 사용한다. 후속 요청에 따라 CMD 한 줄도 같은 PowerShell 설치기를 호출한 뒤 현재 CMD의 PATH에 명령 폴더를 추가한다. 기존 `kitpull.cmd`·`kitpush.cmd`를 재사용하므로 사용자는 확장자 없이 같은 이름을 입력한다.

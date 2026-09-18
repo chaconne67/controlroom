@@ -1,0 +1,8 @@
+[mcp_servers.playwright]
+command = "npx"
+args = [
+    "@playwright/mcp@latest",
+    "--browser=chrome",
+    "--no-sandbox",
+    "--user-data-dir=.browser_profiles/_mcp",
+]

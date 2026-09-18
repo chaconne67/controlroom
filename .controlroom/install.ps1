@@ -4,7 +4,7 @@ param([string]$Agent, [string]$Gbrain, [string]$Project, [string]$ProfileName, [
 $ErrorActionPreference = 'Stop'
 try { [Console]::OutputEncoding = [System.Text.Encoding]::UTF8 } catch { }
 if ($Gbrain) { if ($Agent -and $Agent -ne $Gbrain) { throw 'Conflicting role names.' }; $Agent = $Gbrain }
-if ($Project -or $ProfileName) { throw 'Projects are physical folders under ~/projects. Use kitpull to update them.' }
+if ($Project -or $ProfileName) { throw 'Projects are physical folders under ~/controlroom. Use kitpull to update them.' }
 $python = Get-Command python.exe -ErrorAction SilentlyContinue
 $pythonArgs = @()
 if (-not $python) { $python = Get-Command py.exe -ErrorAction SilentlyContinue; $pythonArgs = @('-3') }

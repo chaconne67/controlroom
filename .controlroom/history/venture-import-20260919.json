@@ -1,0 +1,11 @@
+{
+  "source_repository": "git@github.com:chaconne67/venture.git",
+  "source_commit": "e06a85b7d2a0e6df472fd6308aada18aa0a6155e",
+  "imported_files": 83,
+  "excluded_private_files": 283,
+  "excluded_roots": [
+    "companies",
+    ".venture-sessions"
+  ],
+  "history": "Original repository and the desktop backup retain the original Git history. Active source and synchronization now belong to controlroom/venture."
+}

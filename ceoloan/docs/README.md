@@ -1,6 +1,6 @@
 # ceoloan 조정실 문서
 
-코드·실행 위치: `chaconne@49.247.192.127:/home/chaconne/projects/ceoloan`. 현행 Compose 설정은 `/srv/consolidation/infra`입니다. 과거 문서의 옛 서버 배포 명령을 현재 운영에 사용하지 않습니다.
+현재 조정실은 `~/controlroom/ceoloan`입니다. 실제 서버·코드·DB·GitHub 위치와 운영 경계는 [프로젝트 지침](../AGENTS.md)을 우선합니다.
 
 코드와 결합된 CONTEXT·ADR·수집 템플릿·SQL은 서버에 유지합니다. 별도 기획 원문 이동 대상은 없었습니다.
 

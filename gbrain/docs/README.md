@@ -1,6 +1,6 @@
 # gbrain 조정실 문서
 
-코드·실행 위치: `chaconne@49.247.45.243:/home/chaconne/gbrain`.
+조정실은 `~/controlroom/gbrain`입니다. 현행 main 서비스·코드·DB·GitHub 위치는 [프로젝트 지침](../AGENTS.md)을 따릅니다.
 
 제품 소스의 docs·skills·에이전트 정의는 생성·패키징·테스트 계약에 결합되어 서버 저장소에 유지합니다. 개인 지식과 DB는 이 저장소에 복사하지 않습니다.
 

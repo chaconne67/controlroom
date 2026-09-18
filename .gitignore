@@ -52,7 +52,7 @@
 !/ziin/skills/
 !/ziin/AGENTS.md
 !/ziin/CLAUDE.md
-/venture/
+!/venture/
 .env*
 *.pem
 *.key

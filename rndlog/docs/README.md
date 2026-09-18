@@ -1,15 +1,17 @@
 # rndlog 조정실 문서
 
-코드·실행 위치: `chaconne@49.247.207.147:/home/chaconne/rndlog-dev`.
+현재 조정실은 `~/controlroom/rndlog`입니다. 실제 서버·코드·DB·GitHub 위치와 운영 경계는 [프로젝트 지침](../AGENTS.md)을 우선합니다.
 
-운영 코드는 /home/chaconne/rndlog입니다. DB의 고객자료·업로드 게이트웨이와 기존 개발 변경은 유지합니다. 옛 계획은 현재 승인으로 해석하지 않습니다.
+운영 코드와 고객 자료·업로드 게이트웨이는 main에서 관리하며 위치는 위 지침을 따릅니다. 옛 계획은 현재 승인으로 해석하지 않습니다.
 
 2026-09-13에 보관 위치를 정리했습니다. 문서의 작성일·승인 상태·폐기 여부는 바꾸지 않았습니다. 원문 속 코드·명령 경로는 원래 서버 저장소 기준이며, 이전 위치와 SHA-256은 루트 provenance.json에 있습니다.
 
 ## 문서
 
+- [아성 문서 재작성 및 다운로드 등록 — 2026-09-18](plans/2026-09-18-asung-document-regeneration.md) — 새 제작·내부 다운로드 등록과 후속 기본정보 보완의 재개 기록.
+
 - [담당자 역할 셀 편집 — 2026-09-17](plans/2026-09-17-member-role-inline-edit.md) — 이미지 2와 같은 역할 UI 및 HTMX 역할 셀 교체. 격리 환경 검증과 승인 후 운영 배포·실제 운영 편집 GET 확인 완료.
-- [진행 중: 새 운영서버 통합](../../.controlroom/docs/production-server-consolidation-20260916.md) — 대상 `chaconne@49.247.192.127`. 현재 웹은 `49.247.207.147`, DB·자료 정본은 `49.247.45.243`입니다. 2026-09-16 실제 운영 DB는 `company_main`으로 확인했습니다. 자료 SSH 게이트웨이·업로드·문자 예약 작업의 인계가 끝나기 전에는 정본이 이동했다고 판단하지 않습니다.
+- [운영서버 통합 기록](../../.controlroom/docs/production-server-consolidation-20260916.md) — 대상 `chaconne@49.247.192.127`. 운영 인계는 2026-09-17에 완료됐습니다. 문서의 최신 적용 절과 현재 서버를 확인합니다.
 - [2026-09-05-rndlog-admin-management-plan.md](<plans/2026-09-05-rndlog-admin-management-plan.md>)
 - [2026-09-05-rndlog-admin-quality-bar.md](<plans/2026-09-05-rndlog-admin-quality-bar.md>)
 - [2026-09-06-rndlog-file-upload-tree-plan.md](<plans/2026-09-06-rndlog-file-upload-tree-plan.md>)

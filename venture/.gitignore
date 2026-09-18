@@ -1,0 +1,47 @@
+.venv/
+.env
+node_modules/
+__pycache__/
+.pytest_cache/
+.ruff_cache/
+.browser_profiles/
+.playwright-mcp/
+_session/
+
+# Local agent/browser/runtime state
+.agents/
+.claude/
+.venture-sessions/chrome-profiles/
+.venture-sessions/portal-runs/
+.venture-sessions/launchers/
+.venture-sessions/logs/
+.venture-sessions/*.json
+.venture-sessions/*.log
+.venture-sessions/*.out
+.venture-sessions/*.err
+
+# Company-local generated/private artifacts
+/companies/
+/companies__old_backup/
+companies/*/회사정보.md
+companies/*/screenshots/
+companies/*/application/phase21_experiment_*.json
+companies/*/application/phase21_experiment_*.md
+companies/*/application/portal_run_state.json
+companies/*/application/portal_screen_map.json
+companies/*/application/portal_scroll_scan.json
+companies/*/application/visual_review/
+companies/*/application/visual_review_pages/
+
+# Ad-hoc automation/debug files
+/tmp_*
+tmp_*
+*.ps1
+*.tmp
+*-screen.png
+*_screen.png
+
+.DS_Store
+
+# Windows/Google Drive folder metadata
+desktop.ini

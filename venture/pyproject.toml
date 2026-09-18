@@ -1,0 +1,33 @@
+[project]
+name = "venture-automation"
+version = "0.1.0"
+description = "Venture certification application workflow automation"
+requires-python = ">=3.13"
+dependencies = [
+    "beautifulsoup4>=4.14.3",
+    "cryptography>=3.1",
+    "lxml>=6.1.0",
+    "olefile>=0.47",
+    "pypdf>=6.11.0",
+    "python-docx>=1.2.0",
+    "python-dotenv>=1.2.2",
+    "playwright>=1.60",
+    "pyyaml>=6.0",
+    "requests>=2.34.2",
+    "rich>=15.0.0",
+    "typer>=0.25.1",
+    "pymupdf>=1.27.2.3",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=9.0.3",
+    "ruff>=0.15.13",
+]
+
+[tool.pytest.ini_options]
+pythonpath = ["scripts"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py313"

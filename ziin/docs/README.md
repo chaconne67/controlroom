@@ -1,6 +1,6 @@
 # ziin 조정실 문서
 
-코드·실행 위치: `chaconne@49.247.45.243:/home/chaconne/projects/ziin`.
+현재 조정실은 `~/controlroom/ziin`입니다. 실제 서버·코드·DB·GitHub 위치와 운영 경계는 [프로젝트 지침](../AGENTS.md)을 우선합니다.
 
 디자인 시스템·배포 구조·확정 HTML·미디어·knowledge/ziin.md는 서버에 유지합니다.
 
@@ -8,7 +8,7 @@
 
 ## 문서
 
-- [진행 중: 새 운영서버 통합](../../.controlroom/docs/production-server-consolidation-20260916.md) — 대상 `chaconne@49.247.192.127`. 현재 운영과 DNS는 `49.247.45.243`에 유지합니다. 2026-09-16 실행 이미지의 코드 표시는 `9179f77`, 소스 HEAD는 `427729d`로 달라, 이전 준비는 실제 실행 이미지를 기준으로 합니다.
+- [운영서버 통합 기록](../../.controlroom/docs/production-server-consolidation-20260916.md) — main `chaconne@49.247.192.127`로 운영 인계가 완료됐습니다. 최신 적용·복구 절을 확인합니다.
 - [아티팩트-방법론.md](<implementation/아티팩트-방법론.md>)
 - [지니-챗봇-작업지시.md](<implementation/지니-챗봇-작업지시.md>)
 - [how-it-works.md](<product/how-it-works.md>)

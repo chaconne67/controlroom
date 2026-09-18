@@ -1,6 +1,6 @@
 # exdigm 조정실 문서
 
-코드·실행 위치: `chaconne@49.247.202.197:/home/chaconne/exdigm-debug`.
+현재 조정실은 `~/controlroom/exdigm`입니다. 실제 서버·코드·DB·GitHub 위치와 운영 경계는 [프로젝트 지침](../AGENTS.md)을 우선합니다.
 
 운영 코드는 /home/chaconne/exdigm입니다. 원문에 적힌 코드·명령 상대 경로는 해당 서버 저장소 기준입니다.
 
