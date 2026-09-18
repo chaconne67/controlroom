@@ -40,4 +40,10 @@ try {
         Remove-Item -LiteralPath $resolvedBootstrap -Recurse -Force
     }
 }
-exit $exitCode
+if ($exitCode -ne 0) { throw "Controlroom installation failed (exit $exitCode)." }
+if (-not $Help) {
+    $commandPath = Join-Path $env:USERPROFILE '.local\bin'
+    if (($env:Path -split ';') -notcontains $commandPath) {
+        $env:Path = "$commandPath;$env:Path"
+    }
+}

@@ -7,6 +7,7 @@ from contextlib import contextmanager
 import os
 import json
 from pathlib import Path
+import re
 import shutil
 import subprocess
 import tempfile
@@ -399,6 +400,27 @@ class WindowsInstallerTests(unittest.TestCase):
         self.fixture = KitFixture()
         self.addCleanup(self.fixture.close)
 
+    def test_downloaded_powershell_installer_exposes_commands_in_current_shell(self):
+        home = self.fixture.new_home(True)
+        env = self.fixture.env(home)
+        env['PATH'] = os.pathsep.join(env['PATH'].split(os.pathsep)[1:])
+        env['CONTROLROOM_TEST_INSTALLER'] = str(self.fixture.seed / '.controlroom/install.ps1')
+        command = '''$ErrorActionPreference = 'Stop'
+& ([scriptblock]::Create((Get-Content -LiteralPath $env:CONTROLROOM_TEST_INSTALLER -Raw).TrimStart([char]0xFEFF))) -Agent windows-control
+foreach ($name in @('kitpull', 'kitpush')) {
+    $expected = Join-Path $env:USERPROFILE ('.local\\bin\\' + $name + '.cmd')
+    if ((Get-Command $name).Source -ne $expected) { throw 'Command resolved outside the new installation' }
+}
+kitpull --verify
+if ($LASTEXITCODE -ne 0) { throw 'Verification failed' }
+kitpush --help
+if ($LASTEXITCODE -ne 0) { throw 'Command dispatch failed' }
+Write-Output 'CURRENT_SHELL_COMMANDS_READY'
+'''
+        result = run('powershell.exe', '-NoProfile', '-Command', command, env=env)
+        self.assertIn('CURRENT_SHELL_COMMANDS_READY', result.stdout)
+        self.assertIn('usage: kitpush', result.stdout)
+
     def test_real_windows_installer_help(self):
         result = run('powershell.exe', '-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', ROOT / 'install.ps1', '-Help')
         self.assertIn('usage:', result.stdout)
@@ -459,6 +481,23 @@ class WindowsInstallerTests(unittest.TestCase):
 
 @unittest.skipIf(os.name == 'nt', 'Native POSIX installer contract')
 class PosixControlRoomInstallerTests(unittest.TestCase):
+    def test_readme_one_liner_exposes_commands_in_current_shell(self):
+        fixture = KitFixture()
+        self.addCleanup(fixture.close)
+        home = fixture.new_home(True)
+        env = fixture.env(home)
+        env['PATH'] = os.pathsep.join(env['PATH'].split(os.pathsep)[1:])
+        readme = (ROOT.parent / 'README.md').read_text(encoding='utf-8')
+        command = next(line for line in readme.splitlines() if line.startswith('(set -e;'))
+        # Substitute only the download URL; exercise the exact shell command and installer.
+        command = re.sub(r'https://api\.github\.com/[^" ]+/install\.sh\?ref=main',
+                         (fixture.seed / '.controlroom/install.sh').as_uri(), command)
+        command = 'gh() { printf test-token; }; ' + command
+        command += '; test "$(type -t kitpull)" = function && kitpull --verify && kitpush --help'
+        result = run(BASH, '--noprofile', '--norc', '-c', command, env=env)
+        self.assertIn('Physical layout and installed contents verified.', result.stdout)
+        self.assertIn('usage: kitpush', result.stdout)
+
     def test_downloaded_script_string_does_not_use_core_from_current_directory(self):
         fixture = KitFixture()
         self.addCleanup(fixture.close)

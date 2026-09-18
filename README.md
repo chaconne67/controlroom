@@ -18,31 +18,31 @@ gh auth setup-git --hostname github.com
 ### Windows — PowerShell
 
 ```powershell
-powershell -NoProfile -ExecutionPolicy Bypass -Command "& ([scriptblock]::Create((Invoke-RestMethod -Headers @{Authorization=('Bearer ' + (gh auth token --hostname github.com)); Accept='application/vnd.github.raw+json'} -Uri 'https://api.github.com/repos/chaconne67/controlroom/contents/.controlroom/install.ps1?ref=main' -ErrorAction Stop).TrimStart([char]0xFEFF))) -Agent windows-control"
+& ([scriptblock]::Create((Invoke-RestMethod -Headers @{Authorization=('Bearer ' + (gh auth token --hostname github.com)); Accept='application/vnd.github.raw+json'} -Uri 'https://api.github.com/repos/chaconne67/controlroom/contents/.controlroom/install.ps1?ref=main' -ErrorAction Stop).TrimStart([char]0xFEFF))) -Agent windows-control
 ```
 
 ### PC·노트북의 macOS·Linux — Bash
 
 ```bash
-(set -e; installer="$(mktemp)"; trap 'rm -f "$installer"' EXIT; curl -fsSL -H "Authorization: Bearer $(gh auth token --hostname github.com)" -H "Accept: application/vnd.github.raw+json" "https://api.github.com/repos/chaconne67/controlroom/contents/.controlroom/install.sh?ref=main" -o "$installer"; bash "$installer" windows-control)
+(set -e; installer="$(mktemp)"; trap 'rm -f "$installer"' EXIT; curl -fsSL -H "Authorization: Bearer $(gh auth token --hostname github.com)" -H "Accept: application/vnd.github.raw+json" "https://api.github.com/repos/chaconne67/controlroom/contents/.controlroom/install.sh?ref=main" -o "$installer"; bash "$installer" windows-control) && . "$HOME/projects/.controlroom/shell/kit-aliases.sh"
 ```
 
-설치기는 최신본을 먼저 받아 확인하고 기존 대상을 압축 백업한 뒤 적용합니다. 설치 후 새 터미널에서 `kitpull --verify`로 확인합니다. PC·노트북의 최종 저장 위치는 `~/projects`이며 별도의 `~/controlroom` 체크아웃은 필요하지 않습니다. 이미 설치한 장비에서 다시 실행해도 최신본을 적용합니다.
+설치기는 최신본을 먼저 받아 확인하고 기존 대상을 압축 백업한 뒤 적용합니다. 한 줄 명령이 끝나면 같은 터미널에서 바로 `kitpull`과 `kitpush`를 사용할 수 있습니다. `kitpull --verify`로 설치 상태를 확인합니다. PC·노트북의 최종 저장 위치는 `~/projects`이며 별도의 `~/controlroom` 체크아웃은 필요하지 않습니다. 이미 설치한 장비에서 다시 실행해도 최신본을 적용합니다.
 
 ### Ubuntu main 서버 — 코드 보존 설치
 
 기존 `~/projects/<프로젝트>`에서 코드가 운영되고 있고 GitHub SSH 인증이 되어 있으면 다음 한 줄로 처음 설치합니다. `gh` 설치나 토큰 입력은 필요 없습니다.
 
 ```bash
-d=~/.local/share/controlroom/source; git clone git@github.com:chaconne67/controlroom.git "$d" && bash "$d/.controlroom/install.sh" --main-server
+d=~/.local/share/controlroom/source; { [ -d "$d/.git" ] || git clone git@github.com:chaconne67/controlroom.git "$d"; } && bash "$d/.controlroom/install.sh" --main-server && . "$d/.controlroom/shell/kit-aliases.sh"
 ```
 
-설치가 끝나면 현재 Bash 터미널에서 `source ~/.bashrc`를 한 번 실행합니다. 이후 갱신은 `kitpull`을 사용합니다. 위 경로에 원본만 받아져 있고 설치를 마치지 못했다면 `bash ~/.local/share/controlroom/source/.controlroom/install.sh --main-server`로 이어서 설치합니다.
+한 줄 명령이 끝나면 같은 터미널에서 바로 `kitpull`과 `kitpush`를 사용합니다. 기존 설치나 미완료 설치가 있어도 같은 한 줄을 다시 실행할 수 있습니다. 이후 갱신은 `kitpull`을 사용합니다.
 
 이미 `gh`를 설치하고 위 HTTP 인증 설정을 마친 장비에서는 curl로도 설치할 수 있습니다. `gh`가 없으면 이 명령을 사용하지 않습니다.
 
 ```bash
-script=$(curl -fsSL -H "Authorization: Bearer $(gh auth token)" https://raw.githubusercontent.com/chaconne67/controlroom/main/.controlroom/install.sh) && bash -c "$script" -- --main-server
+script=$(curl -fsSL -H "Authorization: Bearer $(gh auth token)" https://raw.githubusercontent.com/chaconne67/controlroom/main/.controlroom/install.sh) && bash -c "$script" -- --main-server && . "$HOME/.local/share/controlroom/source/.controlroom/shell/kit-aliases.sh"
 ```
 
 - 공통 원본·도구는 `~/.local/share/controlroom/source`에 보관합니다. 기존 프로젝트 폴더는 그대로 사용합니다.

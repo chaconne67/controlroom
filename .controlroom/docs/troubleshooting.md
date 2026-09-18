@@ -22,7 +22,7 @@ git -C ~/projects diff origin/main...main
 
 ## Windows 명령이 보이지 않는 경우
 
-기존 장비에서는 아래 설치기를 실행하고 터미널을 새로 엽니다. 처음 설치하는 장비에서는 README의 다운로드한 `install.ps1`을 실행합니다.
+기존 장비에서는 현재 PowerShell에서 아래 설치기를 실행합니다. 처음 설치하는 장비에서는 README의 한 줄 명령을 사용합니다. 명령 등록은 설치한 현재 PowerShell에 바로 적용됩니다.
 
 ```powershell
 & "$env:USERPROFILE\projects\.controlroom\install.ps1" -Agent windows-control
@@ -33,7 +33,7 @@ Get-Command kitpull, kitpush
 
 ## Ubuntu 설치 직후 명령이 보이지 않는 경우
 
-설치 전에 열어 둔 Bash 터미널에서는 새 명령 등록을 한 번 읽습니다.
+README의 한 줄 명령은 현재 셸의 명령 등록까지 포함합니다. 그 대신 설치기 파일만 직접 실행한 경우, 설치 전에 열어 둔 Bash 터미널에서 새 명령 등록을 한 번 읽습니다.
 
 ```bash
 source ~/.bashrc

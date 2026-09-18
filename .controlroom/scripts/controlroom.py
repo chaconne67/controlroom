@@ -704,7 +704,7 @@ def apply(source, home, agent, products, preserve_config=None, legacy_cleanup=Tr
             raise RuntimeError(f'Rollback incomplete: {error}. Recovery archive: {tx.archive}') from error
         raise
     print(f'Applied and verified: {workspace}', flush=True)
-    print('Open a new terminal to use kitpull and kitpush.', flush=True)
+    print('Commands: kitpull, kitpush.', flush=True)
 
 
 def verify_copy(source, target):
