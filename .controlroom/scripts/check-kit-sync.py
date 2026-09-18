@@ -194,15 +194,17 @@ class KitFixture:
             self.cleanups.enter_context(preserve_windows_installer_path(home))
         return home
 
-    def install(self, home, agent='windows-control', standalone=False, bash=False):
+    def install(self, home, agent='windows-control', standalone=False, bash=False, workspace=None):
         installer = self.seed / '.controlroom' / ('install.ps1' if os.name == 'nt' and not bash else 'install.sh')
         if standalone:
             destination = home / installer.name
             shutil.copy2(installer, destination)
             installer = destination
         if os.name == 'nt' and not bash:
-            return run('powershell.exe', '-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', installer, '-Agent', agent, env=self.env(home))
-        return run(BASH, '--noprofile', '--norc', installer, agent, env=self.env(home))
+            options = ['-Workspace', workspace] if workspace else []
+            return run('powershell.exe', '-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', installer, '-Agent', agent, *options, env=self.env(home))
+        options = ['--workspace', workspace] if workspace else []
+        return run(BASH, '--noprofile', '--norc', installer, *options, agent, env=self.env(home))
 
     def clone(self, agent='main', spaces=False):
         home = self.new_home(spaces)

@@ -1,6 +1,6 @@
 # 스킬 관리
 
-원본과 배치 목록을 하나씩 유지합니다. 공통 원본은 `~/projects/.controlroom/skills/<이름>`, 도메인 원본은 `~/projects/<프로젝트>/skills/<이름>`의 실제 폴더입니다. `SKILL.md`와 직접 참조하는 scripts/references/agents 파일을 함께 관리합니다. 이름은 전체 원본 목록에서 유일해야 합니다.
+원본과 배치 목록을 하나씩 유지합니다. 공통 원본은 `~/projects/.controlroom/skills/<이름>`, 도메인 원본은 `~/projects/<프로젝트>/skills/<이름>`의 실제 폴더입니다. main 조정실에서는 같은 상대 경로를 실제 루트 `~/controlroom-workspaces` 아래에서 사용합니다. 아래 명령의 `~/projects`는 현재 조정실 루트로 바꿉니다. `SKILL.md`와 직접 참조하는 scripts/references/agents 파일을 함께 관리합니다. 이름은 전체 원본 목록에서 유일해야 합니다.
 
 `.controlroom/manifests/skills.json`의 `sources`는 원본 위치, `profiles`는 전역·프로젝트 배치 목록, `depends_on`은 의존 관계입니다. 전역에는 공통 스킬만 배치하며 프로젝트 스킬의 의존 스킬은 전역 또는 같은 프로젝트에 있어야 합니다. FundKeeper는 TestBed의 원본을 배치 목록으로 사용합니다.
 

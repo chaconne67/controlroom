@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # One implementation; no fallback repository roots or asset links.
-controlroom_home="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd)"
+controlroom_home="${HOME:?HOME is required}"
 unalias kitpull kitpush controlroom 2>/dev/null || true
 controlroom() { "$controlroom_home/.local/bin/controlroom" "$@"; }
 kitpull() { controlroom pull "$@"; }

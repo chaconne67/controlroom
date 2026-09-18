@@ -1,6 +1,6 @@
 # Controlroom 장비 준비
 
-조정실의 실제 루트를 `~/projects`로 통일합니다. 프로젝트 문서·지침·스킬을 직접 보관하고 공통 설치 도구는 `~/projects/.controlroom`에 둡니다. Windows의 `~`는 USERPROFILE, macOS·Linux는 HOME입니다.
+조정실의 실제 루트를 `~/projects`로 통일합니다. 프로젝트 문서·지침·스킬을 직접 보관하고 공통 설치 도구는 `~/projects/.controlroom`에 둡니다. Windows의 `~`는 USERPROFILE, macOS·Linux는 HOME입니다. main 서버 조정실은 운영 코드와 분리된 `~/controlroom-workspaces`를 실제 Git 루트로 사용하며 내부 상대 구조와 설치·동기화 명령은 같습니다. 최초 루트 지정은 `bash ./install.sh --workspace "$HOME/controlroom-workspaces" windows-control`입니다. 설치 이후에는 `controlroom pull`을 사용합니다.
 
 Git과 Python 3.12 이상, 비공개 Controlroom/Venture GitHub 저장소의 Git 인증을 준비합니다. 새 기기의 앱 로그인·SSH 키·프로젝트 서버 접근은 해당 장비에서 준비합니다. 개발 에이전트는 조정실에서 실행하며 서버의 실제 제품 코드·데이터·배포 경로를 설치기로 옮기지 않습니다.
 

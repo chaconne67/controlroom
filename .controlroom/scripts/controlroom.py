@@ -367,6 +367,10 @@ def clone(url, destination, existing=None):
         for key, value in config(existing):
             if key.startswith('url.') and key.endswith('.insteadof'):
                 args.extend(['-c', f'{key}={value}'])
+    if existing and (existing / '.git').exists():
+        configured = git(existing, 'config', '--get', 'remote.origin.url', check=False).stdout.strip()
+        if github_repository(configured) == github_repository(url):
+            url = configured
     args.extend(['clone', '--no-hardlinks', '--branch', 'main', '--single-branch', url, str(destination)])
     run(*args)
 
@@ -441,8 +445,8 @@ def shell_content(path, marker, line):
     return content.rstrip('\n') + '\n\n' + block + '\n'
 
 
-def apply(source, home, agent, products, preserve_config=None, legacy_cleanup=True, refresh_only=False, worktrees=()):
-    workspace = home / 'projects'
+def apply(source, home, agent, products, preserve_config=None, legacy_cleanup=True, refresh_only=False, worktrees=(), workspace=None):
+    workspace = workspace or home / 'projects'
     if source.resolve() == workspace.resolve() or not (source / '.git').is_dir():
         raise RuntimeError('Installation requires an independent prepared Git clone')
     data = validate(source)
@@ -533,8 +537,8 @@ def apply(source, home, agent, products, preserve_config=None, legacy_cleanup=Tr
         action = 'pull ' if name == 'kitpull' else 'push ' if name == 'kitpush' else ''
         script = workspace / TOOLKIT / 'scripts/controlroom.py'
         if os.name == 'nt':
-            files[command_dir / (name + '.cmd')] = f'@"{sys.executable}" -X utf8 "{script}" --home "{home}" {action}%*\r\n'
-        files[command_dir / name] = f'#!/usr/bin/env bash\nexec "{Path(sys.executable).as_posix()}" -X utf8 "{script.as_posix()}" --home "{home.as_posix()}" {action}"$@"\n'
+            files[command_dir / (name + '.cmd')] = f'@"{sys.executable}" -X utf8 "{script}" --home "{home}" --workspace "{workspace}" {action}%*\r\n'
+        files[command_dir / name] = f'#!/usr/bin/env bash\nexec "{Path(sys.executable).as_posix()}" -X utf8 "{script.as_posix()}" --home "{home.as_posix()}" --workspace "{workspace.as_posix()}" {action}"$@"\n'
     proxy_roles = {agent} if agent not in CENTRAL else set()
     if command_dir.is_dir():
         for entry in command_dir.glob('gbrain-*'):
@@ -551,7 +555,8 @@ def apply(source, home, agent, products, preserve_config=None, legacy_cleanup=Tr
             files[command_dir / ('gbrain-' + proxy_role + '.cmd')] = f'@"{bash}" --noprofile --norc "{proxy}" {proxy_role} %*\r\n'
     for name in ('.bashrc', '.zshrc'):
         path = home / name
-        files[path] = shell_content(path, 'controlroom commands', '[ -f "$HOME/projects/.controlroom/shell/kit-aliases.sh" ] && . "$HOME/projects/.controlroom/shell/kit-aliases.sh"')
+        aliases = workspace / TOOLKIT / 'shell/kit-aliases.sh'
+        files[path] = shell_content(path, 'controlroom commands', f'[ -f "{aliases.as_posix()}" ] && . "{aliases.as_posix()}"')
     path = home / '.bash_profile'
     files[path] = shell_content(path, 'load ~/.bashrc for kmh-agent-kit', '[ -f "$HOME/.bashrc" ] && . "$HOME/.bashrc"')
     tx = Transaction(home, [destination for _, destination in copies] + list(files) + legacy + ([workspace / '.git/config'] if refresh_only else []) + [path / '.git' for _, paths in worktrees for path in paths], archive_units=[workspace / name for name in products])
@@ -568,7 +573,9 @@ def apply(source, home, agent, products, preserve_config=None, legacy_cleanup=Tr
                     git(workspace, 'config', '--local', '--unset-all', key, check=False)
                     restored_keys.add(key)
                 git(workspace, 'config', '--local', '--add', key, value)
-        git(workspace, 'remote', 'set-url', 'origin', ORIGIN)
+        configured = next((value for key, value in old_config if key == 'remote.origin.url'), '')
+        origin = configured if github_repository(configured) == github_repository(ORIGIN) else ORIGIN
+        git(workspace, 'remote', 'set-url', 'origin', origin)
         git(workspace, 'config', '--local', 'controlroom.agent', agent)
         installed_profiles = dict(data['profiles'], hermes=hermes_owned)
         git(workspace, 'config', '--local', 'controlroom.installedProfiles', json.dumps(installed_profiles, ensure_ascii=False))
@@ -669,16 +676,17 @@ def verify(workspace, home, agent):
             verify_copy(workspace / data['sources'][name], target)
 
 
-def update(home, agent=None, prepared=None):
-    workspace = home / 'projects'
+def update(home, agent=None, prepared=None, workspace=None):
+    workspace = workspace or home / 'projects'
     role = agent or agent_for(workspace)
     cache = home / '.local/share/controlroom/tmp'
     cache.mkdir(parents=True, exist_ok=True)
     with tempfile.TemporaryDirectory(prefix='update-', dir=cache) as temporary:
         temporary = Path(temporary)
         source = temporary / 'incoming'
+        existing = next((path for path in (workspace, home / 'kmh-agent-kit', home / 'controlroom') if (path / '.git').exists()), workspace)
         if prepared is None:
-            clone(ORIGIN, source, workspace)
+            clone(ORIGIN, source, existing)
         else:
             validate(prepared)
             run('git', 'clone', '--no-hardlinks', str(prepared), str(source))
@@ -691,7 +699,6 @@ def update(home, agent=None, prepared=None):
                         if (item / name).exists():
                             replace(item / name, source / item.name / name, home)
         validate(source)
-        existing = next((path for path in (workspace, home / 'kmh-agent-kit', home / 'controlroom') if (path / '.git').exists()), workspace)
         worktrees = [(workspace, preserve_worktrees(source, existing))]
         products = {}
         if role in CENTRAL:
@@ -701,7 +708,7 @@ def update(home, agent=None, prepared=None):
                 products[name] = stage
                 worktrees.append((workspace / name, preserve_worktrees(stage, workspace / name)))
         previous = config(existing)
-        apply(source, home, role, products, preserve_config=previous, worktrees=[(root, paths) for root, paths in worktrees if paths])
+        apply(source, home, role, products, preserve_config=previous, worktrees=[(root, paths) for root, paths in worktrees if paths], workspace=workspace)
 
 
 def restore_archive(home, path):
@@ -755,8 +762,8 @@ def allowed(path, role, projects):
     return len(parts) > 1 and parts[0] in projects and (role in CENTRAL or parts[0] == role) and parts[1] in {'docs', 'skills', 'AGENTS.md', 'CLAUDE.md'}
 
 
-def push(home, message):
-    root = home / 'projects'
+def push(home, message, workspace=None):
+    root = workspace or home / 'projects'
     role = agent_for(root)
     check_origin(root, ORIGIN)
     check_main(root)
@@ -783,7 +790,7 @@ def push(home, message):
     with tempfile.TemporaryDirectory(prefix='refresh-', dir=cache) as temporary:
         source = Path(temporary) / 'incoming'
         run('git', 'clone', '--no-hardlinks', str(root), str(source))
-        apply(source, home, role, {}, legacy_cleanup=False, refresh_only=True)
+        apply(source, home, role, {}, legacy_cleanup=False, refresh_only=True, workspace=root)
     if role in CENTRAL:
         for name, expected in repositories(root):
             product = root / name
@@ -805,6 +812,7 @@ def main():
     own_workspace = Path(__file__).resolve().parents[2]
     default_home = own_workspace.parent if own_workspace.name == 'projects' else Path(os.environ.get('USERPROFILE' if os.name == 'nt' else 'HOME', str(Path.home())))
     parser.add_argument('--home', type=Path, default=default_home)
+    parser.add_argument('--workspace', type=Path)
     sub = parser.add_subparsers(dest='action', required=True)
     for action in ('install', 'pull'):
         command = sub.add_parser(action)
@@ -818,13 +826,15 @@ def main():
     command.add_argument('archive', type=Path)
     args = parser.parse_args()
     home = Path(os.path.abspath(args.home))
+    installed = (own_workspace / '.git').is_dir() and bool(dict(config(own_workspace)).get('controlroom.installedprofiles'))
+    workspace = Path(os.path.abspath(args.workspace or (own_workspace if installed else home / 'projects')))
     try:
         if args.action in {'install', 'pull'}:
-            update(home, args.agent, getattr(args, 'source', None))
+            update(home, args.agent, getattr(args, 'source', None), workspace=workspace)
         elif args.action == 'push':
-            push(home, args.message)
+            push(home, args.message, workspace=workspace)
         elif args.action == 'verify':
-            verify(home / 'projects', home, agent_for(home / 'projects'))
+            verify(workspace, home, agent_for(workspace))
             print('Physical layout and installed contents verified.')
         elif args.action == 'restore':
             restore_archive(home, args.archive)

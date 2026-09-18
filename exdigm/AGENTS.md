@@ -2,11 +2,11 @@
 
 ## 조정실
 
-- 작업 위치는 실제 프로젝트 폴더 `~/projects/exdigm`입니다. `~`는 Windows의 `USERPROFILE`, macOS·Linux의 `HOME`입니다.
+- 작업 위치는 현재 조정실 루트의 실제 `exdigm` 폴더입니다. PC·노트북은 `~/projects/exdigm`, main 서버 조정실은 `~/controlroom-workspaces/exdigm`입니다. `~`는 Windows의 `USERPROFILE`, macOS·Linux의 `HOME`입니다.
 - 개발 에이전트는 사용자 로컬 조정실 또는 main(`49.247.192.127`)의 자동 수정용 조정실에서 실행합니다. main에서도 아래 Exdigm 서버의 코드·Git·검증·배포 경로는 SSH로 사용하며 제품 기능의 기존 AI·LLM 실행은 보존합니다. 두 조정실이 같은 debug worktree를 동시에 수정하지 않도록 작업 소유와 진행 상태를 확인합니다.
 - 새 세션은 `~/.gbrain-agent.md`를 읽고, 공용 최신 `project/windows-control-tower-operating-context`와 `project/exdigm-operating-context`를 확인합니다.
 - 아래 Linux 경로와 명령은 명시된 원격 호스트의 셸에서 실행합니다. 조정실 OS에 맞춰 서버 경로를 바꾸거나 운영 코드를 조정실에 복제하지 않습니다.
-- 기획·리서치·작업 계획은 `docs/README.md`에서 찾습니다. 정본은 현재 프로젝트의 실제 폴더 `~/projects/exdigm/docs`이며 GitHub controlroom 저장소의 `exdigm/docs`와 같은 위치입니다.
+- 기획·리서치·작업 계획은 `docs/README.md`에서 찾습니다. 정본은 현재 프로젝트의 실제 `docs` 폴더이며 GitHub controlroom 저장소의 `exdigm/docs`와 같은 위치입니다.
 - 작업을 이어받을 때는 `docs/README.md`의 진행 중 작업 링크와 해당 계획의 재개 정보를 읽고 실제 서버 Git 상태와 대조합니다. 작업을 마치거나 옮기기 전에 그 계획에 재개 정보를 갱신하며 병렬 작업은 각 계획에서 관리합니다.
 
 ## 역할
@@ -14,7 +14,7 @@
 - 이 폴더는 Exdigm의 에이전트 지침·스킬·기획 문서와 GBrain 연결 정보의 진입점입니다.
 - 애플리케이션 소스는 기존 원격 저장소에 둡니다. 비밀값은 실제 사용·복구에 필요한 양쪽에서 관리할 수 있으며, 교체 기준을 하나로 정하고 필요한 값만 공급합니다. 문서·Git·로그에는 값을 남기지 않습니다.
 - 중앙 에이전트가 SSH로 원격 디버깅 worktree를 수정·검증·Git 관리합니다.
-- Exdigm 앱 서버에는 Codex·Claude 개발 에이전트와 조정실 지침·스킬·GBrain 설정을 설치하지 않습니다. main의 자동 수정용 조정실은 같은 controlroom 저장소를 설치·동기화하며, 설치된 프로젝트 경로 등록값을 따릅니다.
+- Exdigm 앱 서버에는 Codex·Claude 개발 에이전트와 조정실 지침·스킬·GBrain 설정을 설치하지 않습니다. main의 자동 수정용 조정실은 같은 controlroom 저장소를 설치·동기화하며, 실제 조정실 루트 `~/controlroom-workspaces`를 사용합니다.
 
 ## 정본
 

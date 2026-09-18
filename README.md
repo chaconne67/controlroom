@@ -1,6 +1,6 @@
 # Controlroom
 
-조정실의 공통 지침·스킬·프로젝트 계획을 관리합니다. 모든 조정실 장비의 실제 작업 폴더는 **`~/projects`**입니다. Windows의 `~`는 사용자 폴더, macOS·Linux는 HOME입니다.
+조정실의 공통 지침·스킬·프로젝트 계획을 관리합니다. PC·노트북 조정실의 실제 작업 폴더는 **`~/projects`**, main 서버 조정실은 기존 운영 코드와 겹치지 않는 **`~/controlroom-workspaces`**입니다. Windows의 `~`는 사용자 폴더, macOS·Linux는 HOME입니다.
 
 ## 처음 설치하거나 최신본 적용
 
@@ -22,7 +22,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\install.ps1 -Agent windows
 bash ./install.sh windows-control
 ```
 
-설치 후 터미널을 새로 엽니다. 설치 파일은 임시로 다운로드한 어디에서든 실행할 수 있습니다. 최종 저장 위치는 항상 `~/projects`이며 별도의 `~/controlroom` 체크아웃은 필요하지 않습니다. 이미 설치한 장비에서 다시 실행해도 최신본을 적용합니다.
+설치 후 터미널을 새로 엽니다. 설치 파일은 임시로 다운로드한 어디에서든 실행할 수 있습니다. PC·노트북의 최종 저장 위치는 `~/projects`이며 별도의 `~/controlroom` 체크아웃은 필요하지 않습니다. 이미 설치한 장비에서 다시 실행해도 최신본을 적용합니다.
 
 ## 일상 동기화
 
@@ -55,9 +55,9 @@ controlroom verify
 
 GitHub와 각 장비는 같은 상대 경로를 사용합니다. 프로젝트 문서는 바로 `<프로젝트>/docs`에 있고 스킬 원본은 `<프로젝트>/skills`에 있습니다. 공통 스킬 원본은 `.controlroom/skills`입니다. 문서·지침·스킬 원본에 연결 폴더나 하드링크를 만들지 않습니다. 앱이 요구하는 `.agents/skills`, `.claude/skills` 등에는 설치기가 실제 파일을 복사합니다. 배치 목록은 `.controlroom/manifests/skills.json` 한 곳입니다.
 
-사용자 조정실은 로컬 데스크탑이며 main 서버에는 자동 수정용 조정실을 함께 둘 수 있습니다. 같은 저장소와 설치·동기화 명령을 사용하되, main의 기존 운영 코드 폴더와 조정실 프로젝트 폴더는 별도로 등록합니다. Exdigm은 main의 Codex에서도 SSH로 전용 서버의 debug worktree에 접근합니다. 실제 설치 위치·인증·검증 상태는 [자동 수정 방침](exdigm/docs/operational-error-triage-repair-policy-20260918.md)을 확인합니다.
+사용자 조정실은 로컬 데스크탑이며 main 서버에는 자동 수정용 조정실을 함께 둘 수 있습니다. 같은 저장소와 설치·동기화 명령을 사용하되, main의 조정실은 `~/controlroom-workspaces` 하나를 실제 Git 루트로 사용합니다. 내부 상대 구조는 위와 같고, Venture도 이 루트의 `venture`에 둡니다. 운영 코드 네 저장소는 기존 `~/projects/<프로젝트>`에 유지합니다. Exdigm은 main의 Codex에서도 SSH로 전용 서버의 debug worktree에 접근합니다. 실제 설치 위치·인증·검증 상태는 [자동 수정 방침](exdigm/docs/operational-error-triage-repair-policy-20260918.md)을 확인합니다.
 
-현재 main의 조정실은 옛 등록 구조로 설치되어 있습니다. 서버 조정실의 전환 계획이 승인·검증되기 전에는 새 설치기를 main의 운영 코드 루트 `~/projects`에 적용하지 않습니다.
+main의 최초 전환은 승인된 기존 위치의 백업·이동과 함께 수행합니다. 루트를 지정하는 설치 명령은 `bash ./install.sh --workspace "$HOME/controlroom-workspaces" windows-control`입니다. 설치한 뒤에는 같은 `controlroom pull`, `push`, `verify`를 쓰며 루트 옵션을 반복 입력하지 않습니다. 기존에 SSH로 GitHub를 사용하던 장비는 같은 저장소의 SSH 주소와 인증을 이어 사용합니다. 에이전트 앱 로그인과 제품 서버 SSH 접근은 별도입니다.
 
 개발 에이전트는 조정실에서 실행합니다. 서버의 제품 코드·Git·데이터·미디어·빌드·테스트·배포는 각 프로젝트의 기존 SSH 절차와 실제 서버 경로를 따릅니다. Venture의 업무 스킬은 Venture 저장소의 `skills`가 원본입니다. 조정실 Git은 Venture와 고객 자료·환경 파일·인증 정보를 자동 수집하지 않습니다.
 

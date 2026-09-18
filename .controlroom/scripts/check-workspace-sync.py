@@ -31,6 +31,58 @@ class WorkspaceSyncTests(unittest.TestCase):
     def plan(self, repo):
         return repo / 'rndlog/docs/plan.md'
 
+    def test_server_workspace_override_keeps_operating_repositories(self):
+        home = self.fixture.new_home(True)
+        workspace = home / 'controlroom-workspaces'
+        baseline = {}
+        for name in ('ceoloan', 'fundkeeper', 'rndlog', 'ziin'):
+            code = home / 'projects' / name
+            run('git', 'init', '--initial-branch=main', code)
+            self.fixture._configure(code)
+            (code / 'app.py').write_bytes(b'operating code\n')
+            run('git', 'add', 'app.py', cwd=code)
+            run('git', 'commit', '-m', 'operating baseline', cwd=code)
+            (code / '.env').write_bytes(b'SYNTHETIC=preserve\r\n')
+            baseline[code] = ((code / '.git/index').read_bytes(),
+                              run('git', 'rev-parse', 'HEAD', cwd=code).stdout,
+                              run('git', 'status', '--porcelain', cwd=code).stdout)
+        self.fixture.install(home, standalone=True, workspace=workspace)
+        self.fixture._configure(workspace)
+        self.assertTrue((workspace / '.git').is_dir())
+        self.assertTrue((workspace / 'venture/.git').is_dir())
+        self.assertFalse((home / 'projects/.git').exists())
+        self.command(home, 'controlroom verify')
+        self.plan(workspace).write_bytes(b'server plan\n')
+        self.command(home, 'controlroom push "server checkpoint"')
+        self.fixture.install(home, bash=True, workspace=workspace)
+        # An installed entrypoint also infers its physical root without flags.
+        run(checks.BASH, '--noprofile', '--norc', workspace / '.controlroom/install.sh',
+            'windows-control', env=self.fixture.env(home))
+        self.command(home, 'kitpull')
+        self.assertEqual(self.plan(workspace).read_bytes(), b'server plan\n')
+        for code, expected in baseline.items():
+            self.assertEqual(((code / '.git/index').read_bytes(),
+                              run('git', 'rev-parse', 'HEAD', cwd=code).stdout,
+                              run('git', 'status', '--porcelain', cwd=code).stdout), expected)
+            self.assertEqual((code / 'app.py').read_bytes(), b'operating code\n')
+            self.assertEqual((code / '.env').read_bytes(), b'SYNTHETIC=preserve\r\n')
+
+    def test_pull_uses_existing_same_repository_ssh_authentication(self):
+        home, repo = self.device()
+        for target, remote, name in [(repo, self.fixture.remote, 'controlroom'),
+                                      (repo / 'venture', self.fixture.product_remote, 'venture')]:
+            origin = f'git@github.com:chaconne67/{name}.git'
+            run('git', 'remote', 'set-url', 'origin', origin, cwd=target)
+            run('git', 'config', f'url.{remote.as_uri()}.insteadOf', origin, cwd=target)
+        (self.fixture.seed / '.controlroom/common.txt').write_bytes(b'updated through SSH\n')
+        self.fixture.commit_seed('SSH update', True)
+        self.command(home)
+        self.assertEqual((repo / '.controlroom/common.txt').read_bytes(), b'updated through SSH\n')
+        for target, name in [(repo, 'controlroom'), (repo / 'venture', 'venture')]:
+            self.assertEqual(run('git', 'config', '--get', 'remote.origin.url', cwd=target).stdout.strip(),
+                             f'git@github.com:chaconne67/{name}.git')
+        self.command(home, 'controlroom verify')
+
     def test_two_devices_round_trip_tools_planning_and_code(self):
         a, ra = self.device(True)
         b, rb = self.device()
