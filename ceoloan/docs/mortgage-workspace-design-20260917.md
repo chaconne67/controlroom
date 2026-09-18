@@ -339,3 +339,69 @@ Codex의 현재 작업에 1회 예약을 등록했다. 예약 ID는 `ceo-loan-9-
 배포 범위는 11절의 모기지 별도 업무 전체와 12절의 첫 시트 기준 재무/부동산 양식이다. 현행 Compose 절차로 코드 이미지·정적 파일·nginx를 반영하고, mortgage 0002 및 중앙 소유자의 `deploy/real_estate_workspace.sql` 적용, 기존 운영 작업에 모기지 예약/도달 명령 연결까지 수행한다. 기존 기업자금 처리와 역할별 원본 다운로드를 보존한다. 예약 본문에 현재 승인과 공식 서버 경로, 검증 및 결과 기록 절차를 함께 전달했다.
 
 실행 때에는 현재 Git·운영 서비스·복구 가능한 백업을 다시 확인하고, 다른 작업의 변경이 섞이지 않았는지 대조한다. 실제 문자/메일 시험 발송이나 캠페인 신규 생성, 검토 대기 판독 8개의 공개 승인은 배포 검증에 포함하지 않는다. 완료는 운영 HTTPS·실제 메뉴/모달·정적 파일·역할별 다운로드·예약 작업 연결과 서비스 상태를 확인한 뒤 기록한다. 이번 기록은 예약 완료이며 실제 배포 완료가 아니다.
+
+## 14. 17시 운영 배포 실행 기준선 (2026-09-18)
+
+17:00 KST 예약 호출로 실행을 시작했다. 앱 main/ceoloan main은 승인된 e04abc4이며 clean이다. 운영은 기존 web a5ceae7/nginx 7d976f5, 인증된 기업자금 문자 목록 HTTP200, 공개 HTTPS200이다. infra Git 기준은 0a6e400이며 기존 미추적 증거 파일과 타 작업의 조정실 수정은 보존한다. 실행 증거와 이전 설정은 main `/srv/consolidation/work/ceoloan-mortgage-deploy-20260918`에 보관한다.
+
+최소 구현 게이트: 2단계에서 멈춤. 앱/웹서버는 저장소의 기존 Dockerfile을, 예약은 기존 jobs의 ceoloan sms/delivery 서비스·타이머 형식을 재사용한다. 기업자금과 모기지의 실패가 서로 막지 않도록 모기지용 두 서비스와 두 타이머를 같은 시각표로 연결한다. 기존 기업자금 유닛과 타이머는 변경하지 않는다. 새 프레임워크나 앱 소스 변경은 없다.
+
+배포·리뷰 계약은 다음과 같다.
+
+1. 원천·목적: 13절의 17시 운영 배포 승인, 기존 UI 보존과 모기지 업무 분리 및 첫 시트 양식 계약.
+2. 경계: infra의 CEO Loan 이미지 참조, scheduled-jobs 목록과 모기지 전용 유닛 4개; 앱 e04abc4의 mortgage0002와 real_estate_workspace.sql; 직접 소비자인 web/nginx/systemd 및 DB 읽기 권한.
+3. 입력: 승인된 Git 코드, 기존 운영 환경·인증·파일 mount, 검증한 이미지, 현재 정상 서비스. 비밀값은 출력·Git에 기록하지 않는다.
+4. 절차: 동일 Docker 빌드 → 격리 검사 → 백업/기준선 → 추가형 DB 변경 → 기존 Compose의 해당 제품만 교체 → 모기지 예약 연결 → 공식 HTTPS/명령 확인. 타 제품이나 기존 서비스의 소유권을 바꾸지 않는다.
+5. 출력: 실제 운영의 모기지 메뉴/목록/양식/업무와 권한별 원본 다운로드, 독립 예약 처리. 기존 기업자금 URL·처리 유지.
+6. 보호: company 쓰기 금지, 원문 바이트·기존 권한, 판독8건 검토 대기/공개0, 업무 기록과 기존 사용자 세션, 다른 제품 서비스·기존 미커밋 작업.
+7. 비목표: 시험 문자/메일 또는 캠페인 생성, 등기 판독 공개 승인, 회사 재무 정정, 옛 서버 writer 재개.
+8. 검증: 새 운영 이미지에서 funding/mortgage/accounts/main 412개 + registry39개 =451개 통과. 이전과 같은 금요일 주간 검사 시간 보정과 독립 registry 프로세스를 사용했다. Django check·nginx 문법·실제 migrate 계획 통과. 백업 company_main SHA와 native pg_restore 목록1350줄 확인. 이후 같은 인증 HTTPS·운영 DB/서비스 및 실제 Chrome 화면을 재확인한다.
+9. 리뷰 관점: 변경 diff와 직접 소비자. 이미지/정적 파일 일치, 새 명령의 격리·실패 상태·예약 시각, 기존 funding 유닛 보존, DB 소유권·권한 및 자료 공개 경계를 확인한다.
+
+### 운영 반영 및 최종 확인
+
+17:00 KST 승인된 예약으로 실행을 시작하여 **17:16:41 KST에 운영 web/nginx 교체를 완료**했다. 이후 실제 HTTPS·숨은 Chrome·권한별 다운로드와 17:25/17:30 자연 예약 실행까지 확인했다. 11~13절의 배포 전 상태는 당시 기록이며, 현재 운영 상태는 이 절을 따른다.
+
+- 앱 최종 코드는 `062b42be8e36ede479df3e5c489119971e1b715d`이다. 승인된 `7f1593d`/`e04abc4`의 구현에 아래 조회 권한 보완만 더했고, `ceoloan/main` push와 원격 HEAD 일치 및 작업 트리 clean을 확인했다.
+- 실제 운영 이미지는 web `ceoloan-web:062b42b-20260918` (`sha256:46fe466890a3adb6636427fbfd1a2b8a8a715077e4b591ac593e1eef3f62a854`), nginx `ceoloan-nginx:e04abc4-20260918` (`sha256:8ed197e0e9060ab29e3a9d941ac48b3d91d3e98db5e60d3a26240617a5f34b32`)이다. SQL 권한 보완은 정적 파일을 바꾸지 않으므로 nginx는 검증한 동일 CSS 빌드를 사용한다.
+- `mortgage.0002_mortgage_workflow`를 ceoloan 업무 스키마에 적용했다. 중앙 DB 소유자로 `deploy/real_estate_workspace.sql`의 두 조회 뷰와 앱 조회 권한을 적용했다. 회사 원천을 복사하거나 company/cretop 스키마를 변경하지 않았다.
+- 운영 설정은 infra Git `b074d60d2064c1f1420e6322622c5acef14ca1ca`에 보존했다. CEO Loan 이미지 참조 두 곳, scheduled-jobs의 모기지 항목 두 개, 새 서비스/타이머 네 개만 포함한다. infra에는 Git 원격이 없어 이 커밋은 서버 내 보존이며 앱 코드의 GitHub push와 구별한다.
+
+### 조회 권한 결함과 보완 검증
+
+실제 앱 역할로 새 뷰를 읽자 `permission denied for function valid_source_review`가 재현됐다. 뷰의 공개 검토 조건이 호출하는 `real_estate.valid_source_review(jsonb)`의 실행 권한이 앱 역할에 없었다. 함수 본문·소유자·ACL을 확인했고, 전달받은 JSON만 검사하는 IMMUTABLE/SECURITY INVOKER 함수이며 테이블 조회나 쓰기를 하지 않는다.
+
+이때 이번에 만든 미검증 조회 뷰 두 개만 CASCADE 없이 되돌리고, 공식 SQL에 해당 함수의 `EXECUTE`를 ceoloan에 부여하는 두 줄(설명 포함)을 추가했다. 검증한 추가형 mortgage 마이그레이션은 보존했다. 격리 DB에서 수정 전 권한 오류와 수정 후 성공을 확인한 뒤 중앙 소유자로 공식 SQL을 다시 적용했다. 실제 `SET ROLE ceoloan` 조회 결과는 목록7행/공개 사실0행이며, `real_estate.party_mentions` SELECT와 `company.companies` UPDATE 권한은 계속 false다.
+
+최소 구현 게이트는 2단계 재사용을 유지한다. 새 읽기 우회 경로나 포괄적인 테이블 권한을 만들지 않고 기존 뷰가 사용하는 순수 검토 함수의 권한만 연결했다. Root가 최종 SQL 및 직접 소비자인 뷰·앱 역할, infra diff/예약 서비스/이미지 연결을 다시 검토했다. 검증 후 승인된 미해결 finding이나 열린 계약 질문이 없다.
+
+### 운영 예약 처리
+
+기존 기업자금 유닛의 내용은 보존했다. 같은 공식 Compose 실행 방식에 다음 모기지 유닛을 별도로 연결했다.
+
+- `consolidation-job-ceoloan-mortgage-sms.service/.timer`: 매시 00·30분, `mortgage_send_sms_campaigns` 실행.
+- `consolidation-job-ceoloan-mortgage-delivery.service/.timer`: 매시 25·55분, `mortgage_sync_sms_delivery` 실행.
+
+시각 기준은 Asia/Seoul, Persistent=false이며 systemd 단위 문법과 Compose 설정 검사가 통과했다. 캠페인/문자0건을 먼저 확인한 후 공식 서비스로 각각 실행하여 처리0건·종료코드0을 확인했다. 이어 **17:25:01~03 도달 확인, 17:30:01~03 문자 예약 처리**가 타이머에 의해 실행됐다. 같은 시각 기존 기업자금 작업과 새 모기지 작업 모두 Result=success, ExecMainStatus=0이다. 캠페인이나 시험 문자를 새로 만들지 않았다.
+
+### 실제 운영 검증 범위와 데이터 상태
+
+- 새 운영 이미지로 격리 환경의 관련 검사 **451개(412+39)**, Django check 및 production deploy check, nginx 설정 문법을 통과했다. 금요일 주간 검사와 registry 프로세스 분리는 위 기준선과 동일하며 기대값을 완화하지 않았다.
+- 실제 기존 관리자/TM/영업 세션을 읽기 전용으로 사용했다. 기업자금 문자/TM 및 모기지 문자/TM/진행/영업 목록의 실제 HTTPS 여섯 경로가 모두200이었다. 계정이나 인증 세션을 새로 만들지 않았으며 인증값은 문서·Git·검증 출력에 기록하지 않았다.
+- 실제 회사 목록을 클릭해 모달을 열었다. 첫 상태 재무 접힘/부동산 펼침, 첫 시트 양식과 단기대여금, 독립 토글, 다시 열 때 초기 상태 복구, Escape로 닫은 뒤 회사 버튼에 포커스 복귀, 기업자금↔모기지 HTMX 메뉴 왕복을 확인했다. 1440/1024/480/390px에서 모달이 화면 안에 들어가며 내부 스크롤이 되고 페이지 가로 넘침이 없었다. 실제 캡처를 눈으로 확인했고 마지막 관찰 구간 콘솔 오류·실패 요청은0이었다.
+- 실제 정적 파일 `/static/css/output.ca60e798f28f.css`는200, text/css, 30,432바이트이며 SHA-256 `fdccef4e46fe2a0da9fa2c26a714b3826c2220b0bacd3cd4ad1ae94fa4b5c18e`가 빌드와 일치했다. 표 머리색은 기존 rgb(45,58,85)이다.
+- 관리자 경로로 원문7개 모두 내려받아 길이·SHA-256을 DB 원본과 대조했다. 비로그인은 로그인 이동, 현재 미배정 TM/영업자는404였으며 응답은 private/no-store다. 배정된 TM의 허용 경로는 앞선 실제 격리 개발 검증과 자동 검사로 확인했다. 운영 회사에 새 담당자를 배정하여 시험하지는 않았다. 인증 없는 녹음 원문 직접 경로는403이다.
+- 최종 상태는 모기지 대상20,519개, 모기지 캠페인/문자/상담/영업 전달 각0개, 원문7개, 검토 대기 판독8개, 공개 확정 사실0개다. 원문 열람은 가능하지만 검토 대기 소유·거래·담보 사실을 확정값으로 표시하지 않는다. 실제 대출 잔액·금리·만기와 미확인 금융 수치를 추정하지 않았다.
+- 공개 `https://rogeon.kr`의 로그인 화면200 및 `production-ceoloan-web-1` healthy를 확인했다. 다른 운영 서비스·DB 컨테이너의 ID/이미지/시작 시각/mount는 기준선과 같고, CEO Loan의 기존 미디어·원문 mount도 유지됐다.
+
+### 보존·복구·인계
+
+배포 전 기존 2026-09-18 일일 company_main 백업(571,949,562바이트)의 SHA-256 `751710df712d88ba5b3c4271ec19140672e31e1f45d4b87a5787eb6471482799`과 native `pg_restore --list` 1350줄을 확인했다. 같은 날짜 일일 백업을 중복 생성하지 않았다. 이전 Compose 설정·컨테이너 기준선·ceoloan/real_estate 스키마 정의·검증 결과는 `/srv/consolidation/work/ceoloan-mortgage-deploy-20260918`에 보존하고 이전 앱/nginx 이미지도 유지했다. 백업의 해시/목록 확인은 전체 복원 시험을 의미하지 않는다. 배포 후 새 업무가 저장됐다면 추가형 마이그레이션을 무조건 역적용하지 말고 현재 데이터와 앱 호환성을 먼저 확인해야 한다.
+
+작업 시작 이전에 다른 작업이 적용한 원문 SSH 접속 호스트 `chaconne@172.30.32.128` 및 readonly 키 mount는 유지했다. 그 호스트 변경과 인증서/디스크/기타 infra 변경은 이번 커밋에 포함하지 않았다. infra Git 개체 폴더 소유권과 작성자 설정 문제는 프로젝트에 확인된 작성자 값으로 해당 Git 명령만 sudo 실행해 해결했고, 인덱스 소유권을 원래1001:1001로 돌렸다. 시스템 권한이나 전역 Git 설정은 바꾸지 않았다. 조정실의 다른 작업 파일 역시 보존했다.
+
+실제 자료가 담긴 화면/검증 자료는 Windows `C:\Users\chaconne\.hidden-browser\evidence\ceoloan-mortgage-production-20260918\deployment`와 위 서버의 비공개 증거 위치에만 저장했다. Git/GBrain에는 원문·실제 회사 스크린샷·자격증명을 넣지 않았다. 이번 검증용 숨은 Chrome PID23120만 종료하고 프로필은 보존했다. 입력 데스크톱 및 전경 창이 유지됐음을 시작/종료 시 확인했고 사용자용 개발 화면·서버·터널은 유지했다.
+
+GBrain의 `project/ceoloan-workspace-navigation`, `project/ceoloan-operating-context`에 완료 상태·현행 서버·검증 범위와 공개0건 제한을 기존 기록에 덧붙이고 다시 읽어 확인했다. 이 승인의 운영 배포는 완료됐으므로 같은 승인 건으로 다시 배포하지 않는다. 실제 고객 발송·외부 전사 품질·새 독립 등기 판독의 의미 정확성까지 검증했다고 해석하지 않는다.
+
+문서 저장 중 다른 작업이 controlroom의 프로젝트 경로를 `projects/ceoloan/docs`에서 `ceoloan/docs`로 옮긴 것을 확인했다. 기존 로컬 작업을 재배치하거나 숨기지 않고 최신 origin/main의 별도 문서 작업 트리에서 계획·README 두 파일만 보존한다. 계획 원본의 Git blob이 동일함을 대조했고 README의 새 통합 런북 상대 경로도 유지한다. 기존 조정실의 사용자 수정과 로컬 인계 문서는 그대로 남긴다.
