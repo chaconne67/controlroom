@@ -93,3 +93,6 @@ Exdigm 개발 커밋: 4ac2f0b26027c58c96fda142e8c7e690eb340539. 디버깅 detach
 
 
 종료 확인: 검증 후보자·Application·검수 결과와 비교용 worktree를 정리했다. Candidate의 보호 관계 때문에 최초 삭제가 중단되어 트랜잭션이 취소됐고, 이번에 만든 검수 결과 → Application → 후보자 순서로 삭제해 각각 부재를 확인했다. 원래 후보자·프로젝트는 삭제하지 않았다. 전용 Chrome stopped=true, 입력 데스크톱·전경 창 유지, 개발 runserver inactive 및 운영·디버깅 Git clean을 확인했다. 실제 개발 URL은 종료 상태이며 화면 증거는 파일로 보존한다.
+
+
+최종 상태 갱신: 2026-09-18 13:13:21 KST에 디버깅 HEAD가 4ac2f0b2에서 4df3adb6로 checkout된 것을 Git reflog에서 확인했다. 이번 에이전트가 실행한 정리 명령에는 해당 checkout이 없으며 실행 주체는 미확인이다. 현재 기본 디버깅 worktree와 운영 main은 clean 4df3adb6다. 검증한 수정본 4ac2f0b26027c58c96fda142e8c7e690eb340539는 서버의 refs/heads/control-room/markdown-display-20260918에 별도로 보존하고 참조 값을 확인했다. 이 참조는 HEAD·운영·origin/main을 바꾸지 않는다. 위 검증 결과는 4ac2f0b2의 실제 실행 증거이며 현재 기본 worktree에 수정이 적용돼 있다고 보고하지 않는다. 운영 승인 후에는 이 참조를 기준으로 다른 진행 작업을 보존하며 통합하고, 같은 공식 검증·배포 경로로 반영한다.
