@@ -167,3 +167,16 @@ GitHub `chaconne67/controlroom` 저장소 루트를 각 조정실의 `~/projects
 - [ ] 설치/운영 안내와 GBrain 현행 운영 계약 갱신
 
 완료는 계획 저장이나 코드 변경만으로 판정하지 않는다. 원격 저장소와 현재 PC에 새 실제 구조가 적용되고, 기존 자료가 있는 격리 장비에서 백업 후 갱신 및 실패 복구가 실제로 확인돼야 한다. 아직 접속/확인하지 않은 노트북까지 적용 완료로 보고하지 않는다. 일괄 승인 후 승인된 범위의 구현·검증·리뷰·문서화·커밋은 추가 승인 없이 진행한다.
+
+
+## 구현·검증 상태와 새 서버 의존성 — 2026-09-18
+
+주인님은 전체 변경안의 구현·검증·리뷰·커밋·GitHub 반영과 현재 PC 전환을 일괄 승인했다. 격리 worktree의 새 실제 폴더 구조와 표준 Python 단일 설치/pull/push/verify/restore 구현은 GitHub `controlroom/structure-update-20260918` 브랜치에 저장했고, [검토용 PR #1](https://github.com/chaconne67/controlroom/pull/1)에 정리했다. 기본 main 브랜치 게시와 현재 PC 실제 전환은 아직 하지 않았다.
+
+최신 프로그램 코드 54dc1c4e07eecfaf421d13f8d783db594fd0423a의 [Windows·macOS·Linux 검사](https://github.com/chaconne67/controlroom/actions/runs/35319493595)가 모두 통과했다. 실제 OS 설치와 두 장비의 도구·문서·검토 코드 전달, 일반 docs 충돌/오래된 관리 파일 교체, 숨김·미추적·Git/index 전체 압축과 내용 검사, 다운로드 이전 실패 보존, 실제 Windows 파일 잠금 자동 복구, 명시 복구, 별도 실행 자료의 동시 변경 보존, 기존 worktree의 HEAD·스테이징 원문과 Git 객체/경로, POSIX 원래 0700 폴더와 0444 파일 모드를 확인했다. 기존 POSIX 동기화 명령 12개와 장비·실패 보존 검사 14개를 유지한다. 원본 50스킬/전역 28배치 그래프도 통과했다.
+
+이동 파일 336개는 기존 Git 원문 blob과 실행 비트가 일치한다. 선언한 프로젝트 지침의 경로 변경과 README 링크 4개는 원문에서 해당 문자열만 바뀌었음을 별도로 대조했다. 기존 스킬 배치 링크 84개를 제거했고 새로운 Git 심링크는 없다. 두 스킬 본문 변경은 skill-review/직접 참조 검토와 quick_validate를 통과했다. 같은 승인 경계의 현재 diff 코드 리뷰에서 승인된 finding은 없으며 공유 전환의 열린 계약 질문은 아래와 같다.
+
+작업 중 다른 작업이 main 서버에 옛 구조의 조정실을 설치했다. SSH 읽기 확인상 `/home/chaconne/controlroom`은 b5c2b3b의 clean Git이고, 조정실 프로젝트 다섯 개는 `/home/chaconne/controlroom-workspaces/<프로젝트>`에서 그 원본을 연결한다. 서버 `/home/chaconne/projects`는 운영 코드 네 저장소가 사용하고 별도 Venture Git도 그 안에 있다. 원래 승인 계획은 원격 코드·서비스·DB·배포를 보호 대상으로 지정했으므로 새 기본 설치를 이 운영 코드 루트에 적용하지 않는다.
+
+추가 제안은 PC·노트북의 기본 `~/projects`를 유지하고 main 조정실만 현재 `~/controlroom-workspaces`를 실제 Git 루트로 통합하는 것이다. 내부 이름/구조·설치·백업 후 갱신은 같게 하며 프로젝트별 등록/연결 폴더는 제거한다. 기존 서버 코드·서비스·DB·인증·예약은 보존하고 main 조정실/별도 Venture만 압축 후 전환한다. 이 서버 루트 예외와 추가 전환 범위는 주인님께 확인을 요청했고 아직 답을 받지 않았다. main은 기존 GitHub SSH 인증을 사용하며 HTTPS 비대화 조회는 인증 없음으로 실패했으므로 전환 후 공식 명령도 기존 인증으로 검증해야 한다. 이 선택이 확정되기 전에는 공유 기본 브랜치 게시/실제 PC 전환을 완료로 판정하지 않는다.
