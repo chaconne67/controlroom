@@ -45,7 +45,28 @@ def run_gbrain(args, timeout=120):
     args = list(args)
     data = None
     if args and args[0] == 'capture' and '--file' in args and '--stdin' not in args:
-        data = Path(args[args.index('--file') + 1]).read_bytes()
+        file_index = args.index('--file')
+        data = Path(args[file_index + 1]).read_bytes()
+        del args[file_index:file_index + 2]
+        if '--slug' in args:
+            slug = args[args.index('--slug') + 1]
+            current = run_gbrain(['get', slug, '--include-content', '--json'], timeout=timeout)
+            if current.returncode == 0:
+                page = json.loads(current.stdout[current.stdout.index('{'):])
+                content = page['content']
+                separator = b'\r\n---\r\n' if data.startswith(b'---\r\n') else b'\n---\n'
+                body = data.partition(separator)[2].decode('utf-8').strip()
+                if not body:
+                    raise RuntimeError('The captured file has no Markdown body')
+                if body.replace('\r\n', '\n') not in content.replace('\r\n', '\n'):
+                    content += '\n\n## 조정실 기록 갱신\n\n' + body + '\n'
+                data = content.encode('utf-8')
+                if '--type' in args:
+                    args[args.index('--type') + 1] = page['type']
+                else:
+                    args += ['--type', page['type']]
+            elif '[page_not_found]' not in current.stderr:
+                raise RuntimeError('Existing GBrain content could not be checked; capture stopped')
         args.append('--stdin')
     if '--source' not in args:
         args += ['--source', 'default']
@@ -59,7 +80,7 @@ def run_gbrain(args, timeout=120):
 
 def write_gbrain_report(slug, report_path):
     result = run_gbrain(['capture', '--file', str(report_path), '--slug', slug,
-                         '--type', 'report', '--quiet'])
+                         '--type', 'analysis', '--quiet'])
     if result.returncode:
         raise RuntimeError('GBrain report delivery failed; rc=%s' % result.returncode)
 
@@ -121,7 +142,7 @@ def main():
     args = pipeline.build_parser().parse_args()
     if args.command == 'generate':
         credential = provider_key()
-        pipeline.load_exdigm_env_value = lambda name: credential if name == 'OPENROUTER_API_KEY' else ''
+        pipeline.load_provider_env_value = lambda name: credential if name == 'OPENROUTER_API_KEY' else ''
     return args.func(args)
 
 

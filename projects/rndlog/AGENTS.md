@@ -23,7 +23,7 @@
 | 항목 | 값 |
 |---|---|
 | 컨트롤타워 | 현재 조정실의 `~/projects/rndlog` 또는 등록 경로 |
-| 운영 업로드·고객자료 정본(main) | `/srv/consolidation/data/files-standby/workspace/companies/<정식 회사명>/` |
+| 운영 업로드·회사별 제출·연구자료 정본(main) | `/srv/consolidation/data/files-standby/workspace/companies/<정식 회사명>/` |
 | 공통 제작 자원(main) | `/srv/consolidation/data/files-standby/workspace/resources/` |
 | 자료 접속 프로그램(main 코드) | `/home/chaconne/projects/rndlog/deploy/workspace_storage_gateway.py` |
 | 로컬 스킬 | `~/controlroom/skills/domains/rndlog` |
@@ -66,7 +66,7 @@ git status --short
 
 ## 작업 전 GBrain
 
-GBrain 본체는 main에 있습니다. 로컬 카드의 기존 DB 주소 호환 CLI로 다음 공용 문서를 읽습니다. 고객자료 저장 위치는 `project/rndlog-file-upload-storage`를 함께 확인합니다.
+GBrain 본체는 main에 있습니다. 로컬 카드의 기존 DB 주소 호환 CLI로 다음 공용 문서를 읽습니다. 회사별 제출·연구자료 저장 위치는 `project/rndlog-file-upload-storage`를 함께 확인합니다.
 
 - `project/rndlog-operating-context`
 - 작업 기능명·화면명·모델명으로 찾은 관련 페이지
@@ -123,3 +123,9 @@ GBrain 본체는 main에 있습니다. 로컬 카드의 기존 DB 주소 호환 
 
 - 월간 연구노트·주간 연구일지·주간 업무일지는 별도 문서입니다.
 - 검증한 고객 검토용 DOCX는 보완 목록과 함께 전달할 수 있습니다. 고객 사실 확인까지 끝난 문서만 final/에 확정합니다.
+
+## 보관 디스크·DB 백업
+
+- 현행 저장 배치와 실행·복원 증거는 `~/controlroom/docs/production-server-consolidation-20260916.md` 20절 및 main `/srv/consolidation/infra/README.md`를 확인합니다. 코드·Git은 위 프로젝트 폴더에서 관리합니다.
+- Main DB 백업은 단일03:40 한국 시각 예약으로 `/mnt/data/backups/daily/YYYY-MM-DD`에 하루 한 묶음만 만들며 전체 PG 접속 가능 비템플릿 DB와 MySQL 저장 스키마를 포함합니다. 같은 날 재호출은 SHA 확인 후 중단하고 기존14일 보존 기본값을 유지합니다. 추가 디스크 고정 UUID/mount 확인 실패 시 시스템 디스크에 대신 저장하지 않습니다.
+- 실시간으로 쓰거나 즉시 꺼내 쓰지 않는 이미지·파일 원본·보관 자료는 `/mnt/data/files`에 둡니다. 복구 시험/보관 이미지 사본은 `/mnt/data/archive`, 초기 Git bundles는 `/mnt/data/imports`에 있습니다. 현재 앱 DB·실행 파일·캐시·업로드/다운로드는 위 정본 경로를 유지합니다. 기존 `/srv/consolidation` 복구용 bind mount는 같은 추가 디스크 파일을 보는 접속 경로이며 코드/자료 복사본을 새로 만드는 경로가 아닙니다.

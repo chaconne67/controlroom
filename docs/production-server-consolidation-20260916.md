@@ -3,12 +3,12 @@
 작성일: 2026-09-16 (Asia/Seoul)
 계획 정본: controlroom/docs/production-server-consolidation-20260916.md
 목표 호스트: chaconne@49.247.192.127, hostname main
-상태: 운영 DB·자료·쓰기 책임 및 DNS 14개 이전 완료(16·18절) · 정상 주기 결과·옛 서버 의존성/백업/저장공간·해지 후속 대기
+상태: 운영·DNS 14개·프로젝트 루트 및 보관 디스크 이전 완료 · 일일 전체 DB 백업·실제 03:40 실행·전체 복원 확인(20절) · 인증서 전달 복구 완료 · 기억 정리 응답 형식·Coconut 캐시 후속 대기(21절)
 대상: 기존 DB, Coconut/FundKeeper, RNDLOG, ZiiN, CEO Loan, GBrain 런타임·자료 게이트웨이·필요한 제품 런타임
 제외: Exdigm 앱·운영서버·도메인 이전. 공용 DB를 쓰는 Exdigm 소비자의 기존 접속·업무 계약도 보호한다.
 
 
-> 최신 상태: 실제 정본·예약 책임 인계와 최종 백업 독립 복원은 16절, 2026-09-18 00:35 KST 공개 DNS 14개 완료와 남은 운영 후속은 18절을 먼저 읽는다. 17절의 synco 미변경은 주인님의 후속 변경과 실제 권한 DNS 조회로 해소됐다. 본문의 이전 승인·준비·DNS 상태는 각 확인 시점의 이력으로 보존한다.
+> 최신 상태: 현행 프로젝트 루트는 19절, 보관 디스크·하루 한 번 전체 DB 백업과 실제 복원 결과는 20절, 정상 예약 관찰과 인증서·조정실 기억 정리 후속은 21절을 먼저 읽는다. 실제 운영 인계는 16절, 공개 DNS 14개 완료와 옛 서버 의존성은 18절이다. 앞 절의 당시 경로·승인·준비 상태는 이력으로 보존한다.
 
 ## 1. 사용자 결정과 완료 의미
 
@@ -747,3 +747,82 @@ RNDLOG 자료 코드994ef3b와 ZiiN af6888f는 기존 GitHub origin/main에 push
 - 보관위치는 옛 DB `/mnt/consolidation-20260916/offsite`, 증거는 `/mnt/consolidation-20260916/code-layout-recovery-20260918-proof.json` 및 main `/srv/consolidation/work/project-layout-20260918`. 기존16절의 실제coldData/11frozenimages·runtime companions와 이 최신code/access companion을 함께 사용한다. 복구 전에 현재 Root의 실제 `.git`/RNDLOG gateway와 selected workspace·SSH제한설정을 준비하며 과거symlink를 코드에 덮지 않는다. 선택marker 이후 OLD를 재개하지 않는다.
 
 앞18절의 정상일정 관찰·옛서버별 제외서비스/호환주소/백업·저장공간·최종해지 후속은 유지한다. 이번 변경으로 코드 진입·Git·지침의 폴더 혼동은 해소했고 old VM 해지/삭제·vdb 포맷을 실행하거나 추가AI/유료 배치·고객 발송 시험을 하지 않았다.
+
+## 20. 2026-09-18 저장공간 분리와 일일 전체 DB 백업
+
+주인님은 운영 DB 백업을 하루 한 번 만들고 추가 마운트 디스크에 보관하며, 실시간으로 쓰거나 즉시 꺼내 쓰지 않는 이미지·파일 원본·보관 데이터도 같은 디스크에 저장하도록 지시했다. 과거의 `/dev/vdb` 미포맷·별도 지시 대기는 이 후속 지시로 대체된다. 코드 저장소는 19절의 실제 프로젝트 폴더 구조를 유지한다.
+
+자료라는 표현은 RNDLOG 회사별 `sources/original`, `sources/intake`, `research`, `deliverables/drafts`, `deliverables/final`과 공통 `resources`를 가리킨다. 회사에서 받은 파일 원본, 수신 기록, 조사자료, 작성 중인 보고서, 검토가 끝난 산출물과 공통 양식·제작 자원이며 운영 DB를 가리키지 않는다. 이 경로는 현재 자료 업로드·다운로드의 정본이므로 코드 Git에 넣지 않는다.
+
+### 현행 저장 기준
+
+| 데이터 | 실제 위치와 관리 기준 |
+|---|---|
+| 네 프로젝트 코드·Git | `/home/chaconne/projects/<프로젝트>` |
+| 현재 쓰는 DB·앱 실행 파일·캐시·업로드/다운로드 | 기존 `/srv/consolidation/data`의 정본 경로 |
+| 일일 PG/MySQL 논리 백업 | `/mnt/data/backups/daily/YYYY-MM-DD` |
+| 통합 복구 시험용 사본·보관 실행 이미지 묶음 | `/mnt/data/archive` |
+| 기존 DB·복구 백업 | `/mnt/data/backups` |
+| 초기 가져오기 Git bundles | `/mnt/data/imports` |
+| 운영에 연결되지 않은 RNDLOG 초기 준비 사본 | `/mnt/data/files/rndlog-preparation` (기존 `/srv/consolidation/data/rndlog-workspace`에서 같은 파일 접속) |
+| 새로 보관하는 비실시간 이미지·파일 원본·자료 | `/mnt/data/files` |
+
+추가 볼륨은 `/dev/vdb` 200GiB, ext4, UUID `d7c1e2fe-b0e9-4c68-a6c9-1888e3825ffb`, 마운트 `/mnt/data`다. UUID 기반 `/etc/fstab`과 기존 복구 경로를 유지하는 Linux bind mount를 사용한다. 코드 폴더에 자료 symlink를 다시 만들지 않는다. `/srv/consolidation/{work,backups,incoming}`은 각각 `/mnt/data/{archive,backups,imports}`의 같은 파일을 보는 기존 접속 경로다. 전역 마운트 폴더의 소유/권한은 기존 보호 부모와 같은 1001:1001·0750으로 유지한다.
+
+### 백업 공식 실행 경로
+
+기존 단일 `consolidation-ceo-loan-backup.timer`를 재사용해 **매일 03:40 한국 시각**, `consolidation-ceo-loan-backup.service` → `daily-database-backup.py` → 기존 `legacy/backup-ceo-loan-db.sh`/native PG 도구와 native MySQL 도구로 백업한다. 기존 유닛 이름은 호환 식별자로 남아 있고 대상은 현재 PG의 모든 접속 가능한 비템플릿 DB와 MySQL의 모든 저장 스키마다. 정보 조회용 가상 스키마 두 개만 MySQL에서 제외한다. MySQL `sys`의 원본 설정 데이터도 명시적으로 포함한다.
+
+완료 묶음은 한국 날짜별 하나다. 같은 날 재호출하면 기존 manifest·파일 크기·SHA-256을 먼저 확인하고 새로 덤프하지 않는다. 신규 백업은 비공개 `.partial-*`에 쓰고 native 파일 검사 및 SHA를 확인한 뒤 날짜 폴더로 원자 확정한다. 기존 보존 기본값 14일을 유지하며 이 작업이 만든 14일 초과 완료 묶음만 정리한다. 과거 복구 사본·알 수 없는 파일·불완전 묶음을 성공으로 간주하거나 삭제하지 않는다.
+
+유닛은 실제 `/mnt/data` mount를 요구하고 스크립트는 고정 UUID를 확인한 뒤 쓰기를 시작한다. 추가 디스크가 없거나 다른 디스크이면 시스템 디스크에 백업을 생성하지 않고 실패한다. 서비스는 root, 파일/백업 폴더는 기존 비공개 권한으로 실행한다.
+
+### 완료 증거와 재개 정보
+
+자료 이동은 02:33 KST, 미사용 RNDLOG 초기 준비 사본 이동은 02:34 KST 완료했다. 기존 파일 내용·UID/GID/mode·ACL/xattr/hardlinks를 이동 전후 대조한 뒤 검증된 시스템 디스크 중복 사본만 제거했다. 시스템 디스크는 사용 약182.5GB/여유24.6GB/89%에서 사용47.1GB/여유160.0GB/23%로 정리됐다. 추가 디스크에는 보관 사본 약106.3GB와 이후 일일 백업이 저장된다.
+
+첫 공식 service 백업은 02:34:37~02:37:00 KST, PG12 DB·MySQL7 저장 스키마·1,411,297,685bytes였다. 02:37:21~22 KST 같은 service 재호출에서 already_completed_today와 manifest·파일 inode/mtime/크기·완료 폴더 불변을 확인했다. 별도 mount namespace의 디스크 누락 거부 및 시스템 mountpoint 무변경·host 실제 mount 보존도 확인했다. 실제 03:40:03 timer가 03:40:04~05 service를 실행했고, 오늘 이미 완료된 묶음을 SHA 확인 뒤 중복 생성 없이 종료했다. 다음 일정은 9월19일 03:40이다. native generated fstab mount units의 의존성은 확인했으며 실제 main 재부팅 시험은 실행하지 않았다.
+
+network-none/공개포트 없음·원래 DB 이미지의 격리 전체 복원시험은 완료됐다. PostgreSQL 12개 DB 전체 restore, MySQL 7개 저장 스키마 import 및 1,818개 테이블·뷰 전수 검사(all OK), 원래 앱 계정 접속, sys 설정 원본 행·시각, GBrain owner 및 최종 비관리자 권한을 확인했다. 사용자 중지 후 재개에서는 이미 성공한 PG restore를 반복하지 않고 상태를 재확인했다. 시험 컨테이너 2개와 이번 시험 데이터는 종료 후 제거했다. 증거는 main infra `validation-mounted-daily-restore-20260918.json`의 completed=true다.
+
+운영 보존 검사는 시작 기준선의 전체 32개 컨테이너 ID·상태·시작 시각·이미지·mount 일치, intended timer 13개 enabled/active와 옛 파일 동기화 timer inactive/disabled, 선택 marker·PG/MySQL identity 및 단일 쓰기 정본, 실제 원본 파일·RNDLOG 자료 접근을 확인했다. 13시대 최종 시스템 디스크는 사용47,684,345,856bytes/여유159,370,731,520bytes(24%), 보관 디스크는 사용107,763,265,536bytes/여유102,461,517,824bytes(52%)다. 200GiB는 214.75GB이므로 공급자 용량·파일시스템 사용 가능 용량·GB/GiB를 구별한다.
+
+백업 전용 추가 디스크는 같은 main 호스트에 연결돼 있으므로 서버 자체의 소실에 대비한 별도 호스트 정기 백업을 대신하지 않는다. 기존 별도 호스트의 암호화 최종 인계 백업은 보존한다. 옛 서버 호환 경로·제외 서비스·해지 판단과 정상 예약 결과 관찰은 18절의 남은 작업을 따른다.
+
+### 별도 발견한 Coconut 02:10 캐시 작업
+
+첫 정상 예약에서 원래 캐시 코드가 Wikipedia `Nasdaq-100`의 고정된 네 번째 표를 종목 표로 가정하여 `KeyError: ticker`로 종료했다. 종목 표가 `List_of_NASDAQ-100_companies`로 옮겨졌고 새 표의 Ticker/Company 102행을 확인했다. 기존 코드가 입력 조회 전에 지난 US 캐시를 지우므로 현재 US 캐시 파일이 없는 상태다. 디스크 이동 대상이 아닌 현재 Coconut cache 경로에서 원래 예약 명령이 실행한 결과다. KRX 인증 설정 경고는 별도이며 이번 실제 실패 위치를 대신하는 원인으로 단정하지 않는다.
+
+수정안은 새 표를 컬럼 이름으로 찾고 새 캐시를 먼저 원자 저장한 뒤 옛 캐시를 정리하는 한 파일 변경이다. ICB를 기존 GICS로 바꾸어 표시하지 않는다. 입력 실패 시 기존 캐시 보존·표 순서 변경·누락 거부를 부작용 없이 확인했고 원래 운영 이미지 위에 한 파일만 추가한 캐시 전용 제안 이미지를 준비했다. 앱 코드/웹 이미지/예약 실행 정의는 아직 변경하지 않았다. 실제 생성에는 기존 종목 등록과 외부 구독 API 조회가 포함될 수 있어 통합 문서 1절의 다른 유료 배치 시험 제외 조건에 따라 수정·적용·1회 캐시 재생성 승인을 요청한 상태다. 내부 AI 1회 승인을 이 작업에 재사용하지 않는다. 저장공간·일일 DB 백업 작업은 독립적으로 계속한다.
+
+### 최신 저장 설정의 별도 호스트 암호화 보관·복원
+
+Main infra 75dbab3b2a6a9dc258346a44a160a571f0043245의 full Git bundle, 현재 host fstab, mount UID/GID/mode와 실제 백업·누락디스크·전체복원·운영보존·연결 검증 증거를 기존 public encryption keyring/제한 receiver로 별도 옛 DB에 보관했다. archive `checkpoint-base-20260918T043445Z-53539ae9.tar.gz.gpg`는 156,829bytes, SHA-256 `a80a3203196557f132237445d1e41f5170a794e0d8d267a3382fe669de9fed4e`다. Main receipt와 Source 암호문 원본 SHA/크기·GPG 복호화 integrity·12파일 manifest·Git bundle clone/HEAD·세 변경 Python 파일 SHA/compile·host/tracked fstab·mount 권한 metadata·native 증거를 확인했다. Main과 Source의 이번 임시 평문은 제거했다.
+
+증거는 Main `/srv/consolidation/work/storage-config-recovery-20260918/result.json`, Source `/mnt/consolidation-20260916/storage-config-recovery-20260918-proof.json`이다. 이 설정 companion은16절 cold DB/data/image와19절 code/access companion에 추가하며 새로운 전체 DB 정기 서버외부 백업을 뜻하지 않는다. source private keyring이나 비밀값을 조정실·Git·GBrain·로그에 넣지 않았다.
+
+## 21. 2026-09-18 정상 예약 관찰과 연결 후속
+
+이 절은 실제 일정 관찰과 후속 수정 결과다. 새 정상 실행·추가 유료 시험·과거 보고서가 각각 무엇을 증명하는지 구분한다.
+
+### 인증서 중앙 갱신·옛 HTTPS 입구 전달
+
+첫 정상 03:36 실행은 인증서가 만료일까지 남아 CA 갱신을 건너뛴 뒤 옛 DB의 frontend 선택에서 실패했다. frozen ZiiN Nginx 이미지의 compose label이 SQL 전달 컨테이너 두 개에도 상속돼 label 후보가 3개였다. 기존 certificate-receiver.py에서 고정된 cert_root를 실제 bind mount한 후보만 남기고 정확히 1개일 때 기존 nginx 검사·reload를 실행하도록 수정했다. 네 Source의 동일 receiver bytes·소유·권한과 제한 SSH 정책을 보존했다.
+
+같은 공식 consolidation-certificates.service를 13:04:35~57에 1회 실행해 status0과 네 옛 입구 전달을 확인했다. 기존 인증서 archive/live bytes·디렉터리 권한·Nginx ID/StartedAt을 보존했다. 공개 HTTPS 14개 이름은 일반 DNS·기본 CA/호스트명 검증으로 최종200이었다. 만료에 따른 실제 신규 CA 발급이나 장기 자동 갱신 전체를 검증한 결과로 확대하지 않는다.
+
+### 옛 writer 확인 경로 보존
+
+옛 DB의 정지된 ZiiN web 컨테이너와 원래 SQL client Docker image가 현재 없어 기존 verify-new가 조회 단계에서 멈췄다. old web이 실제 존재하면 running 여부를 계속 검사하고, 없으면 나머지 old writer·cron·RO fence·선택 정본 검사를 그대로 수행한다. 기존 설치 GBrain Bun.SQL을 사용해 동일 PG/MySQL identity/읽기전용 값을 읽으며 credential은 자식 프로세스 메모리로만 전달한다. 설치·DB daemon 재개는 없다. 누가 원래 컨테이너·이미지를 제거했는지는 확인되지 않았다.
+
+13:11:31 네 Source의 공식 verify-new는 old writer disabled와 main PG/MySQL identity 및 GBrain health200을 통과했다. 선택 marker 이후 prepare/preflight/choose-authority/old recovery를 반복하지 않는다.
+
+### 조정실 매일 03:30 기억 정리
+
+첫 실제 Windows 작업은 12:49:41에 종료값1이었다. 9월17일 새 대화46개를 읽었으나 adapter가 실제 provider loader에 연결되지 않아 판단 호출 전에 멈췄고, Windows 파일 경로·미등록 report 타입으로 보고서 전달도 실패했다. 같은 adapter의 실제 load_provider_env_value 연결, file→stdin 전달, native analysis 저장과 도메인 page_type:report 보존을 수정했다. 기존 주제 저장 전 원문 전체·title/type을 읽고 보존하며 신규 본문을 덧붙인다. 조회 실패는 저장 전에 중단한다. 모델·판단 프롬프트와 옛 서버 기록 보관 원칙은 유지한다.
+
+주인님이 허용한 유료 1회 재실행은 13:22:12~36이었다. 기존 실패 보고서를 SHA와 함께 보존한 뒤 native Windows task를 정확히 한 번 시작했다. 기존 OpenRouter 모델의 응답은 JSON 파싱 뒤 최상위 객체 조건을 통과하지 못해 `LLM JSON root must be an object`로 종료값2, 새 기억0개였다. 새 실패 보고서와 ledger는 생성됐고 GBrain analysis 보고서에 과거 실패 원문·유형을 보존하며 새 실패를 추가한 실제 readback을 확인했다. 인증·전송 수정의 성공을 기억 생성 완료로 표시하지 않는다. 원래 코드는 원시 모델 응답을 저장하지 않으므로 정확한 응답 값·형식은 재확인할 수 없다. 추가 유료 재실행은 하지 않았다. 다음 정상 작업은 9월19일 03:30이며 응답 형식과 실제 기억 저장 성공은 남은 확인 사항이다.
+
+### 남은 별도 작업
+
+Coconut cache는 20절과 outputs의 구체적 한 파일 수정안·캐시 전용 제안 이미지·실행 정의를 따른다. 실제 수정·적용·1회 재생성의 허용 응답은 아직 없으며 이번 기억 정리 1회 승인을 재사용하지 않는다. 정상 token 08:30·accounts 09:10·prices 09:30 및 RNDLOG/CEO Loan noon timer는 실제 status0을 관찰했다. 고객 수신·금융 결과를 별도로 시험한 것으로 확대하지 않는다. ZiiN 주간 Kakao는 다음9월21일 실제 결과가 필요하다. 옛 서버별 호환 소비자·제외 서비스·서버 외부 정기 백업과 최종 해지 판단은 18절 후속을 유지한다.
