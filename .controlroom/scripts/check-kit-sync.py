@@ -447,8 +447,9 @@ if ($LASTEXITCODE) { throw 'Command dispatch failed' }
         self.assertIn(command, (ROOT / 'docs/onboarding-new-server.md').read_text(encoding='utf-8'))
         result = run('cmd.exe', '/d', '/c', command
                      + ' && where kitpull && where kitpush && kitpull --verify && kitpush --help', env=env)
-        self.assertIn(str(home / '.local/bin/kitpull.cmd'), result.stdout)
-        self.assertIn(str(home / '.local/bin/kitpush.cmd'), result.stdout)
+        resolved_commands = {Path(line).resolve() for line in result.stdout.splitlines() if line.endswith('.cmd')}
+        self.assertIn((home / '.local/bin/kitpull.cmd').resolve(), resolved_commands)
+        self.assertIn((home / '.local/bin/kitpush.cmd').resolve(), resolved_commands)
         self.assertIn('Physical layout and installed contents verified.', result.stdout)
         self.assertIn('usage: kitpush', result.stdout)
 
