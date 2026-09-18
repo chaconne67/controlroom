@@ -4,9 +4,9 @@
 
 ## 처음 설치하거나 최신본 적용
 
-Git, Python 3.12 이상, [GitHub CLI (`gh`)](https://cli.github.com/), 비공개 Controlroom 저장소의 읽기 권한을 준비합니다. PC·노트북의 일반 설치에는 Venture 저장소 읽기 권한도 필요합니다. Windows는 Git for Windows와 PowerShell, Linux·macOS는 Bash와 curl을 사용합니다.
+Git, Python 3.12 이상과 비공개 Controlroom 저장소의 읽기 권한을 준비합니다. 아래 HTTP 다운로드 명령은 [GitHub CLI (`gh`)](https://cli.github.com/) 인증을 사용합니다. GitHub SSH 인증이 있는 Ubuntu main 서버는 아래 SSH 설치 명령을 사용하며 `gh`가 필요 없습니다. PC·노트북의 일반 설치에는 Venture 저장소 읽기 권한도 필요합니다. Windows는 Git for Windows와 PowerShell, Linux·macOS는 Bash를 사용하고 HTTP 다운로드에는 curl도 필요합니다.
 
-새 장비에서 GitHub 인증을 한 번 설정합니다. 아래 두 명령은 두 OS에서 같습니다.
+HTTP 다운로드를 사용할 새 장비에서는 `gh` 설치 후 인증을 한 번 설정합니다. 아래 두 명령은 두 OS에서 같습니다. main 서버의 SSH 설치에는 이 설정이 필요 없습니다.
 
 ```text
 gh auth login --hostname github.com --git-protocol https
@@ -31,7 +31,15 @@ powershell -NoProfile -ExecutionPolicy Bypass -Command "& ([scriptblock]::Create
 
 ### Ubuntu main 서버 — 코드 보존 설치
 
-기존 `~/projects/<프로젝트>`에서 코드가 운영되고 있으면 다음 한 줄을 실행합니다.
+기존 `~/projects/<프로젝트>`에서 코드가 운영되고 있고 GitHub SSH 인증이 되어 있으면 다음 한 줄로 처음 설치합니다. `gh` 설치나 토큰 입력은 필요 없습니다.
+
+```bash
+d=~/.local/share/controlroom/source; git clone git@github.com:chaconne67/controlroom.git "$d" && bash "$d/.controlroom/install.sh" --main-server
+```
+
+이후 갱신은 `controlroom pull`을 사용합니다. 위 경로에 원본만 받아져 있고 설치를 마치지 못했다면 `bash ~/.local/share/controlroom/source/.controlroom/install.sh --main-server`로 이어서 설치합니다.
+
+이미 `gh`를 설치하고 위 HTTP 인증 설정을 마친 장비에서는 curl로도 설치할 수 있습니다. `gh`가 없으면 이 명령을 사용하지 않습니다.
 
 ```bash
 script=$(curl -fsSL -H "Authorization: Bearer $(gh auth token)" https://raw.githubusercontent.com/chaconne67/controlroom/main/.controlroom/install.sh) && bash -c "$script" -- --main-server
