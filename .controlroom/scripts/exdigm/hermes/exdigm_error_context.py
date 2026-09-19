@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Read new incidents and later handling revisions for the Hermes monitor."""
+"""Read undelivered handling results, excluding raw failures and progress."""
 from __future__ import annotations
 
 import base64
@@ -36,13 +36,8 @@ def parse_probe_output(text: str) -> dict:
 
 def remote_code(state: dict) -> str:
     # to_jsonb keeps this query usable before the additive migration is deployed.
-    # Old rows do not become a new backlog just because classification was added.
-    parameters = [
-        state.get("exdigm_error_checkpoint_created_at"),
-        state.get("exdigm_error_checkpoint_created_at"),
-        state.get("exdigm_error_checkpoint_id") or "00000000-0000-0000-0000-000000000000",
-        json.dumps(state.get("exdigm_delivered_revisions", {})),
-    ]
+    # A result can arrive after a newer error; acknowledge result revisions only.
+    parameters = [json.dumps(state.get("exdigm_delivered_revisions", {}))]
     return f'''import json
 from django.db import connection
 with connection.cursor() as cursor:
@@ -54,23 +49,29 @@ with connection.cursor() as cursor:
             SELECT id::text, created_at, occurred_at, summary, source, error_type,
                    COALESCE(to_jsonb(e)->>'category', 'unclassified'),
                    COALESCE(to_jsonb(e)->>'next_action', 'investigate'),
-                   COALESCE((to_jsonb(e)->>'handling_revision')::int, 0),
+                   report.revision,
                    COALESCE(to_jsonb(e)->'handling_context', '{{}}'::jsonb),
-                   COALESCE(to_jsonb(e)->'processing_history'->-1, '{{}}'::jsonb)
+                   report.results->-1, report.results,
+                   COALESCE((to_jsonb(e)->>'handling_revision')::int, 0)
             FROM projects_operationalerror e
-            WHERE (%s::timestamptz IS NULL
-                   OR (created_at, id) > (%s::timestamptz, %s::uuid)
-                   OR COALESCE((to_jsonb(e)->>'handling_revision')::int, 0)
-                      > COALESCE((%s::jsonb->>id::text)::int, 0))
+            CROSS JOIN LATERAL (
+                SELECT jsonb_agg(h ORDER BY (h->>'revision')::int) AS results,
+                       MAX((h->>'revision')::int) AS revision
+                FROM jsonb_array_elements(COALESCE(to_jsonb(e)->'processing_history', '[]'::jsonb)) h
+                WHERE h->>'status' IN ('succeeded', 'failed')
+                  AND COALESCE((h->>'revision')::int, 0) > COALESCE((%s::jsonb->>e.id::text)::int, 0)
+                  AND (h->>'entry_id' IS NULL OR h->>'entry_id' IS DISTINCT FROM h->'handling_context'->>'approval_entry_id')
+            ) report
+            WHERE report.revision IS NOT NULL
               AND summary <> '테스트 오류 기록입니다. 실제 운영 장애가 아닙니다.'
-              AND NOT (COALESCE(to_jsonb(e)->>'category', '') = 'expected_stop'
-                       AND COALESCE(to_jsonb(e)->>'next_action', '') = 'none')
             ORDER BY created_at, id LIMIT 100
         """, {parameters!r})
         errors = [
             dict(zip(("id", "created_at", "occurred_at", "summary", "source", "error_type",
-                      "category", "next_action", "handling_revision", "handling_context", "last_result"),
-                     (row[0], row[1].isoformat(), row[2].isoformat(), *row[3:])))
+                      "category", "next_action", "handling_revision", "handling_context", "last_result",
+                      "processing_results", "current_handling_revision"),
+                     (row[0], row[1].isoformat(), row[2].isoformat(), *row[3:9],
+                      *(json.loads(value) if isinstance(value, str) else value for value in row[9:12]), row[12])))
             for row in cursor.fetchall()
         ]
         result = {{"available": True, "errors": errors}}
