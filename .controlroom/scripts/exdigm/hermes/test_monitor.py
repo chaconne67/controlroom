@@ -12,11 +12,11 @@ def profile(tmp_path, monkeypatch):
     (tmp_path / "cron").mkdir()
     with sqlite3.connect(tmp_path / "cron" / "executions.db") as db:
         db.execute("CREATE TABLE executions (id TEXT, job_id TEXT, status TEXT, delivery_outcome TEXT)")
-        db.execute("INSERT INTO executions VALUES ('current', ?, 'running', NULL)", (checkpoint.JOB_ID,))
+        db.execute("INSERT INTO executions VALUES ('current', 'sam-monitor', 'running', NULL)")
     monkeypatch.setattr(collector, "PROFILE_ROOT", tmp_path)
     monkeypatch.setattr(collector, "STATE_PATH", tmp_path / "state" / "exdigm_error_monitor.json")
     monkeypatch.setattr(collector, "ERROR_LOG", tmp_path / "logs" / "errors.log")
-    checkpoint.save_state(collector.STATE_PATH, {"preserve": True, "exdigm_error_checkpoint_created_at": "2026-09-18T00:00:00+09:00", "exdigm_error_checkpoint_id": "old"})
+    checkpoint.save_state(collector.STATE_PATH, {"preserve": True, "exdigm_monitor_job_id": "sam-monitor", "exdigm_error_checkpoint_created_at": "2026-09-18T00:00:00+09:00", "exdigm_error_checkpoint_id": "old"})
     return tmp_path
 
 
@@ -109,6 +109,15 @@ def test_manual_probe_cannot_claim_another_jobs_delivery(profile):
     with sqlite3.connect(profile / "cron" / "executions.db") as db:
         db.execute("UPDATE executions SET job_id='different-job'")
     with pytest.raises(RuntimeError, match="single active"):
+        collector.prepare_context(runner=probe)
+    assert "exdigm_pending_delivery" not in collector.load_state()
+
+
+def test_missing_installed_job_identity_never_guesses_another_profile(profile):
+    state = collector.load_state()
+    del state["exdigm_monitor_job_id"]
+    checkpoint.save_state(collector.STATE_PATH, state)
+    with pytest.raises(ValueError, match="identity"):
         collector.prepare_context(runner=probe)
     assert "exdigm_pending_delivery" not in collector.load_state()
 

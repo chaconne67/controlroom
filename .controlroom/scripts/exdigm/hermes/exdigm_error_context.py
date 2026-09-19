@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Read new incidents and later handling revisions for the existing Judy monitor."""
+"""Read new incidents and later handling revisions for the Hermes monitor."""
 from __future__ import annotations
 
 import base64
@@ -115,12 +115,12 @@ def prepare_context(*, runner=run_probe, receipt_reader=read_executions) -> dict
     if context:
         active = receipt_reader(PROFILE_ROOT)
         if len(active) != 1:
-            raise RuntimeError("A single active Judy execution is required before preparing delivery")
+            raise RuntimeError("A single active Hermes execution is required before preparing delivery")
         previous = state.get("exdigm_pending_delivery")
         if previous and previous["execution_id"] != active[0]["id"]:
             previous_runs = receipt_reader(PROFILE_ROOT, previous["execution_id"])
             if previous_runs and previous_runs[0]["status"] in {"claimed", "running"}:
-                raise RuntimeError("Previous Judy delivery is still active")
+                raise RuntimeError("Previous Hermes delivery is still active")
         state["exdigm_pending_delivery"] = {
             "execution_id": active[0]["id"],
             "checkpoint": context["exdigm_error_checkpoint"],

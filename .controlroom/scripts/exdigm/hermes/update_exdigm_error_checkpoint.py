@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Acknowledge the existing Judy run only after Hermes records real delivery."""
+"""Acknowledge the configured Hermes job only after its actual delivery."""
 from __future__ import annotations
 
 import argparse
@@ -8,23 +8,24 @@ import sqlite3
 from datetime import datetime
 from pathlib import Path
 
-JOB_ID = "41796002f11e"
-
-
 def read_executions(profile: Path, execution_id=None) -> list[dict]:
+    state = json.loads((profile / "state" / "exdigm_error_monitor.json").read_text(encoding="utf-8"))
+    job_id = state.get("exdigm_monitor_job_id")
+    if not isinstance(job_id, str) or not job_id.strip():
+        raise ValueError("The installed Exdigm monitor job identity is required")
     database = profile / "cron" / "executions.db"
     with sqlite3.connect(database.as_uri() + "?mode=ro", uri=True, timeout=5) as db:
         db.row_factory = sqlite3.Row
         if execution_id:
             rows = db.execute(
                 "SELECT id,status,delivery_outcome FROM executions WHERE id=? AND job_id=?",
-                (execution_id, JOB_ID),
+                (execution_id, job_id),
             )
         else:
             rows = db.execute(
                 "SELECT id,status,delivery_outcome FROM executions "
                 "WHERE job_id=? AND status IN ('claimed','running')",
-                (JOB_ID,),
+                (job_id,),
             )
         return [dict(row) for row in rows]
 
