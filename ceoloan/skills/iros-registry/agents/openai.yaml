@@ -1,4 +1,4 @@
 interface:
   display_name: "IROS 등기부 추출"
   short_description: "인터넷등기소 조회와 등기 PDF 추출·검증 절차"
-  default_prompt: "$iros-registry와 $hidden-desktop-browser를 함께 사용해 숨은 실제 Chrome에서 IROS 화면을 확인하고 승인된 등기부 절차를 수행해 주세요."
+  default_prompt: "$iros-registry의 도메인 계약과 $web-automation의 브라우저 원칙을 적용해 하나의 공식 IROS SSP로 조회·결제·PDF 저장·구조 검증을 수행해 주세요."

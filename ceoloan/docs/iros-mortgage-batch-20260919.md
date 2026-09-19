@@ -4,8 +4,8 @@
 
 ## 공식 경로와 기준선
 
-- 서버 정본: `chaconne@49.247.192.127:/home/chaconne/projects/ceoloan`, `main`, 수집기 커밋 `cf30dfbc4c0032ae07469b7c80384abe07874697`.
-- 실행: `C:\cretop-agent\iros_batch.py collect` → `iros_dom.dom_registry` → 공용 `HiddenBrowser(ceoloan-iros-registry)` → Playwright → PDF·구조 JSON → 후보별 원자적 상태 저장.
+- 서버 정본: `chaconne@49.247.192.127:/home/chaconne/projects/ceoloan`, `main`, 단일 SSP 커밋 `2948718a061f0e2b0a1f1a6e68f18452c232d1bb`.
+- 실행: `C:\cretop-agent\iros_ssp.py collect` → 내부 `iros_batch`·`iros_dom` → 공용 `HiddenBrowser(ceoloan-iros-registry)` → Playwright → PDF·구조 JSON → 후보별 원자적 상태 저장. 별도 수집 CLI는 사용하지 않는다.
 - 고정 배치: `C:\iros-agent\batches\20260919_iros_mortgage_100_001`. 같은 폴더의 `manifest.json`, `approval.json`, `state.json`이 대상·승인·진행의 정본이다.
 - 명단 SHA-256: `9e1b4b3372f8218d8d9fc248503ff4e0eb4e06556264552ecc29607408462d4f`.
 - 대상은 모기지 `detail_pending`, 신뢰도 1/검토 불필요 본점 주소, 중앙 부동산 자료 미연결 회사다. 정확한 정규화 주소로 중복을 제외하고 생성 시각과 ID 순서로 후보 500개를 고정했다.
@@ -69,3 +69,29 @@ GBrain `project/ceoloan-iros-registry-path`와 실제 `20260913_pay_001`, `20260
 15:26:35 중단 직전 상태를 `state-before-official-resume-20260919_1527.json`에 보존하고 기존 `run_iros_batch_background.py`를 숨김 창으로 실행했다. 래퍼는 새 명시 재개 옵션을 전달하며 기존 텔레그램과 GBrain 종료 처리를 유지한다. 15:30 기준 완료14건/확정결제14건/9,800원/결제불명0건이고 후보20 결제·저장 경로를 처리 중이었다. 현재 값은 문서가 아니라 `state.json`을 정본으로 확인한다.
 
 Codex 작업에는 5분 간격 heartbeat `iros-100`을 연결했다. 정상 진행이나 의미 없는 동일 상태에는 알리지 않는다. 인증 도전 또는 홈 실패이면서 결제불명0건일 때만 같은 전용 프로필의 공식 로그인 확인과 안전 재개를 수행한다. 결제 불명·결제 후 미수령·한도 도달·다른 중단은 추가 결제하지 않고 보고하며, 완료 시 100건/확정결제/비용/PDF·구조 JSON/종료 영수증을 확인한다. 의미 판독, 중앙 DB 적재, 운영 배포는 계속 범위 밖이다.
+
+## 단일 SSP 재작성
+
+주인님 지시에 따라 후보별 브라우저 재기동, 사전검색 뒤 같은 대상을 다시 처리하는 이중 경로,
+좌표 기반 구경로와 추측성 로그인 복구를 폐기했다. 공식 실행점은 `iros_ssp.py` 하나이며
+`property`, `validate`, `status`, `collect` 명령만 제공한다. `iros_dom.py`와 `iros_batch.py`는
+별도 실행 파일이 아니라 화면 절차와 상태 체크포인트를 담당하는 내부 모듈이다.
+
+배치는 한 전용 Chrome과 한 Playwright 페이지를 열어 로그인 상태를 확인한 뒤 후보를 연속으로
+처리한다. 로그인 상태는 본문에 포함된 `로그아웃` 글자가 아니라 실제 헤더의 보이는 로그아웃
+링크로 확인한다. 로그아웃이면 저장 자격정보로 한 번 로그인하고 같은 링크로 성공을 확인한다.
+새로고침·강제 로그아웃·자동 재로그인 반복은 하지 않는다.
+
+각 후보는 검색부터 PDF·구조 JSON 저장까지 한 번만 실행한다. 정확한 부동산을 찾지 못한
+`PropertyMatchError`만 결제 전 후보 제외로 계속 진행한다. 그 밖의 실제 오류는 당시 단계와
+비밀값을 제거한 증거를 남기고 즉시 중단한다. 결제 직전과 승인 확인 직후를 state에 저장하며,
+결제 시작·확정·불명 상태에서 결과가 완성되지 않으면 자동 복구나 재결제를 하지 않는다.
+비정형 오류는 발생했을 때만 실제 화면을 에이전트가 판단하고, 검증된 해결만 같은 SSP에
+통합한다.
+
+원격 정본과 Windows 실행본의 세 파일을 동일하게 반영했고, 배치 래퍼도
+`iros_ssp.py collect --resume-stopped`를 가리키도록 바꿨다. 이 변경을 검증하는 동안 래퍼를
+실행하지 않았으며 결제도 하지 않았다. 현재 `state.json`은 중단 상태 그대로이고 완료 87건,
+확정 결제 87건, 결제 불명 0건, 60,900원, 남은 후보 319건이다. 고정 manifest, approval,
+완료·결제·실패 기록은 수정하거나 초기화하지 않았다. 서버 정본과 GitHub `main`은
+`2948718a061f0e2b0a1f1a6e68f18452c232d1bb`이며, 운영 배포는 하지 않았다.
