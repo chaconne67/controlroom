@@ -50,6 +50,7 @@
 1. GBrain과 원격 코드 상태를 확인합니다.
 2. 운영 체크아웃이 `main`의 clean 상태인지 확인합니다.
 3. 디버깅 worktree의 기존 변경을 확인하고 보존합니다.
+   자동 수정과 공유하는 작업 공간 예약은 debug의 `runtime/operational-repair.json`, OS 잠금은 `runtime/operational-repair.lock`입니다. 수정 작업은 같은 잠금을 확보하고 고유 실행 번호로 예약한 뒤 진행합니다. 기존 예약은 DB의 `handling_context.automation_run`·실행 자료·미배포 커밋과 대조하며, 시간 경과만으로 빼앗거나 지우지 않습니다. 예약의 확보·인계·해제 조건은 `docs/operational-error-triage-repair-policy-20260918.md` 8절을 따릅니다.
 4. 디버깅 worktree가 clean일 때만 `origin/main`의 detached HEAD로 갱신합니다.
 5. SSH를 통해 디버깅 worktree의 코드만 수정합니다.
 6. `scripts/debug_workspace.sh`로 격리된 검증을 실행하고, 필요할 때 `goexdigm`으로 같은 코드를 브라우저에서 확인합니다.

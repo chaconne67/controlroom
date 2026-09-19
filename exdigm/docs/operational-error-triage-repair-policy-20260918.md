@@ -1,6 +1,6 @@
 # Exdigm 운영 실패 분류·승인·자동 수정 기획
 
-작성일: 2026-09-18 KST. 개정: 2026-09-19 KST. 상태: **v2 단순화 설계안. 기존 오류 수집·쥬디 알림과 main 조정실 기반은 확인했으며, 아래 직접 기록 전환·새 분류·자동 수정 실행은 구현 전이다.**
+작성일: 2026-09-18 KST. 개정: 2026-09-19 KST. 상태: **v2 코드 구현·개발 검증 완료, 운영 배포와 제한 권한 연결·무인 실행 활성화 대기. 직접 기록·분류/이력은 Exdigm debug에, 단건 실행기와 쥬디 연결 정본은 Controlroom에 보관한다. 쥬디의 기존 로컬 조회는 적용했다. 실제 자동 수리·운영 전달의 종단 검증은 활성화 단계에서 수행한다. 재개는 10절을 따른다.**
 
 ## 1. 목표와 확정된 경계
 
@@ -181,9 +181,19 @@ main은 `/home/chaconne/controlroom/exdigm`에서 실행하고 제품 코드·Gi
 
 main Codex에는 debug 수정·검증에 필요한 권한만 연결하며 사용자 승인·운영 쓰기를 스스로 수행할 권한을 자동 범위로 주지 않는다. 현재 넓은 `chaconne` SSH 접속 성공은 이 제한을 검증한 것이 아니다. 기존 운영/개발 권한과 공식 명령을 활용해 실제 경계를 확인한 뒤 무인 실행한다. 새 서버로 책임을 나누는 것으로 권한 검증을 대신하지 않는다.
 
+### 작업 공간 소유와 결과 재전송의 실행 계약
+
+로컬 에이전트와 main은 debug의 `runtime/operational-repair.lock`에 같은 배타 잠금(`flock`)을 사용한다. 잠금 안에서 `runtime/operational-repair.json`의 `run_id`를 확인하고, 미예약일 때만 고유 UUID로 예약한다. 로컬 수동 개발도 먼저 예약해야 하며 일반 개발의 소유 번호와 재개 계획은 해당 작업 계획에 남긴다. main 실행기는 같은 작업을 `repair_once.py`의 `workspace_lock`으로 수행한다. 파일이 남아 있으면 OS 잠금이 풀렸어도 이전 작업이 끝난 것으로 판단하지 않는다.
+
+수정·검증 동안 OS 잠금을 유지한다. 종료할 때 배포 승인 대기·변경 잔여·실행 여부 미확인은 예약을 유지한다. 수정 없는 조사 종료는 시작 커밋/clean 상태와 DB 결과 저장을 확인한 뒤에만 예약을 해제한다. main은 원격 해제 응답까지 받아야 실행 기록을 닫는다. 예약 인계는 이전 writer 종료, 실제 파일·HEAD·운영 판본, DB의 실행 번호/현재 개정, 보존할 커밋과 다음 담당을 대조한 뒤에만 한다. 명시적으로 승인된 배포 뒤에는 업무 결과 확인과 함께 기존 결과 명령으로 `workspace_reserved=no`를 기록하고 같은 잠금 안에서 일치하는 예약을 해제한다. 중단된 writer를 강제로 재시작하거나 예약 파일만 먼저 지워 우회하지 않는다.
+
+main의 실행 자료는 배포 설정으로 정한 전용 `state_root` 아래에 보관한다. `active.json`은 진행 중 실행 번호와 시작 HEAD, 실행별 폴더는 사건 사본·CLI JSONL·최종 결과·DB에 보낼 인수를 가진다. 최종 `result-payload.json`을 저장한 뒤 DB 응답이 끊기면 다음 호출은 동일 인수/같은 entry_id만 재전송한다. `interrupted-payload.json`도 처음 기록한 내용 그대로 재전송하며 새 Codex는 시작하지 않는다. 사람이 사건을 먼저 처리했으면 개정/소유 불일치로 중단한다.
+
+`approve_deploy`는 실제 debug HEAD=전체 커밋 SHA, 시작 HEAD와 다름, clean 상태를 확인해야 한다. 최종 보고의 검사 문장에 더해 같은 CLI 실행 JSONL의 실제 `command_execution`에 공식 `scripts/debug_workspace.sh test`와 `check`의 종료 코드 0이 있어야 한다. 실행 자료 경로와 해당 명령 ID를 같은 DB 처리 자료에 연결한다. 이 기계 검사는 실행 증거의 존재 확인이며, 실패 원인·검사 범위·작은 변경 여부의 의미 판단은 같은 Codex의 지침/리뷰 책임이다. 실제 제한 권한과 종단 수리 성공의 검증을 대신하지 않는다.
+
 ## 9. 구현 순서와 최소 구현 기준
 
-문서의 수정은 완료해도 아래 기능이 구현됐다는 뜻은 아니다. 이번 범위는 기획이며 실제 구현은 승인된 기획과 당시 기준선에서 시작한다.
+주인님의 v2 구현 승인으로 1~3단계 코드를 작성했다. 10절의 검증 범위와 운영 반영 상태를 구분하며, 4단계의 운영 배포·제한 권한 연결·예약 활성화는 별도 승인 후 진행한다.
 
 | 단계 | 기존 구현의 변경 | 인수 조건 |
 |---|---|---|
@@ -222,6 +232,44 @@ main Codex에는 debug 수정·검증에 필요한 권한만 연결하며 사용
 제품 검사는 기존 원격 `scripts/debug_workspace.sh test`·check, 보호 검사·카탈로그 갱신·필수 리뷰를 사용한다. 즉시 DB 기록 때문에 달라지는 예상 지연만 명시적으로 변경하고, rollback·DB 장애·중복·비밀값·일반 알림 보호 기대값은 유지한다. 실제 메시지·운영 업무 재처리는 해당 검증의 승인 범위에서만 실행한다.
 
 ## 10. 현재 확인과 재개 정보
+
+### 구현·검증 결과 — 2026-09-19
+
+- 승인 범위: v2의 수정·검증·리뷰·커밋. 운영 배포·운영 DB migration·새 반복 실행 활성화는 하지 않았다. 운영 체크아웃은 `851382afac9c8b6a00b401bfb4a2ba2e54a75514`의 clean main이며 debug는 그 판본에서 이 기능만 변경했다. 제품 커밋은 `3141ce76bef167c59700951f65edc306f01b7968`(23개 파일)이며 debug는 clean detached HEAD다. 승인 대기 예약은 `c8fef26b-0c4b-4904-9afb-fa8fc5694960`으로 보존했다. DB의 자동 실행 사건 번호는 아닌 이번 로컬 구현 작업 소유다.
+- 정식 저장은 `common.record_operational_error` → `projects.services.operational_errors.record_error_event` → 기존 `_record` 한 경로다. 알려진 확정 실패는 업무 종료 함수에서 상태와 함께 저장하고, 업무 rollback 위험/초기화 전/DB 장애의 예외 관측은 기존 파일 보관을 쓴다. `_job_sources`·`_collect_jobs`와 업무 재탐색 SQL을 제거했다. 재전달만 남은 기존 collector는 파일이 없으면 업무 DB 조회가 0회다.
+- 기존 종료 지점: 업로드 장부, 추출 실행/잠금 회수, FileData 읽기/추출 종료, 추출 배치, 후보자 임베딩/배치, 검수, 미팅, 자동 게시 run/site, 뉴스 run, 외부 검색 종료/중단 복구. `RecommendationResumePrecomputeJob`은 추적 코드에서 실행 생산자가 없음을 확인했으며 모델을 지우거나 가상의 새 실행기를 만들지 않았다.
+- `OperationalError`의 분류·다음 행동·개정·처리 자료 4필드와 additive migration `0070_operationalerror_handling`을 추가했다. 원래 오류와 기존 처리 이력을 보존한다. 구 데이터의 기본값은 `unclassified/none/revision=0`이므로 자동 과거 수리 목록을 만들지 않는다. 기존 결과 관리 명령에 개정 비교, 동일 결과 재전송, 한 사건 확보를 확장했다.
+- 자료 부족은 기존 `notify_resume_missing_fields`의 실제 담당자·원본 링크를 재사용한다. 로그인 열람 미지원은 기존 `resume_link_login_required` 판정을 연결한다. 근거가 없는 나머지는 `unclassified/investigate`다. 같은 예외가 업무 종료와 후킹에 중복 기록되지 않으며, 오류 저장 자체의 로그는 다시 수집하지 않는다.
+- FileData의 기존 Django Extract(epoch)는 기본 시간대 wall time을 썼다. 새 UTC epoch와 108개 5분 구간 차이가 발생하는 것을 확인해 기존 식별값을 보존했다. 전환 당시 직접 기록/구 수집의 같은 번호 검사를 통과한 뒤 구 수집을 제거했다.
+- 검증: 변경 전 오류/이력 60개·업무 313개, 변경 후 15개 업무 파일 묶음 535개 통과. 마지막 중복 기록 보강 후 오류/이력/임베딩 98개, 테스트 자료 재사용 위치 정리 후 미팅/음성 검수 23개 통과. Django check 정상, 보호 계약 18개 파일 유지 및 관련 216개 검사 통과. catalog는 current/valid, broken reference 없음. 변경 제품 파일 23개의 Ruff와 diff 검사도 통과했다.
+- 검사 중 새 fixture의 잘못된 필드와 `--reuse-db`에 migration 기본자료가 없는 경우를 바로잡았다. 공통 `tests/conftest.py`는 보호 검사에서 금지되어 이번 변경을 되돌렸고, 해당 미팅 테스트의 한 fixture를 음성 검수 테스트가 재사용한다. 기존 검사·기대값을 완화하지 않았다. `--create-db`는 개발 계정 권한으로 금지되어 사용하지 않는다.
+- 쥬디 정본은 Controlroom 루트의 `.controlroom/scripts/exdigm/judy`다. 기존 로컬 프로필 scripts의 2파일과 작업 `41796002f11e`의 Exdigm 지시만 반영했다. Gmail 단독/통합 스크립트, 작업 ID·10분 일정·origin·모델·활성화 값은 보존했다. 새 작업과 직접 메시지는 만들지 않았다.
+- 쥬디는 기존 `cron/executions.db`의 같은 실행이 `completed+delivered`일 때만 오류별 개정을 확인 완료로 반영한다. prepared/failed/suppressed/queued/unknown은 완료가 아니다. 시각은 UTC/KST 표기 순서가 아닌 같은 실제 시각으로 비교한다. 관련 15개 검사와 로컬 기존 Gmail 통합 검사 6개 통과. 구 schema 운영 DB의 공식 조회는 성공했으며 당시 신규/변경 0건이었다. 실제 승인 요청 전송은 검증하지 않았다.
+- 쥬디 원본 백업은 로컬 임시 폴더 `exdigm-repair-policy-detail-20260919/judy-before-implementation`이다. 조회 실패는 빈 결과로 숨기지 않으며 기존 확인 위치를 보존한다.
+- main 실행기는 Controlroom `.controlroom/scripts/exdigm/repair_once.py`다. Linux에서 15개 검사 통과: 한 건 확보, 중단 재실행 금지, 고정 결과 재전송, 사람의 선행 처리 보존, 한 번의 형식 보정, 실제 OS 잠금 충돌/예약/해제 실패, 검사 실행 증거 없는 배포 요청 거절. 원격 잠금 실험은 임시 폴더에서 했다.
+- main Codex 0.153.2의 실제 읽기 전용 실행은 종료 코드 0, AGENTS/README 읽기와 schema 응답 검증이 성공했다. 증거는 main `/home/chaconne/.local/state/exdigm-repair-validation-20260919/cli-readonly.jsonl`이다. 기존 넓은 SSH 신원은 preflight에서 거절됐고 사건 확보/자동 수정 호출은 발생하지 않았다. 실제 제한된 실행 계정/SSH 권한/결과 기록 명령과 무인 수리는 아직 연결하지 않았다.
+
+### 리뷰 계약과 직접 리뷰 결과
+
+- 원천·목적: 주인님의 v2 승인과 이 문서 2~8절. 발생 지점의 단일 기록 → 같은 Codex 조사/수정 → 같은 DB 처리 이력 → 기존 쥬디 전달이다.
+- 경계·base: 제품 `851382a` 대비 이번 23개 파일 diff와 직접 호출자/소비자; Controlroom `3ea7256` 대비 이 정책/README/프로젝트 지침과 `.controlroom/scripts/exdigm` 추가. 개인 프로필은 보관한 기존 파일/기존 작업 설정과 비교한다.
+- 입력: 이미 확정된 업무 판정 또는 예외 관측, 사건 UUID·발생 시각·안전한 진단 자료; 사람/자동 처리에는 관측 개정·실행 UUID. 운영 데이터/인증값은 읽기 전용 조회 범위만 사용한다.
+- 절차·출력: 확정 상태와 오류 행은 함께 commit/rollback, 임시 관측은 같은 번호로 재전달. 원문은 불변이고 처리 결과만 append. 자동 확보 후 같은 근거로 다시 호출하지 않으며 수정 커밋은 배포 대기로 남긴다. 쥬디는 실제 전달 결과 뒤에만 확인 위치를 옮긴다.
+- 보호·비목표: 일반 업무 알림·재시도·취소·Gmail·개인 Hermes·기존 파일/이력 보존. 별도 분류 워커/승인 UI/새 테이블/운영 배포·실고객 메시지는 범위 밖이다.
+- 검증 관점: 변경 diff와 1차 호출/소비자에서 즉시성, 원문 보존, 중복/rollback, 개정 충돌, 실행 중단/재전송, 실제 전달 영수증을 대조한다. 근거는 위 공식 검사와 단건 실행기/쥬디 테스트다.
+- 승인 finding과 수정: 응답 소실 후 저장 인수 재계산, 중단 이력 인수 변경, 선행 수동 처리 덮어쓰기, 예약 해제 미확인 성공 처리, 오류 저장의 자기 재기록, raise 이전 확정된 예외의 중복 후킹, UTC/KST 확인 위치 역행을 재현하고 같은 경로에서 수정했다. 검증 문구만으로 배포 요청을 허용하던 연결도 실제 검사 명령의 실행 증거 확인으로 보강했다.
+- 마지막 갱신 diff 전체를 직접 다시 검토했다. 코드 계약의 열린 질문은 없으며 최종 공식 검사와 Ruff/diff 통과 후 승인 finding 없음으로 마감했다. 실제 제한 권한과 운영 종단 효과는 확인하지 않은 활성화 조건으로 분리한다.
+
+### 운영 반영 전에 남은 실행 준비
+
+1. 제품 커밋과 migration `0070`의 운영 반영 승인을 받는다. 기존 `scripts/deploy/deploy.sh prod`를 사용하고 원문/기존 이력·작업자·HTTPS를 확인한다. 과거 업무의 일괄 재실행은 포함하지 않는다.
+2. main의 자동 실행 신원과 Exdigm SSH 접근은 운영 checkout·main ref·배포 설정·운영 DB/외부 발송 권한을 변경할 수 없어야 한다. debug 코드·검증 DB·동일 worktree의 Git 객체/메타데이터에 필요한 권한을 실경로별로 검증한다. 현재 `chaconne`의 넓은 권한을 설정값 이름만 바꿔 통과시키지 않는다. 주인님 계정이나 기존 권한을 축소·덮어쓰지 않는다.
+3. 설정 JSON의 필수 값은 `restricted_user`, `code_ssh`(argv 배열), `record_command`(기존 결과 관리 명령을 실행할 제한된 argv 배열), `codex_command`(설치된 CLI argv), `project_root`, `debug_root`, `production_root`다. 사용자/키/환경 경로는 실제 배치값을 확인한 뒤 넣으며 현재 가상의 기본값이나 인증값을 배포하지 않았다. 결과 기록 신원은 사건 확보·해당 행 처리 이력에 필요한 범위만 가져야 한다.
+4. 배치가 준비되면 `python3 <Controlroom>/.controlroom/scripts/exdigm/repair_once.py --config <검증한 설정> --state-root <전용 실행 자료> --check`를 실행한다. 이는 DB 확보/Codex 호출을 하지 않는 실제 신원·worktree 검사다. 이후 승인된 격리 시험 사건 한 건으로 기록→호출→검사/커밋→같은 DB 결과→쥬디 전달까지 확인한다. 실고객 업무/메일·게시를 시험 입력으로 삼지 않는다.
+5. 위 종단 확인 후에만 기존 systemd의 oneshot/timer에 같은 명령을 연결한다. 제안 주기는 60초, 동시 1개, 60분 상한이다. 예약/실행 자료/원격 프로세스가 미정리면 다음 수리를 시작하지 않는다. 타이머 단위나 서비스를 현재 설치·활성화한 상태가 아니다.
+
+### v2 설계 당시 기준선
+
 
 - 조정실: 로컬 `C:\Users\chaconne\controlroom`, main `/home/chaconne/controlroom`; Exdigm 진입점은 각각 `controlroom/exdigm`이다. 편집 기준선은 Controlroom `3a76f2bf88df8b7b05992aed70522fcaca6aa7e1`이며 이번 초안은 이 문서에서 작성했다.
 - Exdigm: 운영 clean main `851382afac9c8b6a00b401bfb4a2ba2e54a75514`, debug clean detached `0b237350c87e06e288614ec807b0a6a344fa199e`를 확인했다. 관련 오류 수집 파일은 같았고 이번 읽기 시 debug 판본과 clean 상태도 재확인했다.
