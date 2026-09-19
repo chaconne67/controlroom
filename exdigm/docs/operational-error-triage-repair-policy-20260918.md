@@ -1,6 +1,6 @@
 # Exdigm 운영 실패 분류·승인·자동 수정 기획
 
-작성일: 2026-09-18 KST. 개정: 2026-09-19 KST. 상태: **주인님의 Telegram 직접 「초기 배포 승인」으로 제품 커밋 `3141ce76bef167c59700951f65edc306f01b7968`과 additive migration `0070`의 운영 배포·사후 검증 완료. 기존 오류 원문·이력 59건 보존 확인. 사실 증거 기록 보완은 debug 커밋 `e0606504859b10298456387ef17780b5ce6d4c68`로 검증·커밋했으며 운영 배포 승인 전이다. main의 단건 실행기는 Controlroom `4cc8910ea7e39473d037f1c81292d91a2545d82d`로 동기화했지만 제한 설정과 systemd unit/timer가 없어 자동 실행은 아직 꺼져 있다. 최신 근거와 재개는 아래 「사실 기록과 실행기 검증 경계 보완」을 따른다.**
+작성일: 2026-09-18 KST. 개정: 2026-09-19 KST. 상태: **주인님의 Telegram 직접 「초기 배포 승인」으로 제품 커밋 `3141ce76bef167c59700951f65edc306f01b7968`과 additive migration `0070`의 운영 배포·사후 검증 완료. 기존 오류 원문·이력 59건 보존 확인. 사실 증거 기록 보완은 debug 커밋 `e0606504859b10298456387ef17780b5ce6d4c68`로 검증·커밋했고 샘 메시지 `1179`로 운영 배포 승인을 요청했다. 승인으로 추정하지 않으며 운영은 아직 `3141ce76…`이다. main의 단건 실행기는 Controlroom `4cc8910ea7e39473d037f1c81292d91a2545d82d`로 동기화했지만 제한 설정과 systemd unit/timer가 없어 자동 실행은 아직 꺼져 있다. 최신 근거와 재개는 아래 「사실 기록과 실행기 검증 경계 보완」을 따른다.**
 
 ## 1. 목표와 확정된 경계
 
@@ -408,6 +408,7 @@ main의 실행 자료는 배포 설정으로 정한 전용 `state_root` 아래�
 - main 실행기는 Codex CLI JSONL의 명령 문자열 검색을 검증으로 사용하지 않는다. 보고된 clean 커밋을 대조한 뒤 실행기 자신이 공식 `scripts/debug_workspace.sh test`와 `check`를 SSH로 실행한다. 종료 상태 0·출력 파일·대상 커밋을 실행별 영수증에 원자 저장하고, 같은 커밋의 완료된 검사는 재개 시 재사용한다. 실패·다른 커밋·출력 유실은 배포 요청을 만들지 않는다.
 - Controlroom 결과는 `4cc8910ea7e39473d037f1c81292d91a2545d82d`이며 로컬·GitHub·main `/home/chaconne/controlroom`이 같다. 기존 22개와 검증 실행·실패·영수증 재사용·커밋 불일치 검사를 포함한 25개가 main에서 통과했다. 갱신 diff의 code-review-loop에는 승인 finding과 열린 계약 질문이 없다.
 - main에는 Codex CLI `0.155.0`과 제한 계정 `exdigm-repair`가 있지만 `/etc/exdigm-repair/config.json`과 설치된 `exdigm-repair` systemd unit/timer가 없다. 따라서 현재 오류가 생겨도 main Codex는 자동 호출되지 않는다. 제품 커밋 배포 승인 뒤 제한 설정·읽기 전용 `--check`·격리 시험 사건의 기록→수리→DB 결과→샘 보고 종단 검증을 마치고, 별도 활성화 결정으로 timer를 켠다.
+- 정확한 커밋·검증·영향·복구안을 담은 배포 승인 요청을 기존 main 샘 Telegram으로 보냈다. Hermes 전송 영수증은 `success=true`, message `1179`, `mirrored=true`이며 main `/home/chaconne/.hermes/state/exdigm-factual-evidence-deploy-request-20260919.json`에 보존한다. 전달 성공은 주인님이 읽거나 승인했다는 뜻이 아니다. 주인님이 해당 메시지에 정확한 SHA의 승인·보류·거절로 답하면 샘이 기존 승인 절차로 이어 간다.
 
 ### v2 설계 당시 기준선
 
