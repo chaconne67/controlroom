@@ -389,10 +389,15 @@ def clone(url, destination, existing=None):
 def preserve_worktrees(source, existing):
     if not (existing / '.git').exists():
         return []
-    registered = git(existing, 'worktree', 'list', '--porcelain', '-z').stdout
+    result = git(existing, 'worktree', 'list', '--porcelain', '-z', check=False)
+    separator = '\0'
+    if result.returncode:
+        result = git(existing, '-c', 'core.quotePath=false', 'worktree', 'list', '--porcelain')
+        separator = '\n'
+    registered = result.stdout
     paths, commits = [], []
-    for block in registered.split('\0\0'):
-        fields = dict(item.split(' ', 1) for item in block.split('\0') if ' ' in item)
+    for block in registered.split(separator * 2):
+        fields = dict(item.split(' ', 1) for item in block.split(separator) if ' ' in item)
         if 'worktree' in fields and Path(fields['worktree']).resolve() != existing.resolve():
             paths.append(Path(fields['worktree']))
             commits.append(fields['HEAD'])

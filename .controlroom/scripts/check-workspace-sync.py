@@ -8,6 +8,7 @@ import unittest
 import zipfile
 from unittest.mock import patch
 import shutil
+import subprocess
 import sys
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -15,6 +16,10 @@ spec = importlib.util.spec_from_file_location('kit_checks', ROOT / 'scripts/chec
 checks = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(checks)
 run = checks.run
+
+controlroom_spec = importlib.util.spec_from_file_location('controlroom', ROOT / 'scripts/controlroom.py')
+controlroom = importlib.util.module_from_spec(controlroom_spec)
+controlroom_spec.loader.exec_module(controlroom)
 
 
 class WorkspaceSyncTests(unittest.TestCase):
@@ -30,6 +35,25 @@ class WorkspaceSyncTests(unittest.TestCase):
 
     def plan(self, repo):
         return repo / 'rndlog/docs/plan.md'
+
+    def test_worktree_listing_falls_back_without_nul_support(self):
+        existing = self.fixture.new_home() / 'existing'
+        source = self.fixture.new_home() / 'source'
+        (existing / '.git').mkdir(parents=True)
+        source.mkdir()
+
+        def fake_git(root, *arguments, check=True):
+            if arguments == ('worktree', 'list', '--porcelain', '-z'):
+                if check:
+                    raise AssertionError('unsupported -z was not handled')
+                return subprocess.CompletedProcess(arguments, 129, '', "error: unknown switch `z'")
+            if arguments == ('-c', 'core.quotePath=false', 'worktree', 'list', '--porcelain'):
+                output = f'worktree {existing}\nHEAD deadbeef\nbranch refs/heads/main\n\n'
+                return subprocess.CompletedProcess(arguments, 0, output, '')
+            raise AssertionError(f'unexpected git call: {arguments}')
+
+        with patch.object(controlroom, 'git', side_effect=fake_git):
+            self.assertEqual(controlroom.preserve_worktrees(source, existing), [])
 
     def test_server_workspace_override_keeps_operating_repositories(self):
         home = self.fixture.new_home(True)
