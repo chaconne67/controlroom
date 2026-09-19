@@ -8,7 +8,7 @@
 
 ## 진행 중 작업
 
-- [운영 실패 분류·Codex 자동 수정 — main 조정실 설치·SSH·동기화 확인, 계정 인증·기능 구현 대기](operational-error-triage-repair-policy-20260918.md)
+- [운영 실패 분류·Codex 자동 수정 — 정책 v1: 수정·검증·커밋 자동, 배포 승인 / main 새 조정실·실제 Codex 확인, 기능 구현 전](operational-error-triage-repair-policy-20260918.md)
 
 - [이력서 검수 마크다운 표시 — 개발 수정·실제 화면·보호 검사 완료, 운영 배포 승인 대기](markdown-display-fix-20260918.md)
 
