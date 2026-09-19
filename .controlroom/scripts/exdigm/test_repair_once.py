@@ -32,7 +32,8 @@ class RepairTests(unittest.TestCase):
         self.case = {"id": str(uuid.uuid4()), "handling_revision": 2, "processing_status": "in_progress"}
         self.reply = result()
         self.releases = []
-        self.commands_verified = True
+        self.verification_ok = True
+        self.verification_calls = []
 
     @contextmanager
     def lease(self, *args):
@@ -57,16 +58,27 @@ class RepairTests(unittest.TestCase):
         target.write_text(json.dumps(self.reply))
         if kwargs.get("evidence"):
             events = [{"type": "thread.started", "thread_id": str(uuid.uuid4())}]
-            if self.commands_verified:
-                events.extend({"type": "item.completed", "item": {"id": check, "type": "command_execution", "exit_code": 0,
-                              "command": f"ssh restricted scripts/debug_workspace.sh {check}"}} for check in ("test", "check"))
             kwargs["evidence"].write_text("\n".join(json.dumps(event) for event in events))
         return ""
+
+    def verify(self, config, directory, commit):
+        self.verification_calls.append(commit)
+        if not self.verification_ok:
+            raise RuntimeError("Official test command failed")
+        return {
+            check: {
+                "command": f"scripts/debug_workspace.sh {check}",
+                "exit_code": 0,
+                "evidence": str(directory/f"official-{check}.log"),
+            }
+            for check in ("test", "check")
+        }
 
     def invoke(self):
         with patch.object(repair, "preflight", return_value={"head": "a"*40}), \
              patch.object(repair, "workspace_lock", self.lease), \
              patch.object(repair, "run_command", side_effect=self.command), \
+             patch.object(repair, "run_official_verification", side_effect=self.verify), \
              patch.object(repair, "remote", side_effect=lambda c,s: "" if "status" in s else "b"*40):
             return repair.execute_once(self.config, self.root)
 
@@ -93,11 +105,12 @@ class RepairTests(unittest.TestCase):
         self.assertEqual(self.releases, [True])
         self.assertFalse((self.root/"active.json").exists())
         self.assertEqual(sum(c[0][0]=="codex" for c in self.calls), 1)
+        self.assertEqual(self.verification_calls, ["b"*40])
 
-    def test_claimed_verification_without_execution_evidence_is_rejected(self):
+    def test_failed_runner_owned_verification_is_rejected(self):
         self.reply = result("approve_deploy")
-        self.commands_verified = False
-        with self.assertRaisesRegex(ValueError, "Missing successful official"):
+        self.verification_ok = False
+        with self.assertRaisesRegex(RuntimeError, "Official test command failed"):
             self.invoke()
         payload = json.loads(self.calls[-1][1]["payload"])
         self.assertEqual(payload["next_action"], "user_action")
@@ -136,6 +149,7 @@ class RepairTests(unittest.TestCase):
         with patch.object(repair, "preflight", return_value={"head": "a"*40}), \
              patch.object(repair, "workspace_lock", self.lease), \
              patch.object(repair, "run_command", side_effect=self.command), \
+             patch.object(repair, "run_official_verification", side_effect=self.verify), \
              patch.object(repair, "park_repair") as parked:
             self.assertEqual(repair.execute_once(self.config, self.root)["next_action"], "approve_deploy")
         payloads = [k["payload"] for c,k in self.calls if c[0] == "record" and "--json-input" in c]
@@ -246,6 +260,73 @@ class RepairTests(unittest.TestCase):
             repair.preflight(self.config)
 
 
+class OfficialVerificationTests(unittest.TestCase):
+    def setUp(self):
+        self.temp = tempfile.TemporaryDirectory()
+        self.addCleanup(self.temp.cleanup)
+        self.root = Path(self.temp.name)
+        self.debug = self.root / "debug"
+        scripts = self.debug / "scripts"
+        scripts.mkdir(parents=True)
+        verifier = scripts / "debug_workspace.sh"
+        verifier.write_text(
+            "#!/bin/sh\n"
+            "printf '%s\\n' \"$1\" >> verification.calls\n"
+            "printf '%s output\\n' \"$1\"\n"
+            "test ! -f \"fail-$1\"\n",
+            encoding="utf-8",
+        )
+        verifier.chmod(0o755)
+        self.state = self.root / "state"
+        self.state.mkdir()
+        self.config = {
+            "code_ssh": ["bash", "-c"],
+            "debug_root": str(self.debug),
+        }
+        self.commit = "b" * 40
+
+    def test_runner_executes_each_official_check_once_and_reuses_receipt(self):
+        expected = repair.run_official_verification(
+            self.config, self.state, self.commit
+        )
+        replayed = repair.run_official_verification(
+            self.config, self.state, self.commit
+        )
+
+        self.assertEqual(replayed, expected)
+        self.assertEqual(
+            (self.debug / "verification.calls").read_text().splitlines(),
+            ["test", "check"],
+        )
+        self.assertIn("test output", (self.state / "official-test.log").read_text())
+        self.assertIn("check output", (self.state / "official-check.log").read_text())
+        receipt = json.loads(
+            (self.state / "official-verification.json").read_text()
+        )
+        self.assertEqual(receipt["commit"], self.commit)
+        self.assertEqual(set(receipt["checks"]), {"test", "check"})
+
+    def test_failed_check_is_not_receipted_as_success(self):
+        (self.debug / "fail-check").touch()
+
+        with self.assertRaisesRegex(RuntimeError, "status 1"):
+            repair.run_official_verification(self.config, self.state, self.commit)
+
+        receipt = json.loads(
+            (self.state / "official-verification.json").read_text()
+        )
+        self.assertEqual(set(receipt["checks"]), {"test"})
+        self.assertIn("check output", (self.state / "official-check.log").read_text())
+
+    def test_receipt_cannot_be_reused_for_another_commit(self):
+        repair.run_official_verification(self.config, self.state, self.commit)
+
+        with self.assertRaisesRegex(RuntimeError, "does not match"):
+            repair.run_official_verification(
+                self.config, self.state, "c" * 40
+            )
+
+
 class GitParkingTests(unittest.TestCase):
     def setUp(self):
         self.temp = tempfile.TemporaryDirectory()
@@ -349,14 +430,20 @@ class GitParkingTests(unittest.TestCase):
                 value = result("approve_deploy")
                 value["details"]["commit"] = details["commit"]
                 Path(command[command.index("--output-last-message")+1]).write_text(json.dumps(value))
-                events = [{"type": "item.completed", "item": {"id": check, "type": "command_execution",
-                           "exit_code": 0, "command": "scripts/debug_workspace.sh "+check}} for check in ("test", "check")]
-                kwargs["evidence"].write_text("\n".join(map(json.dumps, events)))
+                kwargs["evidence"].write_text("")
                 return ""
             return original_command(command, **kwargs)
 
+        verified = []
+        def verification(config, directory, commit):
+            verified.append(commit)
+            return {check: {"command": "scripts/debug_workspace.sh "+check,
+                            "exit_code": 0, "evidence": str(directory/("official-"+check+".log"))}
+                    for check in ("test", "check")}
+
         with patch.object(repair, "preflight", side_effect=preflight), \
-             patch.object(repair, "run_command", side_effect=command):
+             patch.object(repair, "run_command", side_effect=command), \
+             patch.object(repair, "run_official_verification", side_effect=verification):
             for name in ("case-a.txt", "case-b.txt"):
                 case = {"id": str(uuid.uuid4()), "handling_revision": 2, "processing_status": "in_progress"}
                 outcome = repair.execute_once(self.config, self.root/"state")
@@ -365,6 +452,7 @@ class GitParkingTests(unittest.TestCase):
                 self.assertFalse((self.debug/"runtime"/"operational-repair.json").exists())
 
         self.assertEqual(codex_runs, ["case-a.txt", "case-b.txt"])
+        self.assertEqual(len(verified), 2)
         self.assertEqual(len(recorded), 2)
         for payload in recorded:
             details = json.loads(payload["details_json"])
