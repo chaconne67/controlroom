@@ -1,0 +1,28 @@
+[Unit]
+Description=Exdigm single Codex investigation and repair
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=exdigm-repair
+Group=exdigm-repair
+WorkingDirectory=/home/chaconne/controlroom/exdigm
+Environment=HOME=/var/lib/exdigm-repair
+Environment=CODEX_HOME=/var/lib/exdigm-repair/.codex
+Environment=PATH=/usr/local/bin:/usr/bin:/bin
+ExecStart=/usr/bin/python3 /home/chaconne/controlroom/.controlroom/scripts/exdigm/repair_once.py --config /etc/exdigm-repair/config.json --state-root /var/lib/exdigm-repair/runs
+TimeoutStartSec=120min
+KillMode=control-group
+UMask=0077
+NoNewPrivileges=true
+ProtectSystem=strict
+ReadWritePaths=/var/lib/exdigm-repair
+PrivateTmp=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+RestrictSUIDSGID=true
+MemoryMax=3G
+CPUQuota=100%
+TasksMax=256

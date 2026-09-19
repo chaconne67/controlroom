@@ -12,10 +12,12 @@ import repair_once as repair
 
 def result(action="user_action"):
     details = dict.fromkeys(repair.DETAILS, "")
+    details["test_targets"] = []
     details.update(owner="owner", required_action="Provide missing evidence", resume_condition="Evidence received")
     if action == "approve_deploy":
         details.update(root_cause="Reproduced defect", commit="b"*40,
-                       verification="Official checks passed", rollback="Deploy approved prior commit")
+                       verification="Focused tests and check passed", rollback="Deploy approved prior commit",
+                       test_targets=["tests/test_repair.py::test_regression"])
     return {"category": "defect" if action=="approve_deploy" else "unclassified", "next_action": action,
             "status": "succeeded", "action": "Observed handling result", "details": details}
 
@@ -61,8 +63,8 @@ class RepairTests(unittest.TestCase):
             kwargs["evidence"].write_text("\n".join(json.dumps(event) for event in events))
         return ""
 
-    def verify(self, config, directory, commit):
-        self.verification_calls.append(commit)
+    def verify(self, config, directory, commit, test_targets):
+        self.verification_calls.append((commit, test_targets))
         if not self.verification_ok:
             raise RuntimeError("Official test command failed")
         return {
@@ -105,7 +107,13 @@ class RepairTests(unittest.TestCase):
         self.assertEqual(self.releases, [True])
         self.assertFalse((self.root/"active.json").exists())
         self.assertEqual(sum(c[0][0]=="codex" for c in self.calls), 1)
-        self.assertEqual(self.verification_calls, ["b"*40])
+        self.assertEqual(self.verification_calls, [("b"*40, ["tests/test_repair.py::test_regression"])])
+        recorded = next(json.loads(k["payload"]) for c,k in self.calls
+                        if c[0] == "record" and "--json-input" in c)
+        self.assertEqual(
+            json.loads(json.loads(recorded["details_json"])["test_targets"]),
+            ["tests/test_repair.py::test_regression"],
+        )
 
     def test_failed_runner_owned_verification_is_rejected(self):
         self.reply = result("approve_deploy")
@@ -209,6 +217,12 @@ class RepairTests(unittest.TestCase):
         self.assertIn("resume", codex[1])
         self.assertIn('sandbox_mode="read-only"', codex[1])
 
+    def test_initial_codex_run_uses_os_account_as_the_external_sandbox(self):
+        self.invoke()
+        codex = next(c for c,k in self.calls if c[0] == "codex")
+        self.assertIn("danger-full-access", codex)
+        self.assertNotIn("sandbox_workspace_write.network_access=true", codex)
+
     def test_second_bad_output_is_not_silently_accepted(self):
         self.reply = {"invalid": "output"}
         with self.assertRaises(ValueError):
@@ -252,6 +266,20 @@ class RepairTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             repair.validate_result(value)
 
+    def test_deployment_needs_safe_focused_test_targets(self):
+        value = result("approve_deploy")
+        for targets in ([], ["../test_secret.py"], ["manage.py"], ["-k expression"],
+                        ["tests/test_ok.py\n--collect-only"]):
+            value["details"]["test_targets"] = targets
+            with self.subTest(targets=targets), self.assertRaises(ValueError):
+                repair.validate_result(value)
+
+    def test_non_deployment_cannot_smuggle_test_targets(self):
+        value = result("user_action")
+        value["details"]["test_targets"] = ["tests/test_ok.py"]
+        with self.assertRaises(ValueError):
+            repair.validate_result(value)
+
     def test_existing_broad_main_user_is_rejected(self):
         import os
         import pwd
@@ -271,12 +299,19 @@ class OfficialVerificationTests(unittest.TestCase):
         verifier = scripts / "debug_workspace.sh"
         verifier.write_text(
             "#!/bin/sh\n"
-            "printf '%s\\n' \"$1\" >> verification.calls\n"
+            "printf '%s\\n' \"$*\" >> verification.calls\n"
             "printf '%s output\\n' \"$1\"\n"
             "test ! -f \"fail-$1\"\n",
             encoding="utf-8",
         )
         verifier.chmod(0o755)
+        tests = self.debug / "tests"
+        tests.mkdir()
+        (tests / "test_repair.py").write_text("def test_regression(): pass\n")
+        subprocess.run(["git", "-C", str(self.debug), "init"], check=True,
+                       stdout=subprocess.DEVNULL)
+        subprocess.run(["git", "-C", str(self.debug), "add", "scripts/debug_workspace.sh", "tests/test_repair.py"],
+                       check=True)
         self.state = self.root / "state"
         self.state.mkdir()
         self.config = {
@@ -284,19 +319,20 @@ class OfficialVerificationTests(unittest.TestCase):
             "debug_root": str(self.debug),
         }
         self.commit = "b" * 40
+        self.targets = ["tests/test_repair.py::test_regression"]
 
     def test_runner_executes_each_official_check_once_and_reuses_receipt(self):
         expected = repair.run_official_verification(
-            self.config, self.state, self.commit
+            self.config, self.state, self.commit, self.targets
         )
         replayed = repair.run_official_verification(
-            self.config, self.state, self.commit
+            self.config, self.state, self.commit, self.targets
         )
 
         self.assertEqual(replayed, expected)
         self.assertEqual(
             (self.debug / "verification.calls").read_text().splitlines(),
-            ["test", "check"],
+            ["test tests/test_repair.py::test_regression", "check"],
         )
         self.assertIn("test output", (self.state / "official-test.log").read_text())
         self.assertIn("check output", (self.state / "official-check.log").read_text())
@@ -304,13 +340,14 @@ class OfficialVerificationTests(unittest.TestCase):
             (self.state / "official-verification.json").read_text()
         )
         self.assertEqual(receipt["commit"], self.commit)
+        self.assertEqual(receipt["test_targets"], self.targets)
         self.assertEqual(set(receipt["checks"]), {"test", "check"})
 
     def test_failed_check_is_not_receipted_as_success(self):
         (self.debug / "fail-check").touch()
 
         with self.assertRaisesRegex(RuntimeError, "status 1"):
-            repair.run_official_verification(self.config, self.state, self.commit)
+            repair.run_official_verification(self.config, self.state, self.commit, self.targets)
 
         receipt = json.loads(
             (self.state / "official-verification.json").read_text()
@@ -319,12 +356,30 @@ class OfficialVerificationTests(unittest.TestCase):
         self.assertIn("check output", (self.state / "official-check.log").read_text())
 
     def test_receipt_cannot_be_reused_for_another_commit(self):
-        repair.run_official_verification(self.config, self.state, self.commit)
+        repair.run_official_verification(self.config, self.state, self.commit, self.targets)
 
         with self.assertRaisesRegex(RuntimeError, "does not match"):
             repair.run_official_verification(
-                self.config, self.state, "c" * 40
+                self.config, self.state, "c" * 40, self.targets
             )
+
+    def test_receipt_cannot_be_reused_for_different_targets(self):
+        repair.run_official_verification(self.config, self.state, self.commit, self.targets)
+        with self.assertRaisesRegex(RuntimeError, "does not match"):
+            repair.run_official_verification(
+                self.config, self.state, self.commit,
+                ["tests/test_repair.py"],
+            )
+
+    def test_untracked_or_escaping_target_is_rejected_before_pytest(self):
+        (self.debug / "tests" / "test_untracked.py").write_text("def test_x(): pass\n")
+        for target in ("tests/test_untracked.py", "../tests/test_repair.py"):
+            state = self.state / target.replace("/", "_")
+            state.mkdir()
+            with self.subTest(target=target), self.assertRaises((RuntimeError, ValueError)):
+                repair.run_official_verification(
+                    self.config, state, self.commit, [target]
+                )
 
 
 class GitParkingTests(unittest.TestCase):
@@ -435,8 +490,8 @@ class GitParkingTests(unittest.TestCase):
             return original_command(command, **kwargs)
 
         verified = []
-        def verification(config, directory, commit):
-            verified.append(commit)
+        def verification(config, directory, commit, test_targets):
+            verified.append((commit, test_targets))
             return {check: {"command": "scripts/debug_workspace.sh "+check,
                             "exit_code": 0, "evidence": str(directory/("official-"+check+".log"))}
                     for check in ("test", "check")}

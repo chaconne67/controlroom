@@ -1,0 +1,11 @@
+[Unit]
+Description=Check Exdigm for one pending repair after the previous run ends
+
+[Timer]
+OnBootSec=60s
+OnUnitInactiveSec=60s
+AccuracySec=5s
+Unit=exdigm-repair.service
+
+[Install]
+WantedBy=timers.target
