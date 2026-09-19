@@ -1,6 +1,6 @@
 # Exdigm 운영 실패 분류·승인·자동 수정 기획
 
-작성일: 2026-09-18 KST. 개정: 2026-09-19 KST. 상태: **v2 코드 구현·개발 검증 및 승인 대기 중 다음 사건 처리 보완 완료. 운영 배포와 제한 권한 연결·무인 실행 활성화 대기. 직접 기록·분류/이력은 Exdigm debug에, 단건 실행기와 메인 샘 연결 정본은 Controlroom에 보관한다. 샘의 실제 알림 예약·승인 처리 스킬을 설치했고 초기 배포 승인 요청을 샘에게 전달했다. 실제 적용·미완료 경계는 10절에 기록한다. 실제 자동 수리·운영 전달의 종단 검증은 활성화 단계에서 수행한다. 재개는 10절을 따른다.**
+작성일: 2026-09-18 KST. 개정: 2026-09-19 KST. 상태: **주인님의 Telegram 직접 「초기 배포 승인」으로 제품 커밋 `3141ce76bef167c59700951f65edc306f01b7968`과 additive migration `0070`의 운영 배포·사후 검증 완료. 기존 오류 원문·이력 59건 보존 확인. 단건 실행기와 메인 샘 연결 정본은 Controlroom에 보관한다. 제한 권한 연결·무인 실행 활성화와 실제 오류별 승인 저장·자동 수리·운영 전달의 종단 검증은 아직 남아 있다. 초기 배포는 과거 고객 업무 재실행 승인이 아니다. 최신 근거와 재개는 10절을 따른다.**
 
 ## 1. 목표와 확정된 경계
 
@@ -248,6 +248,19 @@ main의 실행 자료는 배포 설정으로 정한 전용 `state_root` 아래�
 제품 검사는 기존 원격 `scripts/debug_workspace.sh test`·check, 보호 검사·카탈로그 갱신·필수 리뷰를 사용한다. 즉시 DB 기록 때문에 달라지는 예상 지연만 명시적으로 변경하고, rollback·DB 장애·중복·비밀값·일반 알림 보호 기대값은 유지한다. 실제 메시지·운영 업무 재처리는 해당 검증의 승인 범위에서만 실행한다.
 
 ## 10. 현재 확인과 재개 정보
+
+### 승인된 초기 운영 배포 완료 — 2026-09-19 18:00 KST
+
+- 이번 직접 승인 문구는 **「초기 배포 승인」**이다. 승인한 제품 SHA `3141ce76bef167c59700951f65edc306f01b7968`만 이전 운영 `851382afac9c8b6a00b401bfb4a2ba2e54a75514`에서 공식 `scripts/deploy/deploy.sh prod`로 한 번 배포했다. 18:00:27 KST `prod ok 3141ce76`, 종료 코드 0이다. 오류 UUID에 연결되지 않은 초기 설치이므로 가짜 오류·승인 DB 기록을 만들지 않았다.
+- 작업 소유: 기존 수동 예약 `c8fef26b-0c4b-4904-9afb-fa8fc5694960` 원문, 정책의 이전 검증 기록, 실제 clean HEAD·운영 기준, 실행 중 writer 없음과 OS 잠금을 대조한 뒤 같은 실행 번호로 main 샘이 인계했다. 검증·배포는 `runtime/operational-repair.lock`의 배타 잠금 아래 진행했다. 아래 검증식 중단 때 예약은 남겼고, 운영 SHA·clean 상태·동일 예약을 잠금 전후 다시 대조해 배포 없이 검증만 재개했다. 최종 결과와 원문·완료 예약 사본을 보관한 후 예약을 해제했다. 별도 SSH 재조회에서 예약 파일 없음과 잠금 재확보 가능을 확인했다.
+- 공식 사전 검사: Django check 정상, 오류/업무 검사 248개, 추출 결과 검사 96개, 보호 계약 216개 통과(총 560개). 보호 기준 `6dd406439be5a52d5ce1f1660ebd05ca621df715`와 보호 파일 18개를 유지했다. 새 이미지의 DOC/DOCX/PDF 실제 업로드 전달 계약도 통과했다. 사후 Django check도 정상이다. 기존 경고는 보존했으며 검사·기대값·보호 기준을 완화하지 않았다.
+- 판본·실행: GitHub `refs/heads/main`, `origin/main`, 운영 clean main, debug clean detached HEAD, 실제 app/SSE/notification dispatcher의 `/app/.source-commit`이 모두 승인 SHA와 일치한다. 이미지 `exdigm_app:20260919175808`, 이미지 ID `sha256:22fe71c80bc0992eda05de2ea11dea1d4e10304859d375349f56bed8bf35a3e8`. 앱 3개 서비스의 update completed, DB·app·SSE·notification·nginx 5개 모두 1/1, 작업자/지원 11개 active·jobs 0·drain off, 실제 systemd 실행 명령과 `main.settings.deploy`의 read-write 모드, 공개 HTTPS 200을 확인했다.
+- DB 검증은 공식 `shell-readonly`의 `exdigm_debug_ro`/`transaction_read_only=on`/DB `exdigm`에서만 수행했다. 배포 전 미적용 migration은 `projects.0070_operationalerror_handling` 하나였다. 운영 적용 시각은 17:59:28.304957+09:00이며 사후 미적용 migration은 없다. 새 `category`·`next_action`은 varchar(20), `handling_revision`은 integer 및 0 이상 CHECK, `handling_context`는 jsonb이며 모두 NOT NULL이다. `next_action` 인덱스도 확인했다. 기존 컬럼의 자료형·null 계약은 동일하다.
+- 기존 오류 59건 전체 행(원문·시각·처리 상태·`processing_history` 포함)을 배포 전후 SHA-256으로 비교해 모두 동일함을 확인했다. 신규 4필드만 비교에서 제외했으며 기존 59건은 전부 `unclassified/none/0/{}`다. 사후 전체 오류도 59건이다. 과거 업무 재실행·재발송이나 오류 일괄 재분류는 하지 않았다.
+- 보호 범위: DB 및 직원 Hermes 6개·Telegram 연결·provisioning 컨테이너의 ID/이미지가 전후 같다. 별도 worktree `exdigm-hermes-debug-20260916`의 `836eb5a645e1769b3576e8e22dfffe289efacd7f`, `exdigm-roster-debug-20260916`의 `8084524bdbea4b6cb8de905b7d1398899187140f`와 clean 상태, 기존 보관 ref를 보존했다. 제품 소스를 추가 수정하지 않았고 DB 인프라·Hermes 배포·권한 변경·새 타이머 활성화는 하지 않았다.
+- 검증 중단 이력: 첫 read-only 검증은 드라이버가 JSON `{}`를 문자열로 반환해 Python dict 직접 비교가 실패했다. 실제 JSON을 해석한 동일 의미의 검증으로 다시 조회해 통과했다. 결과 묶음 검사도 배포 로그의 성공 문구를 잘못 예상해 한 번 중단됐으며, 실제 `Image document contracts passed:`와 정확한 이미지 digest를 확인한 뒤 마감했다. 두 실패 로그를 보존했다. 제품 코드나 DB를 바꾸거나 배포를 반복한 것이 아니다.
+- 증거는 **Exdigm 서버와 main 양쪽 동일 절대경로** `/home/chaconne/.local/state/exdigm-initial-deploy-20260919T085455Z/`에 있다. `deploy.log`, `deploy-exit.log`, `test.log`, `extraction-tests.log`, `contracts.log`, `db-before.json`, `db-after-verified.json`, `schema-constraints.json`, `runtime-after.json`, `workers-after.log`, `worker-write-mode.log`, `https-after.log`, `reservation-before.json`, `reservation-completed.json`, `result.json`을 참조한다. 원격 증거 34개 파일은 `SHA256SUMS.json`으로 main 사본과 일치함을 확인했다. 고객 원문·비밀값을 공용 문서/GBrain에 복제하지 않는다.
+- **남은 단계:** 아래 제한 실행 신원/SSH·DB 기록 권한 검증, 승인된 격리 사건 한 건의 실제 오류별 승인 저장·자동 수리·샘 전달 종단 확인, 그 이후 별도 승인 범위의 systemd 활성화다. 이번 초기 배포 성공으로 무인 자동 수리나 과거 고객 업무 복구가 완료됐다고 판정하지 않는다. 아래 초기 배포 승인 대기·운영 필드 부재·수동 예약 보존 문구는 당시 이력이다.
 
 ### 메인 샘으로 알림·승인 이전 — 2026-09-19
 
