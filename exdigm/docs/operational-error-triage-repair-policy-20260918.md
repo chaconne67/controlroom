@@ -404,11 +404,11 @@ main의 실행 자료는 배포 설정으로 정한 전용 `state_root` 아래�
 주인님의 최신 결정은 Exdigm이 실패 시점의 사실만 기록하고, main Codex가 분류·원인 조사·수정·검증·커밋을 한 번 담당하는 것이다. Exdigm 안에 오류 종류를 판단하는 규칙 스크립트·분류 LLM·별도 수집 워커를 두지 않는다.
 
 - 제품 기준선은 운영·origin/main·debug가 같던 `3141ce76bef167c59700951f65edc306f01b7968`이었다. `record_operation_failure`가 실제 예외 traceback 또는 예외가 없는 상태 실패의 기록 호출 경로, 실제 파일·함수·줄, 실행 코드 SHA, 원천 업무 번호·상태와 생산자 사실을 남기도록 보완했다. 분류·다음 행동 인자를 제거해 최초 기록을 항상 `unclassified/investigate`로 고정했다. 이력서 필수자료 부족과 로그인 링크 열람 실패도 사용자 조치로 미리 분류하지 않고 담당자·원본·재개 사실만 남긴다.
-- 제품 결과는 debug detached 커밋 `e0606504859b10298456387ef17780b5ce6d4c68`이다. 변경 5파일의 Ruff, 관련 149개 검사, Django check, catalog current/valid와 broken reference 0을 확인했다. 운영과 origin/main은 `3141ce76bef167c59700951f65edc306f01b7968`로 유지했으며 배포 승인이 필요하다.
+- 제품 결과는 debug detached 커밋 `e0606504859b10298456387ef17780b5ce6d4c68`이다. 변경 5파일의 Ruff, 관련 149개 검사, Django check, catalog current/valid와 broken reference 0을 확인했다. 주인님의 배포 승인 뒤 2026-09-19 공식 `scripts/deploy/deploy.sh prod`로 반영했다. GitHub `origin/main`, 운영 clean `main`, debug clean detached HEAD가 모두 해당 SHA와 일치하며 앱·SSE·알림 디스패처 컨테이너의 `/app/.source-commit`도 같은 SHA다. Exdigm Swarm 서비스는 모두 `1/1`, 운영 작업자 11개는 모두 `active`·`drain off`, `https://office.exdigm.com/`은 HTTP 200을 반환했다.
 - main 실행기는 Codex CLI JSONL의 명령 문자열 검색을 검증으로 사용하지 않는다. 보고된 clean 커밋을 대조한 뒤 실행기 자신이 공식 `scripts/debug_workspace.sh test`와 `check`를 SSH로 실행한다. 종료 상태 0·출력 파일·대상 커밋을 실행별 영수증에 원자 저장하고, 같은 커밋의 완료된 검사는 재개 시 재사용한다. 실패·다른 커밋·출력 유실은 배포 요청을 만들지 않는다.
 - Controlroom 결과는 `4cc8910ea7e39473d037f1c81292d91a2545d82d`이며 로컬·GitHub·main `/home/chaconne/controlroom`이 같다. 기존 22개와 검증 실행·실패·영수증 재사용·커밋 불일치 검사를 포함한 25개가 main에서 통과했다. 갱신 diff의 code-review-loop에는 승인 finding과 열린 계약 질문이 없다.
 - main에는 Codex CLI `0.155.0`과 제한 계정 `exdigm-repair`가 있지만 `/etc/exdigm-repair/config.json`과 설치된 `exdigm-repair` systemd unit/timer가 없다. 따라서 현재 오류가 생겨도 main Codex는 자동 호출되지 않는다. 제품 커밋 배포 승인 뒤 제한 설정·읽기 전용 `--check`·격리 시험 사건의 기록→수리→DB 결과→샘 보고 종단 검증을 마치고, 별도 활성화 결정으로 timer를 켠다.
-- 정확한 커밋·검증·영향·복구안을 담은 배포 승인 요청을 기존 main 샘 Telegram으로 보냈다. Hermes 전송 영수증은 `success=true`, message `1179`, `mirrored=true`이며 main `/home/chaconne/.hermes/state/exdigm-factual-evidence-deploy-request-20260919.json`에 보존한다. 전달 성공은 주인님이 읽거나 승인했다는 뜻이 아니다. 주인님이 해당 메시지에 정확한 SHA의 승인·보류·거절로 답하면 샘이 기존 승인 절차로 이어 간다.
+- 정확한 커밋·검증·영향·복구안을 담은 배포 승인 요청을 기존 main 샘 Telegram으로 보냈다. 요청 영수증은 `success=true`, message `1179`, `mirrored=true`이며 main `/home/chaconne/.hermes/state/exdigm-factual-evidence-deploy-request-20260919.json`에 보존한다. 주인님이 조정실에서 해당 SHA의 배포를 승인했고 위 공식 경로로 반영했다. 샘은 검증된 처리 결과를 message `1195`로 보고했으며 결과 영수증은 main `/home/chaconne/.hermes/state/exdigm-factual-evidence-deploy-result-20260919.json`에 보존한다. 제품 배포와 별개로 main의 제한 설정·격리 종단 검증·자동수정 timer 활성화는 아직 하지 않았다.
 
 ### v2 설계 당시 기준선
 
