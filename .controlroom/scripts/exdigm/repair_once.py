@@ -149,6 +149,38 @@ else:
             raise RuntimeError("Remote reservation release was not confirmed; keep the run for reconciliation")
 
 
+def park_repair(config, details):
+    """Pin the verified commit, then return the clean workspace to its base."""
+    script = """import subprocess,sys
+debug,prod,base,commit,ref=sys.argv[1:]
+git=['git','-C',debug]
+def read(*args):
+    return subprocess.check_output([*git,*args],text=True).strip()
+if subprocess.run([*git,'symbolic-ref','-q','HEAD'],stdout=subprocess.DEVNULL).returncode!=1:
+    raise SystemExit('Repair workspace must remain detached')
+if read('status','--porcelain'):
+    raise SystemExit('Preserve existing changes before releasing the workspace')
+head=read('rev-parse','HEAD')
+saved=subprocess.run([*git,'rev-parse','--verify','--quiet',ref],capture_output=True,text=True)
+if saved.returncode not in (0,1) or (saved.returncode==0 and saved.stdout.strip()!=commit):
+    raise SystemExit('Saved repair reference differs from the frozen result')
+if head not in (base,commit) or (head==base and saved.returncode!=0):
+    raise SystemExit('Workspace no longer belongs to this repair result')
+deployed=subprocess.check_output(['git','-C',prod,'rev-parse','HEAD'],text=True).strip()
+if deployed!=base:
+    raise SystemExit('Production changed; reconcile the repair base before release')
+subprocess.run([*git,'merge-base','--is-ancestor',base,commit],check=True)
+if saved.returncode!=0:
+    subprocess.run([*git,'update-ref',ref,commit,'0'*40],check=True)
+if head!=base:
+    subprocess.run([*git,'switch','--detach',base],check=True)
+if read('rev-parse','HEAD')!=base or read('status','--porcelain') or read('rev-parse',ref)!=commit:
+    raise SystemExit('Repair preservation or workspace release could not be verified')
+"""
+    remote(config, shlex.join(["python3", "-c", script, config["debug_root"], config["production_root"],
+                               details["base_commit"], details["commit"], details["repair_ref"]]))
+
+
 def prompt_for(case, config):
     return f"""주인님이 승인한 Exdigm 운영 실패 조사·자동 수정 한 건입니다.
 먼저 이 조정실의 AGENTS.md, docs/README.md와 operational-error-triage-repair-policy-20260918.md를 읽으세요.
@@ -294,6 +326,9 @@ def execute_once(config, state_root):
                         details["execution_evidence"] = str(directory/"execution.jsonl")
                         if result["next_action"] == "approve_deploy":
                             details["verification_commands"] = json.dumps(verified_commands)
+                            details.update(base_commit=run["baseline"]["head"],
+                                           repair_ref=f"refs/operational-repairs/{run['id']}",
+                                           workspace_reserved="no")
                         unchanged = result["next_action"]!="approve_deploy" and preflight(config)==run["baseline"]
                         if unchanged:
                             details["workspace_reserved"]="no"
@@ -316,9 +351,14 @@ def execute_once(config, state_root):
                             # Persistent payload plus the claimed row is the recovery evidence.
                             pass
                         raise
+                details = json.loads(payload["details_json"])
+                if payload["next_action"] == "approve_deploy" and details.get("repair_ref"):
+                    # The frozen payload is written before Git changes. Retrying after
+                    # interruption verifies the same ref/base and never reruns Codex.
+                    park_repair(config, details)
                 saved = json.loads(run_command([*config["record_command"], "--json-input"], payload=json.dumps(payload,ensure_ascii=False)))
                 save_json(directory/"recorded.json", saved)
-                if json.loads(payload["details_json"]).get("workspace_reserved") == "no":
+                if details.get("workspace_reserved") == "no":
                     if preflight(config) != run["baseline"]:
                         raise RuntimeError("Workspace changed before release; reconcile the reservation")
                     release.append(True)
