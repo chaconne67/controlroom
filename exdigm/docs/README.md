@@ -8,7 +8,7 @@
 
 ## 진행 중 작업
 
-- [운영 실패 분류·자동 수정 — 사실 증거 기록 보완 운영 배포 완료 / main 실행기 직접 검증은 동기화 완료 / 제한 설정·격리 종단 검증·timer 활성화 대기](operational-error-triage-repair-policy-20260918.md)
+- [운영 실패 분류·자동 수정 — main 제한 실행기·격리 종단 검증 완료 / 60초 systemd timer 운영 중 / 배포는 샘 승인 경로](operational-error-triage-repair-policy-20260918.md)
 
 - [이력서 검수 마크다운 표시 — 개발 수정·실제 화면·보호 검사 완료, 운영 배포 승인 대기](markdown-display-fix-20260918.md)
 
