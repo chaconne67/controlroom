@@ -1,6 +1,6 @@
 # Exdigm 운영 실패 분류·승인·자동 수정 기획
 
-작성일: 2026-09-18 KST. 개정: 2026-09-19 KST. 상태: **주인님의 Telegram 직접 「초기 배포 승인」으로 제품 커밋 `3141ce76bef167c59700951f65edc306f01b7968`과 additive migration `0070`의 운영 배포·사후 검증 완료. 기존 오류 원문·이력 59건 보존 확인. 단건 실행기와 메인 샘 연결 정본은 Controlroom에 보관한다. 제한 권한 연결·무인 실행 활성화와 실제 오류별 승인 저장·자동 수리·운영 전달의 종단 검증은 아직 남아 있다. 초기 배포는 과거 고객 업무 재실행 승인이 아니다. 최신 근거와 재개는 10절을 따른다.**
+작성일: 2026-09-18 KST. 개정: 2026-09-19 KST. 상태: **주인님의 Telegram 직접 「초기 배포 승인」으로 제품 커밋 `3141ce76bef167c59700951f65edc306f01b7968`과 additive migration `0070`의 운영 배포·사후 검증 완료. 기존 오류 원문·이력 59건 보존 확인. 사실 증거 기록 보완은 debug 커밋 `e0606504859b10298456387ef17780b5ce6d4c68`로 검증·커밋했으며 운영 배포 승인 전이다. main의 단건 실행기는 Controlroom `4cc8910ea7e39473d037f1c81292d91a2545d82d`로 동기화했지만 제한 설정과 systemd unit/timer가 없어 자동 실행은 아직 꺼져 있다. 최신 근거와 재개는 아래 「사실 기록과 실행기 검증 경계 보완」을 따른다.**
 
 ## 1. 목표와 확정된 경계
 
@@ -398,6 +398,16 @@ main의 실행 자료는 배포 설정으로 정한 전용 `state_root` 아래�
 9. 검증 근거: 기존·추가 22개 검사와 전체 diff, DB 결과 명령의 문자열 메타데이터 저장 및 예약 조건, 공식 배포의 detached/clean/fast-forward 계약. 리뷰는 주 에이전트가 `code-review-loop`로 직접 수행한다.
 
 후속 diff 전체와 직접 소비자를 위 계약으로 대조했다. 승인된 finding과 열린 코드 계약 질문이 없으며, 22개 검사·변경 Python 2파일 Ruff·diff 검사가 통과했다. 승인 답장 수신/자동 배포 및 실제 제한 신원 검증은 이 코드의 완료 주장에 포함하지 않는다.
+
+### 사실 기록과 실행기 검증 경계 보완 — 2026-09-19
+
+주인님의 최신 결정은 Exdigm이 실패 시점의 사실만 기록하고, main Codex가 분류·원인 조사·수정·검증·커밋을 한 번 담당하는 것이다. Exdigm 안에 오류 종류를 판단하는 규칙 스크립트·분류 LLM·별도 수집 워커를 두지 않는다.
+
+- 제품 기준선은 운영·origin/main·debug가 같던 `3141ce76bef167c59700951f65edc306f01b7968`이었다. `record_operation_failure`가 실제 예외 traceback 또는 예외가 없는 상태 실패의 기록 호출 경로, 실제 파일·함수·줄, 실행 코드 SHA, 원천 업무 번호·상태와 생산자 사실을 남기도록 보완했다. 분류·다음 행동 인자를 제거해 최초 기록을 항상 `unclassified/investigate`로 고정했다. 이력서 필수자료 부족과 로그인 링크 열람 실패도 사용자 조치로 미리 분류하지 않고 담당자·원본·재개 사실만 남긴다.
+- 제품 결과는 debug detached 커밋 `e0606504859b10298456387ef17780b5ce6d4c68`이다. 변경 5파일의 Ruff, 관련 149개 검사, Django check, catalog current/valid와 broken reference 0을 확인했다. 운영과 origin/main은 `3141ce76bef167c59700951f65edc306f01b7968`로 유지했으며 배포 승인이 필요하다.
+- main 실행기는 Codex CLI JSONL의 명령 문자열 검색을 검증으로 사용하지 않는다. 보고된 clean 커밋을 대조한 뒤 실행기 자신이 공식 `scripts/debug_workspace.sh test`와 `check`를 SSH로 실행한다. 종료 상태 0·출력 파일·대상 커밋을 실행별 영수증에 원자 저장하고, 같은 커밋의 완료된 검사는 재개 시 재사용한다. 실패·다른 커밋·출력 유실은 배포 요청을 만들지 않는다.
+- Controlroom 결과는 `4cc8910ea7e39473d037f1c81292d91a2545d82d`이며 로컬·GitHub·main `/home/chaconne/controlroom`이 같다. 기존 22개와 검증 실행·실패·영수증 재사용·커밋 불일치 검사를 포함한 25개가 main에서 통과했다. 갱신 diff의 code-review-loop에는 승인 finding과 열린 계약 질문이 없다.
+- main에는 Codex CLI `0.155.0`과 제한 계정 `exdigm-repair`가 있지만 `/etc/exdigm-repair/config.json`과 설치된 `exdigm-repair` systemd unit/timer가 없다. 따라서 현재 오류가 생겨도 main Codex는 자동 호출되지 않는다. 제품 커밋 배포 승인 뒤 제한 설정·읽기 전용 `--check`·격리 시험 사건의 기록→수리→DB 결과→샘 보고 종단 검증을 마치고, 별도 활성화 결정으로 timer를 켠다.
 
 ### v2 설계 당시 기준선
 

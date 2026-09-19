@@ -8,7 +8,7 @@
 
 ## 진행 중 작업
 
-- [운영 실패 분류·자동 수정 — 승인된 초기 운영 배포·migration0070·기존 오류/이력 보존 확인 완료 / 제한 권한·무인 실행·실제 오류별 종단 검증 대기](operational-error-triage-repair-policy-20260918.md)
+- [운영 실패 분류·자동 수정 — 사실 증거 기록 보완은 debug 커밋·배포 승인 대기 / main 실행기 직접 검증은 동기화 완료 / 제한 설정·격리 종단 검증·timer 활성화 대기](operational-error-triage-repair-policy-20260918.md)
 
 - [이력서 검수 마크다운 표시 — 개발 수정·실제 화면·보호 검사 완료, 운영 배포 승인 대기](markdown-display-fix-20260918.md)
 
