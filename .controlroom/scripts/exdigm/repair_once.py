@@ -167,10 +167,16 @@ def preflight(config):
     import pwd
     if pwd.getpwuid(os.getuid()).pw_name != config["restricted_user"] or os.getuid() == 0:
         raise RuntimeError("Run from the provisioned restricted main-server account")
+    protected_paths = config.get("protected_runtime_paths")
+    if (not isinstance(protected_paths, list) or not protected_paths
+            or any(not isinstance(path, str) or not PurePosixPath(path).is_absolute()
+                   for path in protected_paths)):
+        raise RuntimeError("Restricted runtime protection paths are required")
     debug, prod = config["debug_root"], config["production_root"]
     script = """import json,os,subprocess,sys
 from pathlib import Path
 debug,prod=map(Path,sys.argv[1:3])
+runtime_paths=json.loads(sys.argv[3])
 if os.getuid()==0 or subprocess.check_output(['id','-un'],text=True).strip()=='chaconne':
     raise SystemExit('Automatic repair needs its restricted execution identity')
 if subprocess.run(['sudo','-n','true'],stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL).returncode==0:
@@ -178,6 +184,8 @@ if subprocess.run(['sudo','-n','true'],stdout=subprocess.DEVNULL,stderr=subproce
 protected=[prod,prod/'.git/config',prod/'.git/refs/heads',prod/'.git/hooks']
 if any(os.access(path,os.W_OK) for path in protected):
     raise SystemExit('Automatic repair identity can change production or deployment refs')
+if any(os.access(path,mode) for path in runtime_paths for mode in (os.R_OK,os.W_OK,os.X_OK)):
+    raise SystemExit('Automatic repair identity can access protected runtime data')
 if subprocess.check_output(['git','-C',str(debug),'status','--porcelain'],text=True).strip():
     raise SystemExit('Debug workspace has existing changes')
 head=subprocess.check_output(['git','-C',str(debug),'rev-parse','HEAD'],text=True).strip()
@@ -186,7 +194,9 @@ if head!=deployed:
     raise SystemExit('Debug workspace has an undeployed commit')
 print(json.dumps({'head':head}))
 """
-    return json.loads(remote(config, shlex.join(["python3", "-c", script, debug, prod])))
+    return json.loads(remote(config, shlex.join([
+        "python3", "-c", script, debug, prod, json.dumps(protected_paths),
+    ])))
 
 
 @contextmanager

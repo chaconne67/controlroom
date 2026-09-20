@@ -287,6 +287,47 @@ class RepairTests(unittest.TestCase):
         with self.assertRaisesRegex(RuntimeError, "restricted main-server account"):
             repair.preflight(self.config)
 
+    def test_preflight_rejects_each_runtime_access_mode(self):
+        import io
+        import os
+        import pwd
+        import shlex
+        from contextlib import redirect_stdout
+        self.config["restricted_user"] = pwd.getpwuid(os.getuid()).pw_name
+        self.config["protected_runtime_paths"] = ["/private-runtime"]
+
+        def execute_remote(config, command):
+            argv = shlex.split(command)
+            def output(command, **kwargs):
+                if command[0] == "id":
+                    return "repair-test-user\n"
+                return "" if "status" in command else "a" * 40
+            capture = io.StringIO()
+            with patch("sys.argv", argv[2:]), redirect_stdout(capture), \
+                 patch("subprocess.check_output", side_effect=output), \
+                 patch("subprocess.run", return_value=subprocess.CompletedProcess([], 1)):
+                exec(argv[2], {})
+            return capture.getvalue()
+
+        for mode in (os.R_OK, os.W_OK, os.X_OK, 0):
+            with self.subTest(mode=mode), patch("os.getuid", return_value=os.getuid()), \
+                 patch("os.access", side_effect=lambda path, requested: str(path) == "/private-runtime" and requested == mode), \
+                 patch.object(repair, "remote", side_effect=execute_remote):
+                if mode:
+                    with self.assertRaisesRegex(SystemExit, "protected runtime data"):
+                        repair.preflight(self.config)
+                else:
+                    self.assertEqual(repair.preflight(self.config), {"head": "a" * 40})
+
+    def test_preflight_requires_explicit_runtime_boundary(self):
+        import os
+        import pwd
+        self.config["restricted_user"] = pwd.getpwuid(os.getuid()).pw_name
+        for paths in (None, [], ["relative"], [None], "/private-runtime"):
+            self.config["protected_runtime_paths"] = paths
+            with self.subTest(paths=paths), self.assertRaisesRegex(RuntimeError, "protection paths"):
+                repair.preflight(self.config)
+
 
 class OfficialVerificationTests(unittest.TestCase):
     def setUp(self):
