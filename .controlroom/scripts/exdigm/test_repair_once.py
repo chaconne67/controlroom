@@ -301,11 +301,14 @@ class RepairTests(unittest.TestCase):
             def output(command, **kwargs):
                 if command[0] == "id":
                     return "repair-test-user\n"
+                if "--git-common-dir" in command:
+                    return command[2] + "/.git"
                 return "" if "status" in command else "a" * 40
             capture = io.StringIO()
             with patch("sys.argv", argv[2:]), redirect_stdout(capture), \
                  patch("subprocess.check_output", side_effect=output), \
-                 patch("subprocess.run", return_value=subprocess.CompletedProcess([], 1)):
+                 patch("subprocess.run", return_value=subprocess.CompletedProcess([], 1)), \
+                 patch("pathlib.Path.is_dir", return_value=True):
                 exec(argv[2], {})
             return capture.getvalue()
 
@@ -315,6 +318,44 @@ class RepairTests(unittest.TestCase):
                  patch.object(repair, "remote", side_effect=execute_remote):
                 if mode:
                     with self.assertRaisesRegex(SystemExit, "protected runtime data"):
+                        repair.preflight(self.config)
+                else:
+                    self.assertEqual(repair.preflight(self.config), {"head": "a" * 40})
+
+    def test_preflight_rejects_shared_or_writable_git_objects(self):
+        import io
+        import os
+        import pwd
+        import shlex
+        from contextlib import redirect_stdout
+        self.config["restricted_user"] = pwd.getpwuid(os.getuid()).pw_name
+        self.config["protected_runtime_paths"] = ["/private-runtime"]
+
+        for scenario in ("shared", "writable", "isolated"):
+            def execute_remote(config, command):
+                argv = shlex.split(command)
+                def output(command, **kwargs):
+                    if command[0] == "id":
+                        return "repair-test-user\n"
+                    if "--git-common-dir" in command:
+                        return "/prod/.git" if scenario == "shared" else command[2] + "/.git"
+                    return "" if "status" in command else "a" * 40
+                capture = io.StringIO()
+                with patch("sys.argv", argv[2:]), redirect_stdout(capture), \
+                     patch("subprocess.check_output", side_effect=output), \
+                     patch("subprocess.run", return_value=subprocess.CompletedProcess([], 1)), \
+                     patch("pathlib.Path.is_dir", return_value=True), \
+                     patch("pathlib.Path.rglob", return_value=iter([Path("/prod/.git/objects/aa/blob")])):
+                    exec(argv[2], {})
+                return capture.getvalue()
+            with self.subTest(scenario=scenario), \
+                 patch("os.access", side_effect=lambda path, mode: scenario == "writable" and str(path) == "/prod/.git/objects/aa/blob" and mode == os.W_OK), \
+                 patch.object(repair, "remote", side_effect=execute_remote):
+                if scenario == "shared":
+                    with self.assertRaisesRegex(SystemExit, "independent Git"):
+                        repair.preflight(self.config)
+                elif scenario == "writable":
+                    with self.assertRaisesRegex(SystemExit, "production Git objects"):
                         repair.preflight(self.config)
                 else:
                     self.assertEqual(repair.preflight(self.config), {"head": "a" * 40})

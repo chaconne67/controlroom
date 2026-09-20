@@ -184,6 +184,16 @@ if subprocess.run(['sudo','-n','true'],stdout=subprocess.DEVNULL,stderr=subproce
 protected=[prod,prod/'.git/config',prod/'.git/refs/heads',prod/'.git/hooks']
 if any(os.access(path,os.W_OK) for path in protected):
     raise SystemExit('Automatic repair identity can change production or deployment refs')
+def common_dir(root):
+    return Path(subprocess.check_output(
+        ['git','-C',str(root),'rev-parse','--path-format=absolute','--git-common-dir'],
+        text=True).strip()).resolve()
+debug_git,prod_git=common_dir(debug),common_dir(prod)
+if debug_git==prod_git or (debug_git/'objects/info/alternates').exists():
+    raise SystemExit('Automatic repair needs an independent Git object store')
+objects=prod_git/'objects'
+if not objects.is_dir() or any(os.access(path,os.W_OK) for path in [objects,*objects.rglob('*')]):
+    raise SystemExit('Automatic repair identity can change production Git objects')
 if any(os.access(path,mode) for path in runtime_paths for mode in (os.R_OK,os.W_OK,os.X_OK)):
     raise SystemExit('Automatic repair identity can access protected runtime data')
 if subprocess.check_output(['git','-C',str(debug),'status','--porcelain'],text=True).strip():

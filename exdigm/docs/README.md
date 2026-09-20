@@ -10,7 +10,7 @@
 
 - [전체 시스템 보안 점검 — 내부 보고서·개선 계획 보관 안내](security-audit-20260920.md)
 
-- [운영 실패 분류·자동 수정 — main 제한 실행기·격리 종단 검증 완료 / 60초 systemd timer 운영 중 / 배포는 샘 승인 경로](operational-error-triage-repair-policy-20260918.md)
+- [운영 실패 분류·자동 수정 — 보안 보완 검증 중 자동 수정 일시 중지 / 재개 정보는 보안 실행 기록 참조 / 배포는 샘 승인 경로](operational-error-triage-repair-policy-20260918.md)
 
 - [이력서 검수 마크다운 표시 — 개발 수정·실제 화면·보호 검사 완료, 운영 배포 승인 대기](markdown-display-fix-20260918.md)
 
