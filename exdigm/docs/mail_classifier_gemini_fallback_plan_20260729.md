@@ -46,6 +46,7 @@ Muse와 Gemini 모두 실패
 | 공급자 | 모델 | 방식 | 현재 용도·상태 |
 |---|---|---|---|
 | Muse | `muse-spark-1.3` | API | 메일 분류 기본 모델, 실제 호출 확인 |
+| Muse | `muse-spark-1.3-contributor` | API | 다른 저비용 용도에서 명시적으로 선택 가능한 모델, 실제 호출 확인 |
 | Gemini | `gemini-3.1-flash-lite` | API | 기존 경량 분류 호출, 공급자 목록 확인 |
 | Gemini | `gemini-3.7-flash` | API | 기존 호출 모델, 공급자 목록 확인 |
 | Gemini | `gemini-3.8-flash` | API | 메일 분류 폴백과 기존 최신 Flash 호출, 실제 폴백 확인 |
