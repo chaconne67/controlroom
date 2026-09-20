@@ -1,81 +1,104 @@
-# 메일 분류기 Muse API 전환 및 Gemini 3.8 Flash 폴백
+# 메일 분류 Codex Terra CLI 전환 및 Gemini 3.8 Flash 폴백
 
 ## 2026-09-20 현행 운영 정본
 
 ### 완료 상태
 
-- 운영 반영 커밋: `47d66bf3f88d3cc54bee598fcf5639cc50f80f43`
-- 운영 배포 완료: 2026-09-20 13:44:38 KST
-- 운영 기본 분류: Muse API `muse-spark-1.3`
-- 운영 폴백 분류: Gemini API `gemini-3.8-flash`
-- 운영 서비스, 메일 체커, HTTPS가 정상이며 배포 뒤 Muse 분류 단건도 실제 API로 확인했다.
+- 운영 반영 커밋: `7eda4e4e37945270530abe198559f31f4ed77cf7`
+- 운영 배포 완료: 2026-09-20 15:00:41 KST
+- 운영 기본 분류: OpenAI Codex CLI `gpt-5.6-terra`, reasoning `low`
+- 운영 폴백 분류: Gemini API `gemini-3.8-flash`, reasoning `low`
+- GitHub `main`, 운영·디버깅 체크아웃과 실행 앱의 커밋이 일치하고 모두 clean이다. 앱·SSE·알림·Nginx와 호스트 작업자 11개, 메일 체커, HTTPS가 정상이다.
+- 운영 코드와 메일 체커 사용자로 합성 일반 메일을 실제 Terra CLI로 분류해 `normal` 결과와 JSON 계약을 확인했다.
 
 ### 공식 실행 경로
 
 ```text
 MailChecker
   -> common.llm.call_llm_json
-  -> Muse API muse-spark-1.3 1회
+  -> Codex CLI gpt-5.6-terra 1회
+     - 인증만 공유하는 전용 CODEX_HOME
+     - 빈 LLM 전용 작업 폴더
+     - 개발 도구·스킬·브라우저·다중 에이전트 기능 비활성
+     - --output-schema로 같은 JSON 스키마 강제
   -> JSON 스키마 및 메일 분류 계약 검사
   -> 정상 후속 처리
 
-Muse 통신 실패 또는 결과 계약 실패
+Codex 통신 실패 또는 결과 계약 실패
   -> 같은 common.llm.call_llm_json 안에서 Gemini API gemini-3.8-flash 1회
-  -> JSON 스키마 및 메일 분류 계약 검사
+  -> 같은 JSON 스키마 및 메일 분류 계약 검사
   -> 성공하면 정상 후속 처리 계속
-  -> Muse 실패 원인과 Gemini 폴백 결과는 기존 OperationalError에 pending으로 기록
+  -> Codex 실패 원인과 Gemini 폴백 결과는 기존 OperationalError에 pending으로 기록
 
-Muse와 Gemini 모두 실패
+Codex와 Gemini 모두 실패
   -> 기존 classification_status=failed 및 재시도 계약 유지
 ```
 
-업무 연속성과 장애 수리를 분리한다. Muse가 실패해도 Gemini가 메일 분류 업무를 끝내며, 폴백 성공으로 Muse 장애를 숨기지 않는다. 기존 오류 DB 기록은 main 서버의 Codex 자동 수정기가 조사할 수 있는 입력이 된다.
+업무 연속성과 장애 수리를 분리한다. Codex가 실패해도 Gemini가 메일 분류 업무를 끝내며, 폴백 성공으로 Codex 장애를 숨기지 않는다. 기존 오류 DB 기록은 main 서버의 Codex 자동 수정기가 조사할 수 있는 입력이 된다.
 
 ### 책임 구분
 
-- **LLM**: 제목, 본문, 첨부파일 문맥을 해석하고 `resume`, `job_description`, `spam`, `normal` 중 하나와 기존 필수 결과를 판단한다.
+- **LLM**: 제목, 본문, 첨부파일 문맥을 해석하고 `resume`, `spam`, `normal`과 기존 필수 결과를 판단한다.
 - **공통 LLM 호출 도구**: 공급자 호출, API/CLI 구분, 모델 선택, 엄격한 JSON 스키마, 결과 계약 검사, 한 번의 폴백과 사용량 정규화를 담당한다.
 - **MailChecker**: 메일 입력을 전달하고 검증된 결과를 기존 업로드·후보자 처리 흐름에 연결한다.
-- **기존 오류 기록기**: Muse 실패 원인, 호출 방식, 모델, Gemini 폴백 성공·실패를 같은 운영 오류 경로에 남긴다.
+- **기존 오류 기록기**: Codex 실패 원인, CLI 방식, Terra 모델, Gemini 폴백 성공·실패를 같은 운영 오류 경로에 남긴다.
 - **main 서버 Codex**: 기록된 오류를 가져와 원인을 조사하고 승인된 범위에서 수정·검증·커밋한다.
 
-스크립트가 제목 키워드로 메일의 의미를 판정하지 않는다. 스크립트는 입력 전달과 기계적으로 확인 가능한 형식·필드·첨부 일치만 검사한다.
+스크립트가 제목 키워드로 메일 의미를 판정하지 않는다. 스크립트는 입력 전달과 기계적으로 확인 가능한 형식·필드·첨부 일치만 검사한다.
 
 ### 공통 LLM 모델 목록과 호출 방식
 
 | 공급자 | 모델 | 방식 | 현재 용도·상태 |
 |---|---|---|---|
-| Muse | `muse-spark-1.3` | API | 메일 분류 기본 모델, 실제 호출 확인 |
-| Muse | `muse-spark-1.3-contributor` | API | 다른 저비용 용도에서 명시적으로 선택 가능한 모델, 실제 호출 확인 |
-| Gemini | `gemini-3.1-flash-lite` | API | 기존 경량 분류 호출, 공급자 목록 확인 |
-| Gemini | `gemini-3.7-flash` | API | 기존 호출 모델, 공급자 목록 확인 |
-| Gemini | `gemini-3.8-flash` | API | 메일 분류 폴백과 기존 최신 Flash 호출, 실제 폴백 확인 |
-| Gemini | `gemini-embedding-001` | API | 기존 임베딩 호출, 공급자 목록 확인 |
-| Gemini | `gemini-embedding-2` | API | 기존 임베딩 호출, 공급자 목록 확인 |
-| OpenAI Codex | `gpt-5.5` | CLI | 기존 개발·에이전트 호출, 실제 CLI 응답 확인 |
-| OpenRouter | `minimax/minimax-m3` | API | 기존 OpenRouter 호출, 공개 모델 목록 확인 |
+| OpenAI Codex | `gpt-5.6-terra` | CLI | 메일 분류 기본 모델, JSON Schema 실호출·운영 실호출 확인 |
+| OpenAI Codex | `gpt-5.5` | CLI | 기존 JD·자동게시 등 명시적 호출에 유지 |
+| Muse | `muse-spark-1.3` | API | 공통 도구에서 선택 가능한 모델, 이전 메일 기본 모델 |
+| Muse | `muse-spark-1.3-contributor` | API | 다른 저비용 용도에서 명시적으로 선택 가능한 모델 |
+| Gemini | `gemini-3.1-flash-lite` | API | 기존 경량 호출 |
+| Gemini | `gemini-3.7-flash` | API | 기존 호출 모델 |
+| Gemini | `gemini-3.8-flash` | API | 메일 분류 폴백, 실제 폴백 확인 |
+| Gemini | `gemini-embedding-001` | API | 기존 임베딩 호출 |
+| Gemini | `gemini-embedding-2` | API | 기존 임베딩 호출 |
+| OpenRouter | `minimax/minimax-m3` | API | 기존 OpenRouter 호출 |
 
-더 이상 공급자 목록에 없는 `gemini-2.0-flash` 하드코딩은 제거했다. 새 목록은 `common/llm.py`의 단일 카탈로그가 정본이며, 각 모델의 `api` 또는 `cli` 전송 방식을 함께 기록한다.
+더 이상 공급자 목록에 없는 `gemini-2.0-flash` 하드코딩은 제거된 상태를 유지한다. `common/llm.py`의 단일 카탈로그가 현재 모델과 `api`·`cli` 전송 방식의 정본이다.
+
+### CLI 오버헤드 확인과 축소
+
+동일한 합성 이력서 메일과 동일 JSON Schema를 사용해 단계별로 비교했다.
+
+| 실행 조건 | 입력 토큰 | 출력 토큰 | 시간 |
+|---|---:|---:|---:|
+| 기존 전용 홈 + 저장소 작업 폴더 | 13,817 | 128 | 6.88초 |
+| 인증만 있는 빈 홈 + 빈 작업 폴더 | 11,987 | 138 | 6.76초 |
+| 빈 환경 + 불필요한 개발 도구 기능 비활성 | 9,386 | 128 | 6.38초 |
+
+최소 실행으로 입력 토큰을 4,431개, 약 32% 줄였다. `codex exec`는 개발 에이전트용 CLI이므로 모델 시스템 문맥 자체를 제거하는 문서화된 raw inference 모드는 없다. CLI 사용 계약을 유지하는 범위에서는 현재 설정이 확인된 최소 경로다. 에이전트 문맥까지 없애려면 별도의 직접 API 호출로 전송 방식을 바꾸는 제품 결정이 필요하다.
 
 ### 변경 범위와 최소 구현
 
-- 기존 `common/llm.py`를 확장해 Muse Responses API와 결과 검사·Gemini 폴백을 한 경로에 넣었다.
-- 기존 `MailChecker`, `OperationalErrorHandler`, 실패 재시도 계약을 재사용했다.
+- 기존 `common/llm.py`의 `codex_exec()`에 JSON Schema 파일 전달과 LLM 전용 최소 실행 설정을 추가했다.
+- 기존 `call_llm_json`, `MailChecker`, Gemini 폴백, `OperationalErrorHandler`, 실패 재시도 계약을 그대로 재사용했다.
+- Codex 인증은 기존 사용자 인증을 새 `runtime/codex-llm-home`에 심링크하고, 저장소 지침·개인 플러그인·스킬이 메일 분류 입력에 들어가지 않게 했다.
 - 새 워커, 새 스케줄러, 새 오류 테이블, 별도 LLM 래퍼, 새 패키지는 만들지 않았다.
-- Muse 비밀값은 운영 `.env`에만 저장하고 코드·문서·Git·검증 출력에는 남기지 않았다.
+- Muse 모델 두 개는 다른 용도를 위해 공통 카탈로그에 그대로 남겼다.
 
 ### 검증 근거
 
-- 공통 LLM·메일 경로 집중 검사: 214개 통과
-- 보호된 운영 계약 검사: 234개 통과
-- Django 시스템 검사, Ruff, diff 검사 통과
-- 다양한 Muse 메일 분류 9건 모두 기대 결과와 일치
-- 최종 코드에서 이력서 첨부, 광고, 일반 일정 3건 실제 Muse API 분류 성공
-- Muse 실패를 강제로 만든 전체 MailChecker 경로에서 실제 Gemini 3.8이 이력서와 정확한 첨부명을 반환
-- 폴백 성공 뒤 기존 `OperationalError`에 Muse 실패와 Gemini 성공이 `pending`으로 기록되는 통합 검사 통과
-- 운영 배포 뒤 실제 Muse 이력서 분류 성공, 최근 운영 오류와 Muse 실패 0건 확인
+- 메일 관련 집중 검사 37개 통과
+- 보호된 운영 계약 검사 234개 통과
+- Django 시스템 검사, Ruff, diff 검사, 코드 지식 카탈로그 검사 통과
+- 실제 Terra CLI 분류 6종 모두 기대 결과와 일치: 이력서 첨부, 본문 이력서, 채용 광고, 일반 일정, 과거 이력서 인용 답장, 플랫폼 거절 알림
+- 6종 실호출 합계: 입력 55,906토큰, 출력 803토큰. 뒤 호출 두 건에서는 공통 입력 8,960토큰이 캐시로 보고됐다.
+- Codex 실패를 강제로 만든 전체 MailChecker 경로에서 실제 Gemini 3.8 폴백이 일반 메일을 정상 분류했다.
+- 폴백 성공 뒤 기존 `OperationalError`에 Codex CLI·Terra 실패와 Gemini 성공이 `pending`으로 1건 기록되는 격리 DB 검사를 통과했다.
+- 코드 리뷰 루프 최종 결과 승인된 finding 없음
+- 운영 배포 뒤 실제 Terra 단건 분류 성공: 입력 9,287토큰, 출력 117토큰, `normal`
+- 운영 배포 뒤 HTTPS 200, 앱·SSE·알림·Nginx 1/1, 호스트 작업자 11개와 메일 체커 active, 최근 메일 체커 오류 0건
 
-저장소 전체 검사는 기존 테스트 기반 데이터 누락 등 이번 변경과 무관한 다수 실패가 있어 전체 통과로 판정하지 않았다. 이번에 바꾼 파일의 집중 검사와 배포 보호 계약 검사는 모두 통과했고, 해당 실패 목록에는 변경한 집중 검사 파일이 없었다.
+### 이전 2026-09-20 Muse 운영 단계
+
+커밋 `47d66bf3f88d3cc54bee598fcf5639cc50f80f43`에서는 Muse API `muse-spark-1.3`을 기본, Gemini API `gemini-3.8-flash`를 폴백으로 운영했다. 이 단계에서 공통 모델 카탈로그, 폴백 후 업무 지속, 기본 모델 실패의 `OperationalError` 기록 계약을 만들었다. 현행 Terra 전환은 그 경로를 재사용하며 기본 공급자만 Codex CLI로 바꿨다.
 
 ---
 
