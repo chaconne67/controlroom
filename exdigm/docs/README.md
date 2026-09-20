@@ -28,6 +28,8 @@
 
 ## 최근 완료 작업
 
+- [메일 분류 Muse API·Gemini 3.8 폴백 — 운영 반영·폴백 후 오류 DB 기록·실제 API 검증 완료](mail_classifier_gemini_fallback_plan_20260729.md)
+
 - [자동게시 간결 제목·익명 소개20자·여섯 사이트 제약 — 운영 반영·활성5사이트 최종 입력·원본 보존 확인](incruit-title-limit-alerts-20260918.md)
 
 - [이력서의 정해진 접수 실패·담당 컨설턴트 보완 안내 — 운영 반영·본문 이메일 링크·지정 원본 종결·웹 알림 1회 전송 확인](resume-expected-rejection-notification-20260918.md)
