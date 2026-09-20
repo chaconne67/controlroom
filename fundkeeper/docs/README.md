@@ -8,7 +8,8 @@
 
 ## 문서
 
-- [투자자 프로파일링 문구 최소 수정](<plans/2026-09-18-investor-questionnaire-consistency-plan.md>) — 일부 과도한 표현만 완화했습니다. 기존 배점·점수 구간·분류 상한·추천 경로 유지, 새 구별 절차·분류 규칙·알고리즘 설명서 변경 제외. main 코드 `c77316e6` 검증·커밋·푸시 완료이며 이번 운영 배포는 미실행입니다.
+- [투자자 프로파일링 전체 문항 의미 검토](<plans/2026-09-21-investor-questionnaire-semantic-review.md>) — 13문항·65개 선택지의 의미·단계·배점 연결을 전수검토했습니다. 7번을 `0%`로 바꾼 작업 초안은 철회·복구했습니다. 문항 재구성안과 기존 상한의 영향을 검토 중이며 코드·3차 두 전략 별첨의 최종 반영 전입니다.
+- [2026-09-18 프로파일링 문구 최소 수정 이력](<plans/2026-09-18-investor-questionnaire-consistency-plan.md>) — 당시 네 문구 중심의 변경·검증·푸시 기록입니다. 최신 전수검토와 범위는 위 2026-09-21 문서를 따릅니다.
 - [운영서버 통합 기록](../../.controlroom/docs/production-server-consolidation-20260916.md) — main `chaconne@49.247.192.127`로 운영 인계가 완료됐습니다. 최신 적용·복구 절을 확인합니다.
 - [2026-09-17 테스트베드 알고리즘 심사 발표 자료](<plans/2026-09-17-testbed-algorithm-review-pt-plan.md>) — 국내ETF·퇴직연금 레시피(1336~1339, 1342, 1343) 심사 PT. HTML은 [presentations/2026-09-testbed-algorithm-review](<presentations/2026-09-testbed-algorithm-review/index.html>)(4차 수정본 26장), PDF는 Drive `MOA/테스트베드3차/심사발표자료`에 있으며 `_v4` 파일이 최신입니다.
 - [2026-03-10-chatbot-enhancement-design.md](<plans/2026-03-10-chatbot-enhancement-design.md>)
