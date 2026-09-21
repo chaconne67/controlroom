@@ -449,6 +449,11 @@ def execute_once(config, state_root):
                             }
                         save_json(payload_path, payload)
                     except Exception as error:
+                        workspace_unchanged = False
+                        try:
+                            workspace_unchanged = preflight(config) == run["baseline"]
+                        except Exception:
+                            pass
                         failure = {
                             "operation": "result",
                             "track_id": track["id"],
@@ -463,18 +468,30 @@ def execute_once(config, state_root):
                             "actor": "main_codex",
                             "details": {
                                 "owner": "controlroom",
-                                "resume_condition": "기존 실행과 작업공간을 대조한 뒤 같은 실행을 인계합니다.",
-                                "verification": "정상 결과 기록 전에 실행이 중단됐습니다.",
+                                "resume_condition": (
+                                    "실행 자료의 중단 원인을 해소한 뒤 같은 트랙을 다시 조사합니다."
+                                    if workspace_unchanged
+                                    else "기존 실행과 작업공간을 대조한 뒤 같은 실행을 인계합니다."
+                                ),
+                                "verification": (
+                                    "정상 결과 기록 전에 실행이 중단됐지만 시작 커밋과 clean 작업공간을 확인했습니다."
+                                    if workspace_unchanged
+                                    else "정상 결과 기록 전에 실행이 중단됐습니다."
+                                ),
                                 "stop_reason": f"{type(error).__name__}; 실제 실행 상태는 아직 미확인입니다.",
-                                "workspace_reserved": "yes",
+                                "workspace_reserved": "no" if workspace_unchanged else "yes",
                             },
                         }
-                        save_json(interrupted_path, failure)
-                        try:
-                            _record(config, failure)
-                        except Exception:
-                            pass
-                        raise
+                        if workspace_unchanged:
+                            save_json(payload_path, failure)
+                            payload = failure
+                        else:
+                            save_json(interrupted_path, failure)
+                            try:
+                                _record(config, failure)
+                            except Exception:
+                                pass
+                            raise
                 details = payload.get("details", {})
                 if payload.get("next_action") == "approve_deploy" and details.get("repair_ref"):
                     park_repair(config, details)

@@ -1,4 +1,8 @@
 import copy
+from contextlib import contextmanager
+import json
+from pathlib import Path
+import tempfile
 import unittest
 import uuid
 from unittest import mock
@@ -192,6 +196,110 @@ class PipelineContractTests(unittest.TestCase):
         result["split_tracks"] = {}
         with self.assertRaisesRegex(ValueError, "must be a list"):
             pipeline.validate_result(result, "investigate")
+
+    def test_clean_invalid_execution_records_wait_and_releases_workspace(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            state_root = Path(temporary)
+            run_calls = []
+            records = []
+            releases = []
+            track = {
+                "id": str(uuid.uuid4()),
+                "status": "running",
+                "revision": 3,
+                "next_action": "investigate",
+                "handling_context": {},
+            }
+            case = {"id": str(uuid.uuid4()), "selected_track": track}
+
+            @contextmanager
+            def workspace_lock(*_args):
+                release = []
+                try:
+                    yield release
+                finally:
+                    releases.append(bool(release))
+
+            def run_command(command, **kwargs):
+                run_calls.append(command)
+                if command[0] == "record":
+                    if "claim" in command:
+                        run_id = command[command.index("--automation-run") + 1]
+                        track["handling_context"] = {
+                            "automation_run": run_id,
+                            "workspace_reserved": "yes",
+                        }
+                        return json.dumps(case)
+                    if "read-track" in command:
+                        return json.dumps({"selected_track": track})
+                    payload = json.loads(kwargs["payload"])
+                    records.append(payload)
+                    return json.dumps(
+                        {
+                            "id": case["id"],
+                            "selected_track": {
+                                **track,
+                                "status": "waiting",
+                                "next_action": payload["next_action"],
+                            },
+                        }
+                    )
+                result_path = Path(
+                    command[command.index("--output-last-message") + 1]
+                )
+                result_path.write_text(
+                    json.dumps({"invalid": "contract"}), encoding="utf-8"
+                )
+                if kwargs.get("evidence"):
+                    kwargs["evidence"].write_text(
+                        json.dumps(
+                            {
+                                "type": "thread.started",
+                                "thread_id": str(uuid.uuid4()),
+                            }
+                        )
+                        + "\n",
+                        encoding="utf-8",
+                    )
+                return ""
+
+            config = {
+                "record_command": ["record"],
+                "codex_command": ["codex"],
+                "code_ssh": ["ssh", "restricted"],
+                "gbrain_ssh": ["ssh", "gbrain"],
+                "remote_uv": "/remote/uv",
+                "project_root": "/controlroom/exdigm",
+                "debug_root": "/debug",
+                "production_root": "/prod",
+                "restricted_user": "repair-test-user",
+            }
+            baseline = {"head": "a" * 40}
+            fake_fcntl = mock.Mock(LOCK_EX=1, LOCK_NB=2)
+            with mock.patch.dict(
+                "sys.modules", {"fcntl": fake_fcntl}
+            ), mock.patch.object(
+                pipeline, "preflight", return_value=baseline
+            ), mock.patch.object(
+                pipeline, "agent_environment_preflight", return_value={}
+            ), mock.patch.object(
+                pipeline, "workspace_lock", workspace_lock
+            ), mock.patch.object(
+                pipeline, "run_command", side_effect=run_command
+            ):
+                outcome = pipeline.execute_once(config, state_root)
+
+            self.assertEqual(outcome["next_action"], "external_wait")
+            self.assertEqual(releases, [True])
+            self.assertFalse((state_root / "active.json").exists())
+            self.assertEqual(len(records), 1)
+            self.assertEqual(records[0]["status"], "failed")
+            self.assertEqual(records[0]["details"]["workspace_reserved"], "no")
+            self.assertEqual(sum(call[0] == "codex" for call in run_calls), 2)
+            self.assertTrue(
+                next(state_root.glob("*/result-payload.json")).is_file()
+            )
+            self.assertFalse(any(state_root.glob("*/interrupted-payload.json")))
 
 
 if __name__ == "__main__":
