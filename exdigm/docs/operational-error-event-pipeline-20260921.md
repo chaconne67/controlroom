@@ -132,6 +132,7 @@ main repair Codex가 운영에서 다음을 확인한다.
 - 한 작업자가 실행 중이면 같은 작업자의 다음 주기는 겹치지 않는다.
 - DB 점유에는 고유 실행 번호와 작업 공간 예약 상태를 함께 기록한다.
 - Codex 호출 뒤 응답이 끊기면 같은 작업을 즉시 다시 하지 않는다. 고정된 실행 자료, 실제 HEAD·운영 판본·DB 원장을 대조해 동일 실행을 이어받는다.
+- Codex 결과가 단계 계약을 통과하지 못해 실행이 중단돼도 제품·debug 기준선이 시작 시점과 정확히 같으면, 중단 결과와 작업공간 반환을 같은 append-only 기록에 남기고 전역 예약을 해제한다. 기준선이 달라졌거나 확인할 수 없으면 자동 해제하지 않고 실행 자료와 예약을 보존한다.
 - 수정본은 승인 대기 동안 Git 보관 참조로 고정하고 debug 작업 공간은 기준 커밋으로 반환한다.
 - 배포 실패 시 예약과 로그를 보존해 실제 운영 상태를 확인하기 전 재배포하지 않는다.
 - 배포 프로세스가 중간에 끊기면 운영 커밋이 같다는 사실만으로 성공 처리하지 않는다. 공식 배포 명령의 정상 종료 뒤 생성된 승인 건별 완료 영수증과 로그까지 일치해야 성공으로 복구한다.
@@ -165,15 +166,17 @@ main repair Codex가 운영에서 다음을 확인한다.
 
 ### 8.2 Controlroom 작업자와 권한 경계
 
-- 실행 코드 커밋: `00443cecdd1ad662a725e2d38a851a52cc6751d9`. 로컬·GitHub·main 조정실에 같은 구현을 설치했다.
+- 최초 실행 코드 커밋은 `00443cecdd1ad662a725e2d38a851a52cc6751d9`이고, 실제 설치 사전 검사와 중단 복구를 보강한 최종 Controlroom 커밋은 `a11ff3d429ceb4b0addbcd6a3222df0e0e61785d`다. 로컬·GitHub·main 조정실이 최종 커밋으로 일치하고 clean이다.
 - main에는 조사·수정용 `exdigm-repair`, 배포용 `exdigm-deploy`, 통신 기록용 Sam의 서로 다른 SSH 키와 강제 명령을 설치했다. 각 신원은 자기 read/record/execute만 성공했고 다른 주체의 claim·실행과 임의 shell은 거절됐다.
-- 최종 제품 커밋 기준 repair와 deploy 사전 검사가 모두 통과했다. deploy 신원은 Codex CLI 0.153.2와 공식 배포 경로만 사용한다.
-- Controlroom 검증은 로컬 39건 통과·1건 건너뜀·28개 subtest 통과, main Linux 단위검사 58건 통과, 실제 Hermes Python의 사용자 결정 검사 8건 통과였다. 스킬 의존성 검사는 physical 62개와 global 28개가 통과했고 기존 FundKeeper 경고만 유지됐다.
+- 최종 제품 커밋 기준 repair와 deploy 사전 검사가 모두 통과했다. repair 사전 검사는 전용 GBrain SSH 신원과 `/home/chaconne/.local/bin/uv`를 직접 확인하고, deploy 신원은 Codex CLI 0.153.2와 공식 배포 경로만 사용한다.
+- Controlroom 전체 Linux 단위검사 60건과 Windows의 중단 복구 집중검사 8건이 통과했다. 그 밖의 기존 로컬 검사는 39건 통과·1건 건너뜀·28개 subtest 통과, 실제 Hermes Python의 사용자 결정 검사 8건 통과였다. 스킬 의존성 검사는 physical 62개와 global 28개가 통과했고 기존 FundKeeper 경고만 유지됐다.
 - 리뷰에서 응답 소실 뒤 같은 원장 항목의 안전한 재전송, 배포 완료 영수증, 자식 트랙의 blocking 계약, 보류 요청 중복 보고를 보강했다. 제품 0075 리뷰에서는 비어 있지 않지만 형식이 잘못된 과거 배포 근거와 원상 복구 계약을 추가로 보강했고 재검토에 열린 finding은 없다.
 
 ### 8.3 실제 가동
 
 - 2026-09-21 16:44 KST main의 `exdigm-repair.timer`와 `exdigm-deploy.timer`를 enable/start했다. 두 timer는 main systemd가 DB를 주기 조회하며, 샘의 스케줄과 별개다.
-- 첫 deploy 실행은 승인된 배포가 없어 `no_work`로 정상 종료했다. 첫 repair 실행은 트랙 한 건을 원자적으로 점유해 실행 번호 `479c92ab-796a-4946-9712-f2dda7751913`로 main Codex 조사를 시작했다. 그 시점의 DB는 조사 실행 중 1건, 조사 대기 62건, 해결 1건이다.
-- Hermes의 기존 `Exdigm 10-minute monitor` 작업 `130323c787e0`은 같은 작업 ID로 재개했고 enabled/scheduled 상태다. 설치 스크립트·스킬은 Controlroom 정본과 SHA-256이 같으며, 읽기 전용 조회에서 Codex 결과나 사용자 요청이 나오기 전 보고 대상은 0건이었다.
+- deploy 작업자는 승인된 배포가 없을 때 반복해서 `no_work`로 정상 종료한다. repair 작업자는 실제 기존 오류를 차례로 점유했고 실행 번호 `479c92ab-796a-4946-9712-f2dda7751913`, `e63742a9-d265-45fd-b2e9-1e93a3ac933f`, `6bc39022-0afd-453b-b76b-b2a12450cb40`, `ad0e514c-522a-4b83-862c-288049f91cae`의 결과를 DB에 기록했다. 이 과정에서 GBrain과 uv의 실제 설치 경로가 사전 검사에 반영됐고, 허용되지 않는 단계 결과를 DB 계약이 거절하는 것도 확인했다.
+- 실행 번호 `039ffa34-1c48-4649-bde9-7a27b0915b86`에서는 Codex가 복구된 과거 오류를 `defect / none`으로 반환해 단계 계약에 거절됐다. 중단 내용은 `external_wait`로 보존됐지만 물리 예약을 반환한 뒤 DB의 `workspace_reserved=yes`만 남아 다음 claim을 막았다. Controlroom `a11ff3d`는 앞으로 clean 기준선이면 중단 기록과 예약 반환을 함께 처리하도록 고쳤다. 기존 한 건은 보존 실행 자료·제품과 debug의 clean HEAD·실제 예약 부재를 다시 대조한 뒤 2026-09-21 17:41 KST 결정적 원장 ID `9232bccd-5f58-5155-940f-5b2193a61e15`로 revision 4→5, `workspace_reserved=no`를 추가 기록했다. 오류를 임의 종료하거나 승인하지 않았고 `external_wait`는 유지했다.
+- 위 조정 뒤 repair timer를 다시 시작하자 실행 번호 `ccffa0f9-83c4-4d87-bca0-359a0600d336`가 다음 조사 트랙을 즉시 점유했다. 이는 DB의 오래된 예약 표시가 제거되고 main systemd 대기열이 다시 흐른다는 실제 확인이다.
+- Hermes의 기존 `Exdigm 10-minute monitor` 작업 `130323c787e0`은 같은 작업 ID로 enabled/scheduled 상태다. 샘은 DB 조회·보고·실제 답변 기록만 수행한다. 느린 Telegram 전달 중 같은 fire fence를 heartbeat가 다시 얻으려 해 전달 성공을 실패로 오인하던 Hermes 문제는 설치 저장소의 로컬 커밋 `c608b71d1ec6dc0cf3ef9e7d49db000b83788b34`에서 고쳤다. 관련 64개 검사가 통과했고, 실제 실행 `510a804f5acd42fbaa3562be7027d778`은 전달 완료, 이후 실행 `6155189ee9ef468a8d76c08ed70fcc92`는 새 보고 대상이 없어 정상 억제됐다. 이 Hermes 커밋은 아직 upstream에 push하지 않은 main 설치본 로컬 변경이다.
 - 가짜 사용자 승인이나 실제 고객 오류를 시험용으로 만들지 않았다. 따라서 설치·권한·첫 자동 점유는 확인됐지만, 첫 실제 조사 결과의 샘 전달 → 실제 주인님 결정 기록 → 승인된 수정·배포 → 원래 결과 검증 → 종료까지의 종단 이력은 실제 사건이 그 단계에 도달할 때 계속 확인한다.
