@@ -99,6 +99,10 @@ with connection.cursor() as cursor:
                     )
                     OR t.status IN ('deferred','rejected','resolved','failed')
                   )
+              AND NOT (
+                    t.next_action='external_wait'
+                    AND COALESCE(t.handling_context->>'owner', '')='controlroom'
+                  )
               AND NOT EXISTS (
                     SELECT 1
                     FROM projects_operationalerrortransition x
@@ -216,21 +220,16 @@ def prepare_context(
     state = load_state()
     context = collect_context(runner=runner)
     if context:
+        previous = state.get("exdigm_pending_delivery")
+        if previous:
+            raise RuntimeError(
+                "Previous Hermes delivery is unconfirmed; preserving it without restaging"
+            )
         active = receipt_reader(PROFILE_ROOT)
         if len(active) != 1:
             raise RuntimeError(
                 "A single active Hermes execution is required before preparing delivery"
             )
-        previous = state.get("exdigm_pending_delivery")
-        if previous and previous["execution_id"] != active[0]["id"]:
-            previous_runs = receipt_reader(
-                PROFILE_ROOT, previous["execution_id"]
-            )
-            if previous_runs and previous_runs[0]["status"] in {
-                "claimed",
-                "running",
-            }:
-                raise RuntimeError("Previous Hermes delivery is still active")
         state["exdigm_pending_delivery"] = {
             "execution_id": active[0]["id"],
             "job_id": state["exdigm_monitor_job_id"],

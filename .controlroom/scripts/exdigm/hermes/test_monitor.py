@@ -24,6 +24,11 @@ def profile(tmp_path, monkeypatch):
             "INSERT INTO executions VALUES "
             "('current', 'sam-monitor', 'running', NULL, NULL)"
         )
+    with sqlite3.connect(tmp_path / "cron" / "deliveries.db") as db:
+        db.execute(
+            "CREATE TABLE deliveries "
+            "(execution_id TEXT, for_failure INTEGER, status TEXT, finished_at TEXT)"
+        )
     monkeypatch.setattr(collector, "PROFILE_ROOT", tmp_path)
     monkeypatch.setattr(
         collector,
@@ -166,6 +171,71 @@ def test_confirmed_delivery_records_db_before_local_checkpoint(profile):
     assert "exdigm_pending_delivery" not in state
 
 
+def test_durable_delivery_reconciles_after_execution_finalization_is_interrupted(profile):
+    collector.prepare_context(runner=probe, delivery_writer=noop_writer)
+    with sqlite3.connect(profile / "cron" / "executions.db") as db:
+        db.execute(
+            "UPDATE executions SET status='failed', delivery_outcome=NULL, "
+            "finished_at='2026-09-21T17:09:19+09:00'"
+        )
+    with sqlite3.connect(profile / "cron" / "deliveries.db") as db:
+        db.execute(
+            "INSERT INTO deliveries VALUES "
+            "('current', 0, 'delivered', '2026-09-21T17:09:18+09:00')"
+        )
+    calls = []
+    assert checkpoint.update_checkpoint(
+        collector.STATE_PATH,
+        delivery_writer=lambda *args: calls.append(args),
+    )
+    assert len(calls) == 1
+    _, pending, receipt = calls[0]
+    assert pending["tracks"] == {track_row()["track_id"]: 2}
+    assert receipt == {
+        "id": "current",
+        "status": "completed",
+        "delivery_outcome": "delivered",
+        "finished_at": "2026-09-21T17:09:18+09:00",
+    }
+    assert "exdigm_pending_delivery" not in collector.load_state()
+
+
+def test_failure_notification_is_not_mistaken_for_the_track_report(profile):
+    collector.prepare_context(runner=probe, delivery_writer=noop_writer)
+    with sqlite3.connect(profile / "cron" / "executions.db") as db:
+        db.execute(
+            "UPDATE executions SET status='failed', delivery_outcome=NULL, "
+            "finished_at='2026-09-21T17:09:19+09:00'"
+        )
+    with sqlite3.connect(profile / "cron" / "deliveries.db") as db:
+        db.execute(
+            "INSERT INTO deliveries VALUES "
+            "('current', 1, 'delivered', '2026-09-21T17:09:18+09:00')"
+        )
+    before = collector.STATE_PATH.read_bytes()
+    calls = []
+    assert not checkpoint.update_checkpoint(
+        collector.STATE_PATH,
+        delivery_writer=lambda *args: calls.append(args),
+    )
+    assert calls == []
+    assert collector.STATE_PATH.read_bytes() == before
+
+
+def test_unconfirmed_previous_delivery_is_never_replaced_by_next_execution(profile):
+    collector.prepare_context(runner=probe, delivery_writer=noop_writer)
+    with sqlite3.connect(profile / "cron" / "executions.db") as db:
+        db.execute("UPDATE executions SET status='failed', delivery_outcome=NULL")
+        db.execute(
+            "INSERT INTO executions VALUES "
+            "('second', 'sam-monitor', 'running', NULL, NULL)"
+        )
+    before = collector.STATE_PATH.read_bytes()
+    with pytest.raises(RuntimeError, match="unconfirmed"):
+        collector.prepare_context(runner=probe, delivery_writer=noop_writer)
+    assert collector.STATE_PATH.read_bytes() == before
+
+
 def test_db_receipt_failure_preserves_pending_delivery(profile):
     collector.prepare_context(runner=probe, delivery_writer=noop_writer)
     with sqlite3.connect(profile / "cron" / "executions.db") as db:
@@ -264,6 +334,7 @@ def test_generated_query_uses_track_and_db_delivery_receipt():
     assert "projects_operationalerrortrack" in code
     assert "projects_operationalerrortransition" in code
     assert "report_delivered" in code
+    assert "owner" in code and "controlroom" in code
     assert "LIMIT 100" in code
     assert "UPDATE " not in code and "INSERT " not in code
 

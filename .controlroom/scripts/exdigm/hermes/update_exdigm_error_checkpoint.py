@@ -41,7 +41,46 @@ def read_executions(profile: Path, execution_id=None) -> list[dict]:
                 "WHERE job_id=? AND status IN ('claimed','running')",
                 (job_id,),
             )
-        return [dict(row) for row in rows]
+        receipts = [dict(row) for row in rows]
+    if not execution_id or len(receipts) != 1:
+        return receipts
+    receipt = receipts[0]
+    if (
+        receipt["status"] == "completed"
+        and receipt["delivery_outcome"] == "delivered"
+    ):
+        return receipts
+    delivery_database = profile / "cron" / "deliveries.db"
+    if not delivery_database.exists():
+        return receipts
+    with closing(
+        sqlite3.connect(
+            delivery_database.as_uri() + "?mode=ro", uri=True, timeout=5
+        )
+    ) as db:
+        db.row_factory = sqlite3.Row
+        deliveries = [
+            dict(row)
+            for row in db.execute(
+                "SELECT execution_id,status,finished_at FROM deliveries "
+                "WHERE execution_id=? AND for_failure=0",
+                (execution_id,),
+            )
+        ]
+    if (
+        len(deliveries) == 1
+        and deliveries[0]["status"] == "delivered"
+        and isinstance(deliveries[0]["finished_at"], str)
+    ):
+        return [
+            {
+                "id": execution_id,
+                "status": "completed",
+                "delivery_outcome": "delivered",
+                "finished_at": deliveries[0]["finished_at"],
+            }
+        ]
+    return receipts
 
 
 def save_state(path: Path, state: dict) -> None:

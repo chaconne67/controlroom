@@ -110,6 +110,47 @@ class PipelineContractTests(unittest.TestCase):
             result,
         )
 
+    def test_investigation_closes_already_recovered_defect_with_outcome_evidence(self):
+        result = {
+            "category": "defect",
+            "next_action": "none",
+            "status": "succeeded",
+            "action": "Confirmed the past defect and the already restored business result",
+            "details": details(
+                root_cause="the historical decoder rejected non-UTF-8 redirect bytes",
+                verification="the fix is present on the production revision",
+                outcome_verification="the original resume was stored and linked exactly once",
+            ),
+            "split_tracks": [],
+        }
+        self.assertEqual(
+            pipeline.validate_result(copy.deepcopy(result), "investigate"), result
+        )
+        missing = copy.deepcopy(result)
+        missing["details"]["outcome_verification"] = ""
+        with self.assertRaisesRegex(ValueError, "outcome_verification"):
+            pipeline.validate_result(missing, "investigate")
+
+    def test_investigation_prompt_distinguishes_recovered_defect_from_expected_stop(self):
+        case = {
+            "selected_track": {
+                "next_action": "investigate",
+                "id": str(uuid.uuid4()),
+            }
+        }
+        prompt = pipeline.prompt_for(
+            case,
+            {
+                "code_ssh": ["ssh", "restricted"],
+                "debug_root": "/debug",
+                "gbrain_ssh": ["ssh", "gbrain"],
+                "remote_uv": "/remote/uv",
+            },
+        )
+        self.assertIn("defect/none", prompt)
+        self.assertIn("expected_stop/none", prompt)
+        self.assertIn("outcome_verification", prompt)
+
     def test_prompt_assigns_execution_to_main_codex_not_sam(self):
         case = {
             "selected_track": {

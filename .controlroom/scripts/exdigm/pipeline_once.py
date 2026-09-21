@@ -80,7 +80,10 @@ def prompt_for(case, config):
         "investigate": """이번 단계는 조사와 수정안 작성만 합니다. 코드·설정·데이터·Git 상태를 바꾸지 마세요.
 오류 한 건 안에 독립적으로 승인·실행해야 할 실패가 둘 이상이면 먼저 경계를 정하고 split_tracks에 2~10개로
 분해하세요. 한 원인과 한 수정/검증/배포로 함께 닫히는 실패만 같은 트랙에 둡니다. 코드 변경이 필요하면
-확인된 원인, 권장안, 대안과 선택 이유, 영향, 검증, 복구안을 작성해 approve_change로 끝내세요.""",
+확인된 원인, 권장안, 대안과 선택 이유, 영향, 검증, 복구안을 작성해 approve_change로 끝내세요.
+정상적인 업무상 종료나 확인된 중복 완료는 expected_stop/none과 stop_reason으로 기록하세요. 과거 defect가
+이미 다른 공식 처리로 복구되어 원래 필수 결과의 생산·전달·사용까지 확인됐다면 분류를 왜곡하지 말고
+`defect/none`으로 기록하며 root_cause, verification, outcome_verification을 모두 채우세요.""",
         "repair": """주인님이 이 트랙의 approve_change 요청을 승인했습니다. handling_context에 결박된 정확한
 제안 범위만 구현하세요. 새 범위나 다른 해결책이 필요하면 임의로 넓히지 말고 새 approve_change로 돌아가세요.
 공식 debug 검사, catalog 갱신, code-review-loop, 깨끗한 커밋을 완료한 뒤 approve_deploy를 요청하세요.""",
@@ -204,14 +207,21 @@ def validate_result(result, current_action):
         ],
         "approve_deploy": ["root_cause", "commit", "verification", "rollback"],
         "approve_close": ["root_cause", "verification", "outcome_verification"],
-        "none": ["stop_reason"],
+        "none": [],
     }[result["next_action"]]
-    if result["category"] == "defect" and "root_cause" not in required:
+    if result["next_action"] == "none":
+        if result["category"] == "expected_stop":
+            required = ["stop_reason"]
+        elif result["category"] == "defect":
+            required = ["root_cause", "verification", "outcome_verification"]
+        else:
+            raise ValueError(
+                "Investigation may close only a confirmed expected stop or an already recovered defect"
+            )
+    elif result["category"] == "defect" and "root_cause" not in required:
         required.append("root_cause")
     if any(not details[key].strip() for key in required):
         raise ValueError("Missing required pipeline evidence: " + ", ".join(required))
-    if result["next_action"] == "none" and result["category"] != "expected_stop":
-        raise ValueError("Investigation may close directly only for a confirmed expected stop")
     return result
 
 
