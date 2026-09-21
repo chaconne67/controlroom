@@ -13,29 +13,32 @@ description: Use when monitoring, investigating, repairing, or deploying changes
 
 ## 정기 조회
 
-main에서 10분마다 실행되는 Hermes cron이 이 스킬의 정기 진입점이다. cron의 `workdir`는 `~/controlroom/exdigm`, 연속 실행 제한은 3분이므로 한 번에 끝내지 못한 조사는 확인한 사실과 정확한 재개 지점을 보고하고 멈춘다.
+main에서 10분마다 실행되는 Hermes cron이 이 스킬의 정기 진입점이다. cron의 `workdir`는 `~/controlroom/exdigm`이다. **150초 안에 최종 응답을 만들고**, 시간이 부족하면 확인한 사실과 정확한 재개 지점만 보고한다.
 
-1. `~/.gbrain-agent.md`, 프로젝트 `AGENTS.md`, `docs/README.md`와 관련 진행 문서를 확인한다.
+1. 먼저 `~/.hermes/state/exdigm-error-control.json`을 읽는다. 파일이 없으면 빈 상태로 시작한다.
 2. SSH 대상 `chaconne@49.247.202.197`, debug worktree `/home/chaconne/exdigm-debug`에서 `scripts/debug_workspace.sh shell-readonly`를 사용해 `projects.OperationalError`를 SELECT만 한다. ORM 필드는 현재 모델에서 확인하며 이름을 추측하지 않는다.
-3. `~/.hermes/state/exdigm-error-control.json`의 오류별 마지막 보고 `handling_revision`과 비교한다. 상태 파일은 알림 중복 방지용이며 Exdigm DB의 처리 상태를 대신하지 않는다.
-4. 다음 항목만 새 조사 대상으로 삼는다.
+3. 오류별 마지막 보고 `handling_revision`과 비교한다. 다음 항목만 새 조사 대상으로 삼는다.
    - 상태 파일에 없는 `next_action=investigate` 오류
    - `handling_revision`이 마지막 보고보다 증가한 오류
    - 마지막 보고 뒤 새로 생긴 오류 중 조사나 주인님의 판단이 필요한 오류
    과거 `next_action=none`, 성공 완료, 시험용 오류는 새 증거가 없으면 다시 보고하지 않는다.
-5. 조사 대상이 없으면 최종 응답을 정확히 `NO_REPLY`로 끝내 전달을 억제한다.
+4. 조사 대상이 없으면 다른 문서·GBrain·Git·코드를 조회하지 말고 최종 응답을 정확히 `NO_REPLY`로 끝낸다.
+5. 조사 대상이 있을 때만 프로젝트 `AGENTS.md`, 관련 진행 문서와 GBrain을 최소 범위로 확인한다. hostname이 `main`이면 GBrain은 SSH를 거치지 않고 `/srv/consolidation/infra/gbrain-host ... --source default`로 조회한다. main 자신에게 SSH하지 않는다.
 
-## 조사
+상태 파일은 알림 중복 방지용이며 Exdigm DB의 처리 상태를 대신하지 않는다.
 
-오류 문구를 원인으로 단정하지 않는다. `systematic-debugging` 절차로 다음 증거를 가능한 범위에서 직접 확인한다.
+## 정기 조사
+
+오류 문구를 원인으로 단정하지 않는다. 정기 실행은 읽기 전용 증거 확인을 **최대 네 번의 도구 호출 묶음**으로 제한한다.
 
 - 오류 행의 `summary`, `description`, `context`, `traceback`, `processing_history`, `handling_context`와 연결된 업무 객체
 - 오류가 난 현재 코드와 실제 호출자·입력 흐름
 - 운영·debug Git 상태와 관련 최근 변경
 - 같은 유형의 기존 성공 사례와 관련 진행 문서
-- 운영 데이터를 바꾸지 않는 최소 재현 또는 읽기 전용 대조
 
-고객 원문·인증값·개인정보는 보고나 공유 문서에 복제하지 않는다. 조회 권한, 시간, 재현 자료가 부족하면 근본 원인을 확정하지 말고 확인된 사실과 미확인 부분을 구분한다.
+정기 실행에서는 전체 테스트, 장시간 재현, 브라우저 확인, 새 진단 자료 생성을 수행하지 않는다. 제한 안에 근본 원인을 확정할 수 없으면 원인 후보와 다음 대화형 조사 단계를 보고한다. 주인님이 후속 조사를 지시한 대화에서는 `systematic-debugging` 절차를 완전히 적용한다.
+
+고객 원문·인증값·개인정보는 보고나 공유 문서에 복제하지 않는다.
 
 ## 보고와 체크포인트
 
@@ -50,7 +53,7 @@ main에서 10분마다 실행되는 Hermes cron이 이 스킬의 정기 진입�
 
 정기 실행은 수정이나 배포 승인을 전제로 묻지 않는다. 조사 결과 수정이 필요하면 “수정 필요, 미실행”으로 알린다. 이미 검증된 수정이 있어도 주인님의 명시적 배포 지시 전에는 배포하지 않는다.
 
-보고가 실제 전달될 최종 응답에 포함된 뒤 해당 오류의 `handling_revision`, 보고 시각, 조사 결과 요약 해시를 상태 파일에 원자적으로 저장한다. 조사나 전달이 실패하면 성공한 체크포인트로 기록하지 않는다.
+최종 보고문을 완성한 뒤, 응답을 반환하기 직전에 해당 오류의 `handling_revision`, 보고 시각, 조사 결과 요약 해시를 상태 파일에 원자적으로 저장한다. 상태 저장에 실패하면 보고문에 체크포인트 실패를 밝힌다. 조사 자체가 실패해 유효한 보고문을 만들지 못하면 성공한 체크포인트로 기록하지 않는다.
 
 ## 주인님 지시 후 실행
 
