@@ -30,7 +30,9 @@ class DecisionTests(unittest.TestCase):
                        (datetime.fromisoformat("2026-09-19T03:00:00+00:00").timestamp(),))
         self.case = {"id": str(uuid.uuid4()), "summary": "A verified repair awaits deployment", "handling_revision": 2,
                      "next_action": "approve_deploy", "category": "defect", "handling_context": {
-                         "commit": "a"*40, "base_commit": "b"*40, "verification": "Passed checks", "rollback": "Restore previous release"},
+                         "commit": "a"*40, "base_commit": "b"*40, "verification": "Passed checks",
+                         "rollback": "Restore previous release", "automation_run": str(uuid.uuid4()),
+                         "workspace_reserved": "no"},
                      "processing_history": [{"revision": 2, "recorded_at": "2026-09-19T01:00:00+00:00"}]}
         self.request_hash = decision.request_view(self.case)["request_hash"]
         self.payloads = []
@@ -62,6 +64,8 @@ class DecisionTests(unittest.TestCase):
         self.assertEqual(details["approval_actor"], "sam")
         self.assertEqual(details["approval_message_id"], "456")
         self.assertEqual(details["approval_request_hash"], self.request_hash)
+        self.assertEqual(details["automation_run"], "")
+        self.assertEqual(details["workspace_reserved"], "no")
         self.assertNotIn("Approve the displayed change", json.dumps(self.payloads))
 
     def test_cron_and_cli_cannot_record_decisions(self):

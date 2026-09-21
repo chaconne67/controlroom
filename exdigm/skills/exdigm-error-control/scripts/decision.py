@@ -106,7 +106,8 @@ def decide(profile, environment, error_id, revision, request_hash, decision, rpc
                 raise ValueError("A message from before this request cannot authorize it")
             details = {**proof, "approval_decision": decision, "approval_request_revision": str(revision),
                        "approval_request_hash": request_hash, "approval_request_type": request["next_action"],
-                       "approval_commit": request["details"].get("commit", ""), "approval_entry_id": entry_id}
+                       "approval_commit": request["details"].get("commit", ""), "approval_entry_id": entry_id,
+                       "automation_run": "", "workspace_reserved": "no"}
             action = request["next_action"]
             if decision == "approve":
                 # Sam records the owner's decision and hands execution back to
