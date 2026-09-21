@@ -13,7 +13,10 @@ import repair_once as repair
 def result(action="user_action"):
     details = dict.fromkeys(repair.DETAILS, "")
     details["test_targets"] = []
-    details.update(owner="owner", required_action="Provide missing evidence", resume_condition="Evidence received")
+    details.update(owner="owner", required_action="Provide the source retained only by the owner",
+                   resume_condition="Source received; compare it with the failed input",
+                   verification="Available logs and stored inputs inspected; source is absent",
+                   stop_reason="Source is not retained in accessible records; no permitted reproduction is available")
     if action == "approve_deploy":
         details.update(root_cause="Reproduced defect", commit="b"*40,
                        verification="Focused tests and check passed", rollback="Deploy approved prior commit",
@@ -121,7 +124,8 @@ class RepairTests(unittest.TestCase):
         with self.assertRaisesRegex(RuntimeError, "Official test command failed"):
             self.invoke()
         payload = json.loads(self.calls[-1][1]["payload"])
-        self.assertEqual(payload["next_action"], "user_action")
+        self.assertEqual(payload["next_action"], "external_wait")
+        self.assertEqual(json.loads(payload["details_json"])["owner"], "controlroom")
         self.assertEqual(self.releases, [False])
 
     def test_lost_result_response_replays_without_codex(self):
@@ -265,6 +269,35 @@ class RepairTests(unittest.TestCase):
         value["details"]["verification"]=""
         with self.assertRaises(ValueError):
             repair.validate_result(value)
+
+    def test_change_approval_requires_diagnosis_before_proposal(self):
+        value = result("approve_change")
+        value["details"].update(proposal="Change the shared validation contract",
+                                impact="Existing consumers must migrate",
+                                rollback="Restore the previous contract")
+        with self.assertRaisesRegex(ValueError, "root_cause"):
+            repair.validate_result(value)
+        value["details"]["root_cause"] = "Original input and reproduced output prove a shared contract mismatch"
+        self.assertEqual(repair.validate_result(value), value)
+
+    def test_blocked_investigation_requires_observed_work_and_actual_blocker(self):
+        for action in ("user_action", "external_wait"):
+            for missing in ("verification", "stop_reason"):
+                value = result(action)
+                value["details"][missing] = ""
+                with self.subTest(action=action, missing=missing), self.assertRaisesRegex(ValueError, missing):
+                    repair.validate_result(value)
+
+    def test_change_approval_records_proposal_and_releases_without_deployment(self):
+        self.reply = result("approve_change")
+        self.reply["details"].update(root_cause="Reproduced shared contract mismatch",
+                                     proposal="Migrate both affected consumers",
+                                     impact="Shared input contract changes",
+                                     rollback="Restore previous contract")
+        self.assertEqual(self.invoke()["next_action"], "approve_change")
+        self.assertEqual(self.releases, [True])
+        self.assertEqual(self.verification_calls, [])
+        self.assertFalse((self.root/"active.json").exists())
 
     def test_deployment_needs_safe_focused_test_targets(self):
         value = result("approve_deploy")
