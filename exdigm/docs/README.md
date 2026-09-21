@@ -12,9 +12,8 @@
 
 - [전체 시스템 보안 점검 — 내부 보고서·개선 계획 보관 안내](security-audit-20260920.md)
 
-- [운영 오류 사건 파이프라인 v3 — 샘은 통신 전담, main repair/deploy Codex와 systemd timer 운영 가동](operational-error-event-pipeline-20260921.md)
-
-- [운영 실패 분류·자동 수정 — 기존 설치·검증 이력, 현행 역할은 v3 문서가 대체](operational-error-triage-repair-policy-20260918.md)
+- [운영 오류 한 행 파이프라인 — 제품은 기록, main 단일 작업자는 기술 실행, 샘은 보고·응답 기록만 / 축소 정리 진행](operational-error-triage-repair-policy-20260918.md)
+- [운영 오류 이벤트 축소 작업 — DB 백업·자동 실행 동결·Track/Transition 제거 및 단일 작업자 전환 진행](operational-error-event-pipeline-20260921.md)
 
 - [이력서 검수 마크다운 표시 — 개발 수정·실제 화면·보호 검사 완료, 운영 배포 승인 대기](markdown-display-fix-20260918.md)
 

@@ -31,14 +31,18 @@ class RepairTests(unittest.TestCase):
         self.addCleanup(self.temp.cleanup)
         self.root = Path(self.temp.name)
         self.config = {"record_command": ["record"], "codex_command": ["codex"],
+                       "deploy_command": ["deploy"],
                        "code_ssh": ["ssh", "restricted"], "project_root": "/controlroom/exdigm",
                        "debug_root": "/debug", "production_root": "/prod", "restricted_user": "repair-test-user"}
         self.calls = []
-        self.case = {"id": str(uuid.uuid4()), "handling_revision": 2, "processing_status": "in_progress"}
+        self.case = {"id": str(uuid.uuid4()), "handling_revision": 2,
+                     "processing_status": "in_progress", "next_action": "investigate",
+                     "category": "unclassified", "handling_context": {}}
         self.reply = result()
         self.releases = []
         self.verification_ok = True
         self.verification_calls = []
+        self.preflight_head = "a" * 40
 
     @contextmanager
     def lease(self, *args):
@@ -53,12 +57,25 @@ class RepairTests(unittest.TestCase):
         if command[0] == "record":
             if "--claim-next" in command:
                 if self.case is not None:
-                    self.case.setdefault("handling_context", {"automation_run": command[-1], "workspace_reserved": "yes"})
+                    self.case["handling_context"] = {
+                        **self.case.get("handling_context", {}),
+                        "automation_run": command[-1], "workspace_reserved": "yes",
+                    }
                 return json.dumps(self.case)
             if "--read" in command:
                 return json.dumps(self.case)
             payload = json.loads(kwargs["payload"])
             return json.dumps({**self.case, "next_action": payload["next_action"], "handling_revision": 3})
+        if command[0] == "deploy":
+            payload = json.loads(kwargs["payload"])
+            self.preflight_head = payload["commit"]
+            return json.dumps({
+                "error_id": payload["error_id"],
+                "approved_commit": payload["commit"],
+                "production_commit": payload["commit"],
+                "deployment_completed": True,
+                "deployment_log": "/debug/runtime/deployment.log",
+            })
         target = Path(command[command.index("--output-last-message")+1])
         target.write_text(json.dumps(self.reply))
         if kwargs.get("evidence"):
@@ -80,7 +97,7 @@ class RepairTests(unittest.TestCase):
         }
 
     def invoke(self):
-        with patch.object(repair, "preflight", return_value={"head": "a"*40}), \
+        with patch.object(repair, "preflight", side_effect=lambda config: {"head": self.preflight_head}), \
              patch.object(repair, "workspace_lock", self.lease), \
              patch.object(repair, "run_command", side_effect=self.command), \
              patch.object(repair, "run_official_verification", side_effect=self.verify), \
@@ -97,6 +114,32 @@ class RepairTests(unittest.TestCase):
         self.assertEqual(self.invoke()["next_action"], "user_action")
         payload = json.loads(self.calls[-1][1]["payload"])
         self.assertEqual(json.loads(payload["details_json"])["workspace_reserved"], "no")
+        self.assertEqual(self.releases, [True])
+
+    def test_owner_approved_deployment_uses_same_worker_without_codex(self):
+        self.case.update(next_action="deploy", category="defect")
+        self.case["handling_context"] = {
+            "commit": "b" * 40,
+            "base_commit": "a" * 40,
+            "repair_ref": "refs/operational-repairs/" + str(uuid.uuid4()),
+            "approval_entry_id": str(uuid.uuid4()),
+            "approval_request_hash": "c" * 64,
+            "approval_decision": "approve",
+            "approval_request_type": "approve_deploy",
+            "root_cause": "Reproduced defect",
+        }
+        outcome = self.invoke()
+        self.assertEqual(outcome["next_action"], "verify_result")
+        self.assertEqual(sum(call[0][0] == "deploy" for call in self.calls), 1)
+        self.assertEqual(sum(call[0][0] == "codex" for call in self.calls), 0)
+        payload = next(
+            json.loads(kwargs["payload"])
+            for call, kwargs in self.calls
+            if call[0] == "record" and "--json-input" in call
+        )
+        details = json.loads(payload["details_json"])
+        self.assertEqual(details["deployed_commit"], "b" * 40)
+        self.assertEqual(details["workspace_reserved"], "no")
         self.assertEqual(self.releases, [True])
 
     def test_repair_commit_releases_workspace_for_next_case(self):
@@ -273,6 +316,8 @@ class RepairTests(unittest.TestCase):
     def test_change_approval_requires_diagnosis_before_proposal(self):
         value = result("approve_change")
         value["details"].update(proposal="Change the shared validation contract",
+                                alternatives="Keep both formats with duplicated handling",
+                                recommendation_reason="One validated contract is safer",
                                 impact="Existing consumers must migrate",
                                 rollback="Restore the previous contract")
         with self.assertRaisesRegex(ValueError, "root_cause"):
@@ -292,6 +337,8 @@ class RepairTests(unittest.TestCase):
         self.reply = result("approve_change")
         self.reply["details"].update(root_cause="Reproduced shared contract mismatch",
                                      proposal="Migrate both affected consumers",
+                                     alternatives="Keep duplicate adapters",
+                                     recommendation_reason="One contract avoids drift",
                                      impact="Shared input contract changes",
                                      rollback="Restore previous contract")
         self.assertEqual(self.invoke()["next_action"], "approve_change")
@@ -341,8 +388,7 @@ class RepairTests(unittest.TestCase):
             with patch("sys.argv", argv[2:]), redirect_stdout(capture), \
                  patch("subprocess.check_output", side_effect=output), \
                  patch("subprocess.run", return_value=subprocess.CompletedProcess([], 1)), \
-                 patch("pathlib.Path.is_dir", return_value=True), \
-                 patch("pathlib.Path.rglob", return_value=[]):
+                 patch("pathlib.Path.is_dir", return_value=True):
                 exec(argv[2], {})
             return capture.getvalue()
 
@@ -616,7 +662,9 @@ class GitParkingTests(unittest.TestCase):
              patch.object(repair, "run_command", side_effect=command), \
              patch.object(repair, "run_official_verification", side_effect=verification):
             for name in ("case-a.txt", "case-b.txt"):
-                case = {"id": str(uuid.uuid4()), "handling_revision": 2, "processing_status": "in_progress"}
+                case = {"id": str(uuid.uuid4()), "handling_revision": 2,
+                        "processing_status": "in_progress", "next_action": "investigate",
+                        "category": "unclassified", "handling_context": {}}
                 outcome = repair.execute_once(self.config, self.root/"state")
                 self.assertEqual(outcome["next_action"], "approve_deploy")
                 self.assertFalse((self.root/"state"/"active.json").exists())

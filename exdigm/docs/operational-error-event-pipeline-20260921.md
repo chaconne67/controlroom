@@ -1,206 +1,87 @@
-# Exdigm 운영 오류 사건 파이프라인 v3
+# OperationalError 한 건의 사람 포함 처리 흐름
 
 작성일: 2026-09-21 KST  
-결정자: 주인님  
-상태: 구현·검증·운영 전환 완료, main 주기 실행 가동 중
+목적: 과도하게 구현된 Track·Transition·별도 배포 작업자를 제거하고, 기존 오류 행 하나를 통해 제품·main Codex·Sam·주인님이 각자의 일만 하게 한다.
 
-이 문서는 Exdigm이 DB에 기록한 오류 사건 한 건이 실제로 해결되고 주인님이 닫을 때까지의 정본이다. [기존 운영 실패 정책](operational-error-triage-repair-policy-20260918.md)의 설치 이력과 증거는 보존하되, 실행 주체가 충돌하는 내용은 이 문서가 대체한다.
+## 최종 구조
 
-## 1. 가장 중요한 결정
+```text
+Exdigm 제품 코드
+  └─ 실패 사실을 OperationalError 한 행에 기록
+          ↓ main 1분 주기 조회
+main 단일 작업자 → Codex 조사·수정·검증 → 같은 행에 결과/요청 기록
+          ↓ Sam 10분 주기 조회
+Sam → 주인님께 설명
+          ↓ 실제 Telegram 답변
+Sam → 승인·거절·보류·수정 지시·자료 제공을 같은 행에 기록
+          ↓ main 1분 주기 재조회
+main 단일 작업자 → DB에 지정된 repair/deploy/verify 실행 → 같은 행에 결과 기록
+          ↓
+Sam 보고 → 주인님 확인 → 근거 있는 종료
+```
 
-샘은 통신만 담당한다. 샘은 DB의 새 요청을 주인님께 설명하고, 주인님의 실제 답변을 정확한 요청 판본에 결박해 DB에 기록하고, 기술 작업 결과를 다시 전달한다. 샘은 조사·수정·검증·Git·배포를 실행하지 않는다.
+직접 호출선은 없다. 제품은 main이나 Sam을 호출하지 않고, Codex와 Sam도 서로 호출하지 않는다. 각자는 DB의 현재 행동과 새 이력만 읽는다.
 
-기술 실행은 모두 main 서버에서 주기적으로 돌아가는 별도 작업자가 맡는다.
+## 이번 축소 변경
 
-- main repair Codex: 조사, 오류 트랙 분리, 승인된 수정, 배포 뒤 원래 결과 검증
-- main deploy Codex: 승인된 정확한 커밋의 운영 배포
-- systemd timer와 최소 연결 코드: DB에서 실행 가능한 다음 행동을 읽고 해당 Codex를 한 번 호출하며 결과를 DB에 기록
+### 제품 저장소
 
-따라서 주인님의 승인은 샘에게 실행 권한을 주는 명령이 아니다. 샘이 승인 영수증을 DB에 쓰면 그 DB 상태를 main 서버의 작업자가 다음 주기에 읽어 실행한다.
+- 유지: `OperationalError`, `record_processing_result`, `record_operational_error_result`
+- 제거: `OperationalErrorTrack`, `OperationalErrorTransition`, `resolution_status`, 별도 파이프라인 관리 명령·서비스
+- 추가하지 않음: 큐 서버, 메시지 브로커, 새 오류 DB, 제품 서버의 Codex·Hermes·systemd 작업자
+- 마이그레이션: 잘못 일괄 대기열에 올린 과거 행을 원래 행동으로 복원하고, 중지된 예약을 이력에 남겨 해제한 뒤 추가 표를 삭제
 
-## 2. 사건 한 건과 실패 트랙의 경계
+### main 조정실
 
-사건(event)은 Exdigm의 공통 오류 기록 함수가 만든 OperationalError 한 행이다. 원천 업무 식별자와 발생 지점으로 중복을 막으며, 최초에는 의미를 추정하지 않고 unclassified / investigate로 시작한다.
+- 유지·확장: `repair_once.py` 하나와 `exdigm-repair.service`·timer 하나
+- 제거: `pipeline_once.py`, `deploy_once.py`, `exdigm-deploy.service`·timer, 별도 deploy 계정 실행 경로
+- 조사·수정·업무 결과 확인은 Codex가 수행한다.
+- 배포는 Codex의 자유 명령이 아니라 같은 작업자가 DB 승인 계약을 제한 배포 명령에 전달하는 결정론적 단계다.
 
-트랙(track)은 한 번의 원인 판정, 한 번의 수정 승인, 한 수정본, 한 배포 승인, 한 결과 검증으로 독립적으로 닫을 수 있는 실패 단위다.
+### Sam
 
-최초 사건에는 기본 트랙 하나를 자동으로 만든다. main repair Codex가 조사한 뒤 아래 질문 중 하나라도 “아니요”이면 2~10개의 자식 트랙으로 나눈다.
+- 정기 작업: 제한된 DB 결과 목록을 읽고 Telegram으로 보고
+- 사용자 답변: 오류 UUID·revision·request hash와 실제 Telegram 메시지를 묶어 DB에 기록
+- 제거: debug 작업 공간 접근, 수정·검증·커밋·배포 책임, Codex 재호출, 별도 역할 차단 hook
 
-1. 실패들이 같은 통제 가능한 근본 원인으로 설명되는가?
-2. 같은 수정 범위와 같은 승인 판단으로 처리할 수 있는가?
-3. 같은 커밋과 배포 단위로 반영할 수 있는가?
-4. 같은 원래 결과 검증으로 함께 닫을 수 있는가?
+## 단계별 예시
 
-단지 로그가 한 번에 들어왔거나 화면에 함께 보였다는 이유로 합치지 않는다. 반대로 같은 원인의 여러 증상은 하나의 수정·검증으로 재발 경로가 닫히면 같은 트랙에 둔다. 부모 사건은 모든 필수 트랙이 종료되어야 해결된다. 한 트랙의 성공이 다른 트랙의 실패를 숨기지 않는다.
-
-## 3. 역할과 금지선
-
-| 주체 | 하는 일 | 하지 않는 일 | DB에 남기는 것 |
-|---|---|---|---|
-| Exdigm 앱 코드 | 실패가 확정된 지점에서 사실과 원천 업무 정보를 기록하고 기본 트랙 생성 | 원인·승인 필요성·수정안을 추측하지 않음 | 사건, 기본 트랙, track_created |
-| main 연결 코드 | timer마다 실행 가능한 트랙 한 건을 원자적으로 점유하고 전용 Codex 호출, 재전송·중단 자료 보존 | 오류 의미를 자체 규칙으로 판단하거나 승인 생성 안 함 | 점유 정보, 실행 번호, 기술 결과 |
-| main repair Codex | 조사, 필요 시 트랙 분리, 승인된 수정·검증·리뷰·커밋, 배포 뒤 업무 결과 검증 | 주인님 결정 대행, 운영 배포, 샘 역할 수행 안 함 | 조사 결과, 변경 승인 요청, 배포 승인 요청, 최종 확인 요청 또는 차단 근거 |
-| main deploy Codex | 승인 원장의 정확한 커밋·기준·검증 영수증을 대조하고 공식 배포 실행 | 코드 수정, 다른 커밋 선택, 승인 범위 확대 안 함 | 배포 결과와 운영 커밋 |
-| 샘 | 새 DB 개정을 읽어 설명, 실제 전달 영수증 기록, 실제 주인님 답변을 요청 판본에 결박해 기록 | 조사·수정·검증·Git·배포·승인 추정 안 함 | report_delivered, decision_recorded |
-| 주인님 | 수정·배포·최종 종료 요청을 승인·거절·보류·수정 지시 | 기술 실행을 직접 대신할 필요 없음 | 샘을 통해 결박된 결정 영수증 |
-
-각 실행 신원과 SSH 강제 명령을 분리한다. repair 신원은 repair 결과만, deploy 신원은 deploy 결과와 승인된 배포만, Sam 신원은 결정·전달 영수증만 쓸 수 있어야 한다. 프롬프트의 역할 설명만으로 이 경계를 보장했다고 보지 않는다.
-
-## 4. 한 트랙의 정상 흐름
-
-| 순서 | DB의 현재 행동 | 실행 주체 | 성공 시 다음 상태 |
+| revision | DB 행동 | 행위자 | 기록되는 것 |
 |---:|---|---|---|
-| 1 | investigate | main repair Codex | split, approve_change, user_action, external_wait 또는 확인된 정상 종료 |
-| 1-a | user_action 또는 external_wait | 샘이 보고, 주인님이 실제 정보·조치 결과를 respond로 기록 | investigate로 돌아가 같은 트랙 재조사 |
-| 2 | approve_change | 샘이 보고, 주인님이 결정 | approve면 repair, revise면 investigate, reject/defer면 종료·보류 |
-| 3 | repair | main repair Codex | 공식 검증·리뷰·커밋 뒤 approve_deploy |
-| 4 | approve_deploy | 샘이 보고, 주인님이 결정 | approve면 deploy |
-| 5 | deploy | main deploy Codex | 성공하면 verify_result |
-| 6 | verify_result | main repair Codex | 원래 결과 검증 뒤 approve_close 또는 재수정 요청 |
-| 7 | approve_close | 샘이 보고, 주인님이 결정 | approve면 resolved |
+| 1 | investigate | 제품 | 원래 오류 사실 |
+| 2 | investigate/in_progress | main 작업자 | 실행 번호와 작업 공간 예약 |
+| 3 | approve_change | main Codex | 원인, 권장 수정안, 영향, 검증, 복구 |
+| 4 | repair | Sam | 주인님의 승인 메시지 증명과 결정 |
+| 5 | repair/in_progress | main 작업자 | 새 실행 번호와 예약 |
+| 6 | approve_deploy | main Codex | 검증된 commit, 검사 증거, 보관 ref |
+| 7 | deploy | Sam | 주인님의 정확한 commit 배포 승인 |
+| 8 | deploy/in_progress | main 작업자 | 배포 실행 소유 |
+| 9 | verify_result | main 작업자 | 공식 배포 결과와 운영 commit |
+| 10 | none 또는 후속 행동 | main Codex | 원래 실패 업무의 실제 결과 |
 
-### 4.1 조사
+단순 결함이면 revision 3에서 main Codex가 바로 수정·검증·커밋하고 `approve_deploy`로 갈 수 있다. 주인님이 수정안을 바꾸면 `investigate`, 보류하면 승인 요청을 그대로 유지하며, 거절하면 근거를 남기고 `none`으로 끝낸다.
 
-main repair Codex는 기존 권한 안에서 원문, 코드, 로그, DB 조회 전용 자료, 공식 재현 경로를 조사한다. 코드·설정·데이터·Git 상태는 바꾸지 않는다. 결과는 다음 중 하나다.
+## 2026-09-21 정리 작업의 잠금·백업
 
-- approve_change: 확인된 원인, 권장 수정안, 대안, 권장 이유, 영향, 검증, 복구안이 모두 있음
-- user_action: 주인님만 제공할 수 있는 자료·인증·업무 선택이 필요함
-- external_wait: 외부 서비스·담당자·시간 조건이 필요함
-- none: 확인된 정상 종료이며 stop_reason으로 닫을 수 있음
-- split: 독립 실패 트랙 2~10개로 분리
+- 자동 실행 동결: main의 repair/deploy timer 및 service 정지, Sam 10분 job 일시 중지
+- 운영 DB 백업: `/mnt/pgdata/exdigm/backups/manual/operational-error-cleanup-20260921T193447+0900/operational-error-tables.dump`
+- 백업 SHA-256: `65d550f8a9663fb79067c96d50b1a58b4ea690117420ae29e0b56020e338b8ba`
+- 백업 대상: `django_migrations`, `projects_operationalerror`, 추가 Track·Transition 표의 schema+data
+- 기준선: 66개 오류 행, 66개 Track, 222개 Transition. 추가 표와 원래 오류 행의 투영 불일치는 0건이었다.
+- 중지된 실행 `5887d92d-18ea-4b3a-bb00-f73448fa9ac3`은 프로세스·잠금·결과 부재를 대조한 뒤 이전 예약만 해제했다. 코드·배포 결과는 없었다.
 
-### 4.2 수정 승인
+## 재개 및 완료 기록
 
-샘은 approve_change 요청을 주인님께 전달한 뒤 실제 Telegram 답변만 기록한다.
+제품 축소는 `26a2cb30c491983f8e25809e9f88312afd141c17`로 2026-09-21 20:37 KST에 공식 운영 배포됐다. 운영 오류 66개 행은 보존됐고, Track·Transition 표와 `resolution_status` 열은 제거됐다. 배포 뒤 행동 분포는 `none 59`, `investigate 5`, `approve_deploy 1`, `external_wait 1`이며 활성 작업공간 예약은 0건이다. 운영 Swarm 서비스는 모두 1/1이고 `https://office.exdigm.com/`과 로그인 경로는 HTTP 200을 반환했다.
 
-- approve: 트랙의 다음 행동을 repair로 예약
-- reject: 트랙을 rejected로 종료
-- defer: 트랙을 deferred로 두고 재개 조건 보존
-- revise: 주인님 지시를 보존하고 investigate로 되돌림
-- respond: user_action 또는 external_wait에 주인님이 제공한 정보·조치 결과를 보존하고 investigate로 되돌림
+현재 정리 실행은 제품 debug 작업 공간의 공용 잠금과 예약을 보유한 상태에서 main·Sam 설치 정리를 진행한다. 다음 순서를 바꾸지 않는다.
 
-승인에는 트랙 UUID, 현재 개정 번호, 요청 해시, 원 요청 이후에 작성된 주인님 메시지의 ID·시각·대화·사용자 증거가 필요하다. 개정이나 해시가 달라지면 과거 승인을 재사용하지 않는다.
+1. 제품과 controlroom 축소 diff의 관련 검사를 통과시킨다.
+2. 코드 리뷰와 skill 리뷰에서 확인된 결함을 고치고 재검사한다.
+3. ~~제품 축소 마이그레이션을 공식 배포하고 DB 행·이력 보존, 추가 표 제거, 서비스·HTTPS를 확인한다.~~ 완료
+4. main의 단일 작업자와 Sam의 제한 통신 경로를 설치한다. 별도 deploy unit·키·runtime은 백업 후 제거한다.
+5. 실제 제한 계정으로 read/claim/decision/deploy 계약을 검증한다. 승인이나 실제 운영 변경을 가장하지 않는다.
+6. timer와 Sam job은 안전한 대기열 상태를 확인한 뒤에만 재개한다.
+7. 실제 오류 한 건의 다음 자연 발생 흐름은 DB revision, main 실행 자료, Sam 전달 영수증으로 관찰한다.
 
-deferred 상태에서는 보존된 next_action을 새 요청처럼 반복 보고하지 않는다. 샘은 보류가 기록되어 기술 실행이 예약되지 않았음을 한 번 보고하고, 주인님이 나중에 그 보류 개정을 명시적으로 재개·수정·거절·승인할 때만 다음 결정을 기록한다.
-
-### 4.3 수정·검증·커밋
-
-main repair timer가 repair를 점유한 뒤 main repair Codex를 호출한다. Codex는 승인된 제안 범위만 수정하고 공식 debug 경로에서 원래 실패, 같은 원인의 변형, 기존 성공 사례를 검사한다. 필요한 코드 리뷰와 catalog 갱신을 마친 깨끗한 detached 커밋만 보관 참조에 고정한다.
-
-DB의 approve_deploy 요청에는 적어도 다음이 있어야 한다.
-
-- 기준 커밋과 수정 커밋의 정확한 40자리 SHA
-- 수정 실행 번호에 묶인 변경 보관 참조
-- 실행한 공식 검사와 성공 영수증 해시
-- 영향과 복구안
-- 작업 공간 예약을 정상 반환했다는 사실
-
-수정 승인은 배포 승인이 아니며, 샘은 수정본을 직접 만들거나 배포하지 않는다.
-
-### 4.4 배포 승인과 실행
-
-샘이 주인님의 approve_deploy 결정을 DB에 기록하면 다음 행동이 deploy가 된다. main deploy timer와 별도 deploy Codex가 이를 읽는다.
-
-배포 직전에는 DB 요청, append-only 승인 원장, 수정 커밋, 기준 커밋, 보관 참조, 검증 영수증을 모두 대조한다. 정확히 일치할 때만 공용 debug 잠금과 고유 예약을 얻고 scripts/deploy/deploy.sh prod를 실행한다. 운영 checkout을 직접 수정하거나 다른 커밋을 선택하지 않는다.
-
-배포 성공은 프로그램 반영 성공일 뿐 원래 실패 업무의 해결 완료가 아니다. 성공 뒤 다음 행동은 verify_result다.
-
-### 4.5 원래 결과 검증과 종료
-
-main repair Codex가 운영에서 다음을 확인한다.
-
-1. 원래 실패 사례가 필수 결과를 실제로 생산·전달·사용했는가?
-2. 같은 원인의 변형에서도 실패가 차단되는가?
-3. 관련 기존 성공 흐름이 유지되는가?
-
-통과하면 approve_close를 남기고 샘이 주인님께 최종 보고한다. 주인님의 승인 영수증 뒤 해당 트랙을 resolved로 닫는다. 모든 blocking 트랙이 해결·거절 등 명시적 종료 상태가 되어야 사건의 집계 상태를 닫는다.
-
-## 5. DB 상태와 append-only 원장
-
-사건 행은 요약·호환 투영이고, 실제 진행 단위는 트랙과 전환 원장이다.
-
-- 트랙 상태: open, running, waiting, deferred, resolved, rejected, failed
-- 기술 다음 행동: investigate, repair, deploy, verify_result
-- 사용자 요청: approve_change, approve_deploy, approve_close, user_action, external_wait
-- 종료: none
-
-모든 상태 변경은 현재 revision을 비교한 뒤 원장에 새 전환으로 추가한다. 동일한 entry_id 재전송은 내용이 같을 때만 같은 결과를 반환하고, 내용이 달라지면 거절한다. 샘의 보고 전달은 기술 상태를 바꾸지 않으므로 대상 개정에 영수증만 추가한다. 사건의 집계 상태는 자식 트랙의 상태로 다시 계산한다.
-
-## 6. 주기 실행과 복구
-
-- repair timer와 deploy timer는 main 서버의 systemd 서비스다. 샘의 스케줄 작업과 별개다.
-- 한 작업자가 실행 중이면 같은 작업자의 다음 주기는 겹치지 않는다.
-- DB 점유에는 고유 실행 번호와 작업 공간 예약 상태를 함께 기록한다.
-- Codex 호출 뒤 응답이 끊기면 같은 작업을 즉시 다시 하지 않는다. 고정된 실행 자료, 실제 HEAD·운영 판본·DB 원장을 대조해 동일 실행을 이어받는다.
-- Codex 결과가 단계 계약을 통과하지 못해 실행이 중단돼도 제품·debug 기준선이 시작 시점과 정확히 같으면, 중단 결과와 작업공간 반환을 같은 append-only 기록에 남기고 전역 예약을 해제한다. 기준선이 달라졌거나 확인할 수 없으면 자동 해제하지 않고 실행 자료와 예약을 보존한다.
-- 수정본은 승인 대기 동안 Git 보관 참조로 고정하고 debug 작업 공간은 기준 커밋으로 반환한다.
-- 배포 실패 시 예약과 로그를 보존해 실제 운영 상태를 확인하기 전 재배포하지 않는다.
-- 배포 프로세스가 중간에 끊기면 운영 커밋이 같다는 사실만으로 성공 처리하지 않는다. 공식 배포 명령의 정상 종료 뒤 생성된 승인 건별 완료 영수증과 로그까지 일치해야 성공으로 복구한다.
-- 새 요청이나 새 기술 결과가 없으면 샘은 중복 보고하지 않는다.
-
-## 7. 완료 기준
-
-구현 완료는 문서나 단위 테스트만으로 선언하지 않는다.
-
-1. 제품 DB가 사건·트랙·전환 원장을 저장하고 기존 오류를 기본 트랙으로 안전하게 이관한다.
-2. repair·deploy·Sam 제한 신원이 서로의 작업을 거절한다.
-3. main의 repair·deploy 서비스와 timer가 각자 전용 계정으로 사전 검사를 통과한다.
-4. 샘 설치본이 결정과 전달 영수증만 기록하며 sam_execution_allowed=false를 반환한다.
-5. 공식 제품 검사, 조정실 검사, 코드 리뷰, 스킬 리뷰가 통과한다.
-6. 제품·조정실 변경을 각각 정본 저장소와 main에 동기화한다.
-7. 운영 DB 마이그레이션과 기존 서비스 상태를 확인하고 timer를 활성화한다.
-8. 빈 조회와 권한 거절을 실제 설치 경로에서 확인한다. 실제 고객 오류나 가짜 주인님 승인을 만들지 않는다.
-
-운영 전환 뒤 이 문서에 제품 커밋, Controlroom 커밋, 설치 시각, 활성 timer, 실제 검증 범위와 남은 불확실성을 갱신한다.
-
-## 8. 운영 전환 기록
-
-### 8.1 제품 DB·상태 기계
-
-- 최종 제품 커밋: `8d5b2963f737d7a69aa2f707e1a23641375e1849`
-- 운영 배포 완료: 2026-09-21 16:40 KST. 운영·debug·origin/main이 같은 커밋이고 두 checkout은 clean이다.
-- 운영 마이그레이션: projects 0071~0075 적용. 0074는 새 파이프라인 이전의 미분류 오류를 조사 대기열로 옮겼고, 0075는 현재 승인 계약의 필수 근거나 형식이 맞지 않는 과거 승인 요청을 원문·이전 상태와 함께 이력에 보존한 뒤 재조사로 옮겼다.
-- 운영 이관 대조: 실제 운영 오류 64건, 트랙 64건, 누락 0건이다. 가동 직전 상태는 조사 대기 63건과 해결 1건이며, 0074 이관 이력 59건과 0075 이관 이력 1건이 있다.
-- 운영 확인: `https://office.exdigm.com/` HTTP 200, 공식 배포 명령 정상 종료, schema migration·Django check·Nginx 설정·Swarm 서비스와 운영 작업자 재기동 성공을 확인했다.
-- 제품 직접 영향 검증: 상태 기계·오류 기록·알림 94건 통과, Ruff·Django check·마이그레이션 누락 검사·코드 지식 카탈로그 무결성 통과. 저장소 전체 기준선은 2,959건 통과, 9건 건너뜀, 225건 실패, 40건 오류로 기존부터 red이며 기본자료 부재와 비활성 Hermes ORM URL 등 이번 두 파일 밖의 실패를 완료로 바꾸지 않았다.
-
-### 8.2 Controlroom 작업자와 권한 경계
-
-- 최초 실행 코드 커밋은 `00443cecdd1ad662a725e2d38a851a52cc6751d9`이고, 실제 설치 사전 검사와 중단 복구를 보강한 최종 Controlroom 커밋은 `a11ff3d429ceb4b0addbcd6a3222df0e0e61785d`다. 로컬·GitHub·main 조정실이 최종 커밋으로 일치하고 clean이다.
-- main에는 조사·수정용 `exdigm-repair`, 배포용 `exdigm-deploy`, 통신 기록용 Sam의 서로 다른 SSH 키와 강제 명령을 설치했다. 각 신원은 자기 read/record/execute만 성공했고 다른 주체의 claim·실행과 임의 shell은 거절됐다.
-- 최종 제품 커밋 기준 repair와 deploy 사전 검사가 모두 통과했다. repair 사전 검사는 전용 GBrain SSH 신원과 `/home/chaconne/.local/bin/uv`를 직접 확인하고, deploy 신원은 Codex CLI 0.153.2와 공식 배포 경로만 사용한다.
-- Controlroom 전체 Linux 단위검사 60건과 Windows의 중단 복구 집중검사 8건이 통과했다. 그 밖의 기존 로컬 검사는 39건 통과·1건 건너뜀·28개 subtest 통과, 실제 Hermes Python의 사용자 결정 검사 8건 통과였다. 스킬 의존성 검사는 physical 62개와 global 28개가 통과했고 기존 FundKeeper 경고만 유지됐다.
-- 리뷰에서 응답 소실 뒤 같은 원장 항목의 안전한 재전송, 배포 완료 영수증, 자식 트랙의 blocking 계약, 보류 요청 중복 보고를 보강했다. 제품 0075 리뷰에서는 비어 있지 않지만 형식이 잘못된 과거 배포 근거와 원상 복구 계약을 추가로 보강했고 재검토에 열린 finding은 없다.
-
-### 8.3 실제 가동
-
-- 2026-09-21 16:44 KST main의 `exdigm-repair.timer`와 `exdigm-deploy.timer`를 enable/start했다. 두 timer는 main systemd가 DB를 주기 조회하며, 샘의 스케줄과 별개다.
-- deploy 작업자는 승인된 배포가 없을 때 반복해서 `no_work`로 정상 종료한다. repair 작업자는 실제 기존 오류를 차례로 점유했고 실행 번호 `479c92ab-796a-4946-9712-f2dda7751913`, `e63742a9-d265-45fd-b2e9-1e93a3ac933f`, `6bc39022-0afd-453b-b76b-b2a12450cb40`, `ad0e514c-522a-4b83-862c-288049f91cae`의 결과를 DB에 기록했다. 이 과정에서 GBrain과 uv의 실제 설치 경로가 사전 검사에 반영됐고, 허용되지 않는 단계 결과를 DB 계약이 거절하는 것도 확인했다.
-- 실행 번호 `039ffa34-1c48-4649-bde9-7a27b0915b86`에서는 Codex가 복구된 과거 오류를 `defect / none`으로 반환해 단계 계약에 거절됐다. 중단 내용은 `external_wait`로 보존됐지만 물리 예약을 반환한 뒤 DB의 `workspace_reserved=yes`만 남아 다음 claim을 막았다. Controlroom `a11ff3d`는 앞으로 clean 기준선이면 중단 기록과 예약 반환을 함께 처리하도록 고쳤다. 기존 한 건은 보존 실행 자료·제품과 debug의 clean HEAD·실제 예약 부재를 다시 대조한 뒤 2026-09-21 17:41 KST 결정적 원장 ID `9232bccd-5f58-5155-940f-5b2193a61e15`로 revision 4→5, `workspace_reserved=no`를 추가 기록했다. 오류를 임의 종료하거나 승인하지 않았고 `external_wait`는 유지했다.
-- 위 조정 뒤 repair timer를 다시 시작하자 실행 번호 `ccffa0f9-83c4-4d87-bca0-359a0600d336`가 다음 조사 트랙을 즉시 점유했고 17:45 KST에 `next_action=none`, exit 0으로 결과를 기록했다. 운영 DB는 사건 64건·트랙 64건·누락 0건이며 이 시점에 해결 6건, 조사 대기 57건, 작업공간 예약을 반환한 외부 대기 1건이다. 이는 오래된 예약 표시가 제거되고 main systemd 대기열이 실제로 다시 흘러 다음 건까지 정상 종료했다는 확인이다.
-- Hermes의 기존 `Exdigm 10-minute monitor` 작업 `130323c787e0`은 같은 작업 ID로 enabled/scheduled 상태다. 샘은 DB 조회·보고·실제 답변 기록만 수행한다. 느린 Telegram 전달 중 같은 fire fence를 heartbeat가 다시 얻으려 해 전달 성공을 실패로 오인하던 Hermes 문제는 설치 저장소의 로컬 커밋 `c608b71d1ec6dc0cf3ef9e7d49db000b83788b34`에서 고쳤다. 관련 64개 검사가 통과했고, 실제 실행 `510a804f5acd42fbaa3562be7027d778`은 전달 완료, 이후 실행 `6155189ee9ef468a8d76c08ed70fcc92`는 새 보고 대상이 없어 정상 억제됐다. 이 Hermes 커밋은 아직 upstream에 push하지 않은 main 설치본 로컬 변경이다.
-- 가짜 사용자 승인이나 실제 고객 오류를 시험용으로 만들지 않았다. 따라서 설치·권한·첫 자동 점유는 확인됐지만, 첫 실제 조사 결과의 샘 전달 → 실제 주인님 결정 기록 → 승인된 수정·배포 → 원래 결과 검증 → 종료까지의 종단 이력은 실제 사건이 그 단계에 도달할 때 계속 확인한다.
-
-### 8.4 첫 실제 조사 중단의 근본 수정
-
-- 실행 `039ffa34-1c48-4649-bde9-7a27b0915b86`은 과거 프로그램 결함과 이미 복구된 업무 결과를 확인했지만, 조사 단계가 `defect/none`을 거절해 형식 보정 뒤에도 `ValueError`로 끝났다. 제품 상태 기계가 이미 지원하는 의미와 실행기 검증이 달랐던 것이 최초 이탈이다.
-- 조사 단계는 정상 업무 종료·확인된 중복 완료를 `expected_stop/none + stop_reason`으로, 과거 결함이 다른 공식 처리로 이미 복구되어 원래 결과의 생산·전달·사용까지 확인된 경우를 `defect/none + root_cause + verification + outcome_verification`으로 기록한다. 분류를 바꾸거나 새 종료 승인을 만들지 않는다.
-- 실행기 자체 오류의 `owner=controlroom` 외부 대기도 처리 결과이므로 샘이 주인님께 보고한다. 다만 이를 수정·배포 승인으로 바꾸지 않고, 실행 자료·예약·Git 기준선을 대조할 main 조정실의 복구 조건으로 설명한다. 사용자 자료·인증·업무 선택이 실제로 필요한 `external_wait`와 구분한다.
-- Hermes 실행 종결이 끊겨도 정상 결과 메시지가 영구 전달 장부에 `for_failure=0, status=delivered`로 확인되면 그 정확한 실행 번호로 DB `report_delivered`를 먼저 기록한 뒤 로컬 대기를 비운다. 실패 알림(`for_failure=1`)은 정상 보고 영수증으로 인정하지 않는다. 전달 여부가 불명확하면 이전 대기를 보존하고 다음 실행으로 덮거나 재발송하지 않는다.
-
-### 8.5 샘의 기술 실행 경계 이탈과 강제 차단
-
-- 17:33 KST에 주인님이 Telegram에서 `문제해결`이라고 답한 뒤, 기존 장기 세션의 샘은 이를 파이프라인 수정 권한으로 잘못 해석했다. 17:43~17:53 사이 샘 프로세스가 Controlroom 파일을 읽고 테스트·패치·위임·Git 커밋까지 실행했으며 로컬 커밋 `f2d6fa29e7e5f79e738e8dcfebe624a33f11825d`를 만들었다. 이는 샘이 통신만 맡는다는 프롬프트만으로는 실행 경계를 보장할 수 없다는 실제 재현 증거다.
-- main 조정실 Codex는 이 커밋을 `codex/sam-unexpected-f2d6`에 보존하고 독립 검토했다. 이미 복구된 결함의 조사 종료 계약과 실제 전달 장부 복구는 유지하되, `owner=controlroom` 대기를 사용자 보고에서 숨기는 변경은 역할 계약에 맞지 않아 제거했다. 샘이 만든 결과를 자동으로 신뢰하거나 배포하지 않는다.
-- 샘 전용 `pre_llm_call` 훅은 현재 대화 차례가 Exdigm 운영 오류 문맥이면 통신 전용 경계를 다시 주입한다. `pre_tool_call` 훅은 같은 차례의 조사·파일 조회·수정·테스트·위임·Git·서비스 조작·배포 도구를 fail-closed로 차단한다. 허용되는 터미널 실행은 정확한 `decision.py inspect|decide|deliver`와 설치된 보고 체크포인트 도구뿐이다. 차례 식별자를 함께 저장하고 다음 무관한 대화에서 잠금을 지워 다른 업무까지 영구 차단하지 않는다.
-- `문제해결`, `수정해`, `승인 진행해`, `배포해`는 정확한 현재 트랙의 DB 결정을 기록하라는 뜻일 수는 있어도 샘에게 기술 실행 권한을 주지 않는다. 파이프라인 자체 변경은 main 조정실 Codex가 맡고, 승인 뒤 실제 수정은 `exdigm-repair.timer`, 배포는 `exdigm-deploy.timer`가 각각 DB를 다시 읽어 별도 Codex를 호출한다.
-
-### 8.6 최종 통신 전용 경계와 실제 연속 실행 확인
-
-- 샘의 예기치 않은 변경을 독립 검토해 유지할 부분만 다시 만든 Controlroom 커밋은 `9133de7`이고, 통신 전용 역할과 도구 차단은 `884e2ee`, Linux 사전 검사 격리는 `59fa515`다. 실행 코드 기준 로컬·GitHub·main 조정실이 `59fa515`로 일치하고 clean임을 확인했고, 이 최종 운영 증거는 문서 커밋 `86c6dff`에 추가했다. 샘이 만든 원래 커밋 `f2d6fa29e7e5f79e738e8dcfebe624a33f11825d`는 `codex/sam-unexpected-f2d6` 보존 브랜치에 남겼으며 자동으로 신뢰하거나 실행하지 않았다.
-- 설치된 샘은 새 Telegram 세션으로 전환했다. 운영 오류 차례에는 `pre_llm_call`이 통신 전용 계약을 다시 주입하고, `pre_tool_call`이 기술 조사·파일 읽기/쓰기·패치·검사·위임·Git·브라우저·서비스·배포 계열 도구를 fail-closed로 거절한다. 정확한 `decision.py inspect|decide|deliver`와 보고 체크포인트 명령만 허용한다. 다음 무관한 대화에서는 차례 잠금을 해제해 다른 업무까지 영구 차단하지 않는다. 실제 hook doctor와 오류 문맥 차단·정확한 helper 허용·다음 무관한 차례 해제를 모두 확인했다.
-- 정기 보고 작업 `130323c787e0`에는 `enabled_toolsets=["no_mcp"]`를 저장했다. Hermes의 실제 해석 결과는 도구 목록 0개다. 2026-09-21 18:41 KST 실행 `8dd92c7bb48449babb704e35e11489b8`은 main Codex의 새 결과를 읽고 `tool_turns=0`으로 Telegram에 전달했으며, 다음 실행이 해당 전달을 DB의 `report_delivered` 원장에 기록한 뒤 새 내용이 없어 조용히 종료했다. 샘은 이 과정에서 조사·수정·검증·배포를 실행하지 않았다.
-- main systemd의 별도 `exdigm-repair` 계정은 실행 `d5e78516-ea22-4e1f-98d1-f91b7295e327`과 `975d6ab0-f18d-4b17-be1b-d1a66ce4f921`에서 각각 Codex를 호출했다. 두 번째 실행은 Office 임시 잠금 파일을 이력서로 읽었던 과거 결함이 기존 공식 수정·배포로 이미 복구됐음을 현재 운영 자료와 관련 검사 11건으로 확인하고, 코드·설정·데이터를 바꾸지 않은 채 `defect/none` 결과와 원래 결과 검증을 DB에 기록했다. 이어진 샘 실행은 그 결과만 전달했다.
-- 18:42 KST 운영 DB 읽기 전용 대조는 사건 64건, 트랙 64건, 누락 0건이다. 트랙은 해결 8건, 조사 대기 55건, 작업공간 예약이 없는 외부 대기 1건이며, main Codex 점유 8건·결과 8건·샘 전달 영수증 8건이 append-only 원장에 있다. 남은 외부 대기와 조사 대기를 임의 승인·종료하지 않았다.
-- Controlroom 최종 Linux 검사는 93건 통과·1건 건너뜀·51개 subtest 통과이고, 역할 훅 집중 검사 41건 통과·1건 건너뜀, Ruff와 diff 검사가 통과했다. 코드 리뷰에서 `external_wait` 은폐, 대화 잠금의 과도한 지속, 너무 넓은 경로 차단, 접두사 도구 우회, Linux 전체 검사 격리 문제를 찾아 고친 뒤 같은 범위를 재검토해 남은 확정 finding이 없다. 스킬 리뷰에서는 샘의 절대 경로 helper, 직접 명령 표현의 비인가성, 서비스·프로세스 조작 금지를 다시 확인했다.
-- 최종 동기화 동안만 repair timer를 멈춰 작업 공간 경쟁을 막았고, 문서 반영 뒤 다시 활성화했다. repair·deploy timer와 Hermes gateway가 모두 active인 상태를 확인했다. 실제 주인님이 특정 트랙의 `approve_change`를 승인한 뒤 repair, `approve_deploy` 승인 뒤 deploy, 운영 결과 검증과 `approve_close`까지 이어지는 전체 승인 종단은 가짜 승인을 만들지 않았으므로 아직 실사례로 검증되지 않았다. 그 구간은 첫 실제 승인 건에서 같은 원장과 실행 영수증으로 계속 확인한다.
+완료 시 이 절에 제품·controlroom commit, 배포 결과, 설치 상태, 남은 실제 사건 관찰 여부를 갱신한다. 테스트 행을 운영 오류인 것처럼 만들거나 주인님의 승인을 대신 기록하지 않는다.
