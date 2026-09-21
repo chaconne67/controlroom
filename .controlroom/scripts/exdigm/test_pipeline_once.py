@@ -1,6 +1,7 @@
 import copy
 import unittest
 import uuid
+from unittest import mock
 
 import pipeline_once as pipeline
 
@@ -117,11 +118,56 @@ class PipelineContractTests(unittest.TestCase):
             {
                 "code_ssh": ["ssh", "restricted"],
                 "debug_root": "/debug",
+                "gbrain_ssh": ["ssh", "gbrain"],
+                "remote_uv": "/remote/uv",
             },
         )
         self.assertIn("샘은 주인님과 DB 사이의 통신만 담당", prompt)
         self.assertIn("코드·설정·데이터·Git 상태를 바꾸지 마세요", prompt)
         self.assertIn("approve_change", prompt)
+        self.assertIn('["ssh", "gbrain"]', prompt)
+        self.assertIn("/remote/uv", prompt)
+        self.assertIn("직접 실행하지 마세요", prompt)
+
+    def test_agent_environment_preflight_uses_restricted_existing_paths(self):
+        config = {
+            "code_ssh": ["ssh", "code"],
+            "gbrain_ssh": ["ssh", "gbrain"],
+            "remote_uv": "/home/chaconne/.local/bin/uv",
+        }
+        with mock.patch.object(
+            pipeline,
+            "run_command",
+            side_effect=[
+                "# GBrain Operating Protocol for Agents",
+                "uv 0.8.22",
+            ],
+        ) as run:
+            self.assertEqual(
+                pipeline.agent_environment_preflight(config),
+                {"gbrain": "default-read", "remote_uv": "uv 0.8.22"},
+            )
+        self.assertEqual(
+            run.call_args_list,
+            [
+                mock.call(
+                    [
+                        "ssh",
+                        "gbrain",
+                        "gbrain get agent/gbrain-operating-protocol --source default",
+                    ],
+                    timeout=45,
+                ),
+                mock.call(
+                    [
+                        "ssh",
+                        "code",
+                        "/home/chaconne/.local/bin/uv --version",
+                    ],
+                    timeout=45,
+                ),
+            ],
+        )
 
     def test_malformed_or_failed_result_cannot_advance(self):
         result = {

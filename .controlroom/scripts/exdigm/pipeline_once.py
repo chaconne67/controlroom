@@ -101,12 +101,36 @@ operational-error-triage-repair-policy-20260918.md를 읽고
 external_wait를 사용합니다. 근거 없이 none으로 닫거나 값을 지어내지 마세요. 운영 배포, 운영 DB/권한 변경,
 push, 사용자 승인 대행, 실고객 메시지 발송은 이 실행에서 금지됩니다.
 
+공용 GBrain 읽기 연결: {json.dumps(config['gbrain_ssh'], ensure_ascii=False)}
+GBrain은 위 연결 뒤 `gbrain get <slug> --source default` 또는 허용된 읽기 명령으로 조회하세요.
+main의 `/srv/consolidation/infra/gbrain-host`를 직접 실행하지 마세요.
 원격 코드 연결: {json.dumps(config['code_ssh'], ensure_ascii=False)}
 디버깅 경로: {config['debug_root']}
+원격 uv 절대경로: {config['remote_uv']}
+원격 코드 명령에서는 PATH의 `uv`가 아니라 위 절대경로를 사용하세요.
 최종 응답은 제공된 JSON schema를 정확히 따르고 없는 문자열 근거는 빈 문자열, 분해하지 않으면
 split_tracks는 빈 배열로 두세요.
 사건과 선택 트랙 JSON:\n{json.dumps(case, ensure_ascii=False)}
 """
+
+
+def agent_environment_preflight(config):
+    gbrain = run_command(
+        [
+            *config["gbrain_ssh"],
+            "gbrain get agent/gbrain-operating-protocol --source default",
+        ],
+        timeout=45,
+    )
+    if "GBrain Operating Protocol for Agents" not in gbrain:
+        raise RuntimeError("Restricted public GBrain read did not return its contract")
+    uv_version = run_command(
+        [*config["code_ssh"], f"{shlex.quote(config['remote_uv'])} --version"],
+        timeout=45,
+    )
+    if not uv_version.startswith("uv "):
+        raise RuntimeError("Remote uv executable did not return its version")
+    return {"gbrain": "default-read", "remote_uv": uv_version}
 
 
 def validate_result(result, current_action):
@@ -215,7 +239,9 @@ def execute_once(config, state_root):
         if active.exists():
             run = json.loads(active.read_text(encoding="utf-8"))
         else:
-            run = {"id": str(uuid.uuid4()), "baseline": preflight(config)}
+            baseline = preflight(config)
+            agent_environment_preflight(config)
+            run = {"id": str(uuid.uuid4()), "baseline": baseline}
             save_json(active, run)
         directory = state_root / run["id"]
         directory.mkdir(exist_ok=True)
@@ -477,7 +503,10 @@ def main():
     arguments = parser.parse_args()
     config = json.loads(arguments.config.read_text(encoding="utf-8"))
     if arguments.check:
-        print(json.dumps(preflight(config)))
+        print(json.dumps({
+            **preflight(config),
+            **agent_environment_preflight(config),
+        }))
     else:
         print(json.dumps(execute_once(config, arguments.state_root), ensure_ascii=False))
 
