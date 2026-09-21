@@ -65,6 +65,14 @@
 | 모멘텀국내ETF레시피 | [별첨1 v4 PPTX](https://docs.google.com/presentation/d/1CZg5gESwSoAwTmI-Chu8RjpCqwQ-YiO2/edit) | [별첨1 v4 PDF](https://drive.google.com/file/d/1Clpa2AiYmNQ6oER9oloUT4e1AmwLYYbE/view) |
 | 모멘텀퇴직연금레시피_P | [별첨1 v4 PPTX](https://docs.google.com/presentation/d/1_YogwbDixkK-bpME4ulrUHFaUBC15vFW/edit) | [별첨1 v4 PDF](https://drive.google.com/file/d/1f6D8akJQdinmHay9dD21Qa2t5CWuS-m5/view) |
 
+### 별첨 v4 후속 참고 문구 삭제 — 2026-09-21 13:47 KST
+
+- 주인님 지시에 따라 마지막 근거 페이지의 쿼터백자산운용·이루다투자일임·BNK자산운용 공개 자료 참고 문구와 `구체적인 감점 수치는 모멘텀에셋의 내부 설계 기준` 문장을 삭제했다. 발표자 노트에 있던 세 회사 이름·링크와 같은 부연도 함께 제거했다.
+- 코스콤 개인 맞춤성 I 심사표, 과거 심사 의견, 금융투자협회 표준투자권유준칙 회사참고사항 22-4에 관한 근거는 유지했다. 설문 문항·배점·환산·상한·판정·추천은 변경하지 않았다.
+- main 정본은 `master`와 `origin/master`의 `6ea73850a8013c67176acb732829ae2131b49e3f`다. 공통 생성기와 공통 PPTX만 변경했다.
+- 두 전략 PPTX/PDF를 다시 생성했다. PPTX 본문과 발표자 노트, PDF 추출문에서 삭제 대상 문구·세 회사 이름이 0건이며, 9쪽·표 9pt·overflow 없음·22개 채점 검사 통과를 확인했다. PDF 18쪽을 다시 렌더링했고 본문 차이 없이 전략명 꼬리말만 다르다.
+- Drive의 위 v4 파일 네 개는 파일 ID와 폴더를 유지한 채 내용을 교체했다. 업로드 후 이름·MIME·크기·부모 폴더를 다시 확인했다. 포털 제출은 하지 않았다.
+
 ### 코드 리뷰와 보호 계약
 
 code-review-loop를 주 에이전트가 수행했다. 기준은 f10060bb 대비 승인된 감점 변경이며, 요청한 7개 문항의 수치와 기존 분류·추천 연결이 일치하는지가 검토 질문이다. 입력은 HTTP q1~q13의 실제 선택지 배점, 출력은 기존 점수·성향·상한 이유와 상품 추천이다. 직접 소비자는 UserProfileView, 설문/결과/배점표 템플릿, 별첨 생성기다. DB·주문·인증·캐시·다른 화면은 비목표다.
