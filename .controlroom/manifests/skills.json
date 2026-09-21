@@ -110,7 +110,8 @@
     "venture-phase6-market": "venture/skills/venture-phase6-market",
     "venture-phase7-startup": "venture/skills/venture-phase7-startup",
     "venture-phase8-business-summary": "venture/skills/venture-phase8-business-summary",
-    "venture-phase9-portal-ready": "venture/skills/venture-phase9-portal-ready"
+    "venture-phase9-portal-ready": "venture/skills/venture-phase9-portal-ready",
+    "exdigm-error-control": "exdigm/skills/exdigm-error-control"
   },
   "profiles": {
     "global": [
@@ -155,6 +156,7 @@
         "data-extraction",
         "exdigm-deploy",
         "exdigm-design",
+        "exdigm-error-control",
         "exdigm-hermes-agent",
         "extraction-pipeline-verify",
         "resume-evolution-loop"
