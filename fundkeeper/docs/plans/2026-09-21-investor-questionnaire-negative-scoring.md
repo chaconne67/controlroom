@@ -36,6 +36,17 @@
 | 모멘텀국내ETF레시피 | [별첨1 v3 PPTX](https://docs.google.com/presentation/d/1_zNhClNr6ko5Gt1lEST48yEhmQvI-OX-/edit) | [별첨1 v3 PDF](https://drive.google.com/file/d/16cJ6Al8ej_7yokzl6Pc6ByItxJ0pskaw/view) |
 | 모멘텀퇴직연금레시피_P | [별첨1 v3 PPTX](https://docs.google.com/presentation/d/1TOlGpEtWwX2LaAQ-taT7Jxn8e7Ulfv2r/edit) | [별첨1 v3 PDF](https://drive.google.com/file/d/137A7zE9pPHjMTFSBWFxt0I5DIrEkF_jJ/view) |
 
+## 후속 결과 판정 사유 표시 — 2026-09-21 12:50 KST
+
+환산 점수와 최종 성향이 다른 결과에서 고객이 그 차이를 이해할 수 있도록 운영 결과 화면을 보완했다. 배점·환산점수·성향 점수대·1·7·8번의 기존 상한·상품 추천은 바꾸지 않았다.
+
+- 코드 정본은 main `master`와 `origin/master`의 `a4b2a5b62f65c8876016f235fb10864f781b0da4`다. 변경 범위는 `userprofile/scoring.py`, 결과 템플릿, 관련 검사 세 파일이다.
+- 상한이 실제로 점수 기준 성향을 낮춘 때만 결과 화면에 `점수 기준 성향`과 파란색 `최종 판정 사유`를 표시한다. 88점 사례는 점수 기준 `공격형`, 최종 `안정추구형`과 함께 `1번 ‘투자원금 보전을 중시하는 안정적인 자산 관리’ 응답에 적용되는 안정추구형 이하 기준`을 명시한다.
+- 8번 첫 선택지는 같은 방식으로 안정형 이하 기준과 해당 응답을 표시한다. 1번과 8번 조건이 함께 성립하면 실제 최종 판정을 만든 더 보수적인 8번 기준을 설명한다. 점수만으로 최종 성향이 결정된 결과에는 별도 상한 설명을 표시하지 않는다.
+- 22개 채점 계약 검사와 DB 없는 실제 Django GET/POST 검사가 통과했다. 개발·운영 실제 Chrome의 390·480·1024px에서 88점 결과의 전체 문구, 추천 결과, CSS 적용, 가로 넘침 없음과 콘솔·요청 오류 없음을 확인했다. 8번 단독, 1번·8번 중복, 예외 없는 100점도 각각 확인했다.
+- 운영 웹 이미지는 `sha256:26e4f7c44f5822a924e722726ed8074fcfc8fa14ed5d8f1505fa2e618865ecf4`, 웹 컨테이너는 `7996cfb8102d0053e1620f9efb75ea466c74e1ec6bb5a13e67d3746471c31fe6`다. 웹만 교체했고 healthy·restart 0·공개 health `ok`다. Nginx 이미지와 컨테이너, 나머지 실행 컨테이너 26개의 ID·이미지는 그대로다. CSS SHA-256도 기존 `b350c89ecc33d9693f1ce9cbe418919acfd374e7fc69a52e64ce923da7167c9d`와 같다.
+- 배포·복구 자료는 main `/srv/consolidation/work/fundkeeper-profiling-cap-explanation-a4b2a5b6-20260921.nxGBhJ`에 있다. 복구가 필요하면 그 폴더의 `compose.production.coconut.json.before`를 정본 위치에 복원하고 web 한정 Compose 명령을 실행한다. 이전 웹 이미지 `sha256:c8bb10a5ebc74c9f2064b01f8d365d113f428868fa3285ddee80fa22bc210050`는 보존했다.
+
 ### 코드 리뷰와 보호 계약
 
 code-review-loop를 주 에이전트가 수행했다. 기준은 f10060bb 대비 승인된 감점 변경이며, 요청한 7개 문항의 수치와 기존 분류·추천 연결이 일치하는지가 검토 질문이다. 입력은 HTTP q1~q13의 실제 선택지 배점, 출력은 기존 점수·성향·상한 이유와 상품 추천이다. 직접 소비자는 UserProfileView, 설문/결과/배점표 템플릿, 별첨 생성기다. DB·주문·인증·캐시·다른 화면은 비목표다.
