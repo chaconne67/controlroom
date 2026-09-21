@@ -341,7 +341,8 @@ class RepairTests(unittest.TestCase):
             with patch("sys.argv", argv[2:]), redirect_stdout(capture), \
                  patch("subprocess.check_output", side_effect=output), \
                  patch("subprocess.run", return_value=subprocess.CompletedProcess([], 1)), \
-                 patch("pathlib.Path.is_dir", return_value=True):
+                 patch("pathlib.Path.is_dir", return_value=True), \
+                 patch("pathlib.Path.rglob", return_value=[]):
                 exec(argv[2], {})
             return capture.getvalue()
 
