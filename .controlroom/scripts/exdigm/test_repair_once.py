@@ -31,7 +31,8 @@ class RepairTests(unittest.TestCase):
         self.addCleanup(self.temp.cleanup)
         self.root = Path(self.temp.name)
         self.config = {"record_command": ["record"], "codex_command": ["codex"],
-                       "code_ssh": ["ssh", "restricted"], "deploy_ssh": ["ssh", "deploy-host"],
+                       "code_ssh": ["ssh", "restricted"],
+                       "deploy_ssh": ["ssh", "deploy-host", "deploy"],
                        "project_root": "/controlroom/exdigm",
                        "debug_root": "/debug", "production_root": "/prod", "restricted_user": "repair-test-user"}
         self.calls = []
@@ -328,7 +329,7 @@ class RepairTests(unittest.TestCase):
         self.assertEqual(outcome["next_action"], "approve_deploy")
         codex_call = next(kwargs for command, kwargs in self.calls if command[0] == "codex")
         self.assertIn("Apply the bounded shared-contract repair", codex_call["payload"])
-        self.assertNotIn("deploy-host 'execute --error-id", codex_call["payload"])
+        self.assertNotIn("deploy-host deploy 'execute --error-id", codex_call["payload"])
 
     def test_repair_action_without_exact_owner_approval_never_starts_codex(self):
         self.case.update(next_action="repair", handling_context={})
@@ -344,8 +345,8 @@ class RepairTests(unittest.TestCase):
         outcome = self.invoke()
         self.assertEqual(outcome["next_action"], "verify_result")
         codex_call = next(kwargs for command, kwargs in self.calls if command[0] == "codex")
-        self.assertIn("deploy-host 'execute --error-id", codex_call["payload"])
-        self.assertNotIn("deploy-host 'deploy execute", codex_call["payload"])
+        self.assertIn("deploy-host deploy 'execute --error-id", codex_call["payload"])
+        self.assertNotIn("deploy-host deploy 'deploy execute", codex_call["payload"])
         self.assertEqual(sum(command[:2] == ["ssh", "deploy-host"] for command, _ in self.calls), 1)
         self.assertEqual(self.verification_calls, [])
         self.assertEqual(self.releases, [True])
