@@ -12,8 +12,6 @@
 
 - [전체 시스템 보안 점검 — 내부 보고서·개선 계획 보관 안내](security-audit-20260920.md)
 
-- [운영 실패 분류·자동 수정 — 조사·수정·검증·배포는 main Codex, 샘은 보고·결정 기록 전용 / 자동 실행과 샘 보고 작업 정지](operational-error-triage-repair-policy-20260918.md)
-
 - [이력서 검수 마크다운 표시 — 개발 수정·실제 화면·보호 검사 완료, 운영 배포 승인 대기](markdown-display-fix-20260918.md)
 
 - [학력 선택 정책 — 운영 반영·실패 개인 이력서 4건 재처리·실제 저장 및 중요 표시 확인 완료](resume-optional-education-20260917.md)
