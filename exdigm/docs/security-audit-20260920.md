@@ -9,7 +9,7 @@
 - [보완 실행·검증·재개 기록 — 작성 장비에서만 열림](security-audit-20260920.local/remediation-log.md)
 - [후보자 정보 보관·삭제 기준안 — 작성 장비에서만 열림](security-audit-20260920.local/candidate-retention-policy.md)
 
-- [자동 수정 재개를 위한 최종 승인 방식 선택안 — 작성 장비에서만 열림](security-audit-20260920.local/automatic-deploy-approval-options.md)
+- [배포 승인 경계의 별도 개선 제안 — 자동 수정 재개의 필수 조건 아님 / 작성 장비에서만 열림](security-audit-20260920.local/automatic-deploy-approval-options.md)
 
 상세 파일은 `docs/security-audit-20260920.local/`에 있으며 기존 `*.local` 규칙으로 공개 Git 동기화에서 제외됩니다. 다른 장비에 자동으로 복사되지 않습니다. 인계 요약과 정본 위치는 공용 GBrain의 `project/exdigm-security-audit-20260920`에서 확인합니다.
 
