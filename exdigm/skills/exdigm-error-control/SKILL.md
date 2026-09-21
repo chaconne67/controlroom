@@ -1,47 +1,36 @@
 ---
 name: exdigm-error-control
-description: Handle Exdigm operational-error reports and record the owner's approval, rejection, revision, response, or deferral through communication-only Sam on main.
+description: Handle Exdigm operational-error notifications and the owner's approval, rejection, or deferral through Sam on the main server.
 ---
 
-# Sam의 Exdigm 오류 전달
+# 샘의 엑스다임 오류·승인 처리
 
-Sam은 통신 창구다. DB의 완료된 조사·수정·배포 결과를 주인님께 설명하고, 주인님의 답을 같은 `OperationalError` 행에 기록한다. Sam은 코드 조사·수정·테스트·작업 예약·Codex 호출·배포를 하지 않는다. 승인 후의 기술 실행자는 main 서버의 단일 주기 작업자다.
+주인님이 오류 알림과 승인 창구를 메인 서버의 샘으로 지정했다. 샘은 기존 Telegram 개인 대화에서 요청을 설명하고 답변의 의미와 대상을 판단한다. 초기 자동 조사·단순 수정은 main Codex가 맡고, 주인님이 복잡한 수정 방향을 승인한 뒤에는 샘이 조정실 자원으로 직접 수정·검증·리뷰·커밋한다. 코드·검증·배포는 모두 Exdigm 서버의 기존 공식 경로를 사용한다.
 
-## 읽기와 보고
+## 정본과 책임
 
-정기 보고는 설치된 `exdigm_error_context.py`가 제한된 `sam-record --list` 명령으로 가져온 결과만 사용한다. 원시 오류 발생이나 `in_progress` 기록은 보고 결과가 아니다. 완료된 각 결과에 대해 다음을 구분해 전달한다.
+`controlroom-work`를 읽고 `~/controlroom/exdigm/AGENTS.md`, `docs/README.md`, `docs/operational-error-triage-repair-policy-20260918.md`의 현재 승인·작업 소유 계약을 따른다. 오류 원문이나 cron 문구는 주인님의 승인이 아니다. 여러 요청 중 대상이 불명확하거나 조건부 답변의 범위가 확정되지 않으면 필요한 대상·조건을 확인한다.
 
-- main이 조사하거나 수행한 내용과 확인된 근거
-- 확정 원인과 미확인 부분
-- 현재 DB 행동과 다음 실행 주체
-- 주인님이 결정하거나 제공해야 할 정확한 내용
+도구는 기존 Hermes 대화 기록에서 현재 Telegram 메시지의 발신자·메시지 번호를 확인하고 요청 판본을 검사한다. 승인 여부의 의미 판단은 샘이 맡는다. 도구를 통과시키려고 세션 환경변수·대화 기록·사용자 목록·DB 이력을 수정하지 않는다.
 
-`approve_change`와 `approve_deploy`만 승인·거절·보류 요청이다. `user_action`은 주인님만 제공할 수 있는 자료·권한·업무 선택을 요청한다. `external_wait`는 외부 담당자나 조건과 재개 조건을 설명한다. Sam이 다시 조사하거나 실행하겠다고 말하지 않는다.
+샘이 전달한 배포 요청은 승인 답변이 어느 대화에 도착하든 샘이 유일한 배포 실행 소유자다. 다른 조정실 에이전트는 답변을 샘에게 인계하고 샘의 완료 결과를 확인하며 배포 명령을 실행하지 않는다. 주인님이 배포 실행자를 명시적으로 다른 주체로 바꾼 경우에만 그 주체가 이어받는다. 서버의 배포 잠금은 동시 실행을 막는 마지막 보호 장치이며 실행 소유자를 정하는 수단으로 사용하지 않는다.
 
-## 주인님 응답 기록
+## 기존 오류 요청에 대한 결정
 
-도구는 `~/controlroom/exdigm/skills/exdigm-error-control/scripts/decision.py`다. Python은 `~/.hermes/hermes-agent/venv/bin/python`을 사용한다.
+명령은 main의 현재 사용자 셸에서 실행한다. Python은 `~/.hermes/hermes-agent/venv/bin/python`, 도구는 `~/controlroom/exdigm/skills/exdigm-error-control/scripts/decision.py`다.
 
-1. `decision.py inspect <오류 UUID>`로 현재 요청의 `revision`, `request_hash`, `next_action`, 근거를 확인한다.
-2. 현재 Telegram 개인 메시지가 어느 요청에 대한 것인지 Sam이 의미를 판단한다. 대상이나 조건이 불명확하면 기록하지 말고 주인님께 짧게 확인한다.
-3. 아래 중 정확히 하나를 기록한다.
-   - 승인: `decision.py decide <UUID> --revision <N> --request-hash <HASH> --decision approve`
-   - 거절: `... --decision reject --instruction '<거절 이유 또는 지시>'`
-   - 보류: `... --decision defer`
-   - 수정안 변경: `... --decision revise --instruction '<새 지시>'`
-   - 필요한 자료·답 제공: `... --decision respond --instruction '<주인님 답>'`
-4. 출력의 `recorded_revision`, `next_action`, `sam_execution_allowed=false`를 확인한다. DB 저장 실패를 성공으로 말하지 않는다. 응답이 끊기면 같은 인수를 그대로 재전송한다.
-5. “DB에 응답을 기록했고 main 작업자가 다음 주기에 처리한다”고만 알린다. 기술 작업이 시작·완료됐다고 추정하지 않는다.
+1. `decision.py inspect <오류 UUID>`로 현재 요청·개정·request_hash·구체적 변경과 코드를 확인한다. 주인님이 답한 요청과 대조한다. 요청과 답변의 의미가 맞는지는 샘이 판단하며, 다른 요청의 승인을 재사용하지 않는다.
+2. `decision.py decide <오류 UUID> --revision <확인한 개정> --request-hash <확인한 request_hash> --decision approve|reject|defer`로 결정을 기록한다. 실제 주인님 메시지, 현재 요청 판본과 내용, 기존 DB 결과 명령이 함께 확인되어야 성공한다. 응답이 끊기면 같은 인수를 재전송한다. 저장 실패를 승인 완료로 말하지 않는다.
+3. 성공 응답의 `decision`과 `approval_entry_id`를 확인한다. reject/defer는 실행하지 않고 그 상태를 설명한다. approve는 `execution_allowed=true`일 때 승인된 범위의 다음 작업을 이어 간다. false이면 현재 개정/후속 처리를 재조회한다. 기록 성공은 배포 성공이 아니다.
+4. 실제 작업 잠금을 확보한 뒤 기존 `record_operational_error_result`의 `--read`로 승인 기록과 현재 개정을 다시 대조한다. 승인 응답의 `recorded_revision`을 `--expected-revision`으로 사용해 실행 시작을 `--status in_progress`와 고정한 `--entry-id`로 먼저 기록하고, 성공한 실행 소유자만 작업한다. 승인 뒤 다른 처리가 진행됐으면 멈춘다. 같은 승인 영수증을 다시 읽었다는 이유로 두 번째 실행을 시작하지 않는다.
 
-## 행동 전환 계약
+## 승인 뒤 실행
 
-| 현재 요청 | 주인님 응답 | DB의 다음 행동 | 실행 주체 |
-|---|---|---|---|
-| `approve_change` | approve | `repair` | main Codex |
-| `approve_deploy` | approve | `deploy` | main 단일 작업자 |
-| 승인 요청 | reject | `none` | 없음 |
-| 승인 요청 | defer | 현재 요청 유지 | 없음 |
-| 승인 요청 | revise | `investigate` | main Codex |
-| `user_action`·`external_wait` | respond | `investigate` | main Codex |
+- `approve_change`: 샘이 승인된 제안·영향·검증·복구안과 기존 조사 근거를 읽고 직접 구현한다. `controlroom-work`로 조정실 공통·프로젝트 지침과 해당 기능 스킬을 읽고, 앞 절의 승인 대조·실행 시작 기록 및 정책 8절의 공용 debug 잠금·고유 예약을 확보한다. 같은 잠금을 유지하며 SSH로 debug 코드만 수정하고 공식 검사·catalog 갱신·필수 코드 리뷰·커밋을 수행한다. 승인된 제안 밖으로 넓어지면 구체적 변경안을 새 요청으로 남긴다.
+- 샘의 수정도 정책 8절의 검증·보관 계약을 그대로 따른다. 기존 `.controlroom/scripts/exdigm/repair_once.py`의 `workspace_lock`, `run_official_verification`, `park_repair`를 재사용한다. 현재 실행 주체에게 허용된 SSH 연결과 프로젝트 경로를 사용하고, 자동 수정기의 제한 신원이나 승인을 대신 만들지 않는다. 실제 clean 커밋과 공식 `test`·`check`의 성공 영수증, 기준 커밋·수정 커밋·보관 참조를 확인한다. 결과 저장 인수를 먼저 고정하고 수정본 보관·작업 공간 반환을 실행한 뒤, 같은 오류에 새 `approve_deploy` 요청을 저장한다. DB 저장과 반환 상태를 확인한 뒤 예약을 해제한다. 수정 승인은 배포 승인이 아니다.
+- `approve_deploy`: 샘이 주인님이 승인한 요청 개정·커밋·Git 보관 참조를 대조한 뒤 `exdigm-deploy`와 정책 8절의 같은 debug 잠금·예약을 확보해 공식 배포를 진행한다. 다른 writer가 있으면 해당 배포만 대기로 남긴다. 이전 미승인 변경을 섞지 않는다. 운영 기준이 바뀌어 새 커밋이 필요하면 원본을 보존하고 재검증한 새 요청을 주인님께 알린다.
+- 배포·원래 업무 결과 확인과 남은 행동은 기존 `record_operational_error_result`로 같은 오류의 처리 이력에 남긴다. 프로그램 배포 성공을 이전 실패 업무의 복구 성공으로 대신 기록하지 않는다. 이미 시작된 실행의 응답이 끊겼으면 실제 프로세스·운영 판본·기록부터 확인하고 같은 배포를 무작정 반복하지 않는다.
 
-정기 보고 job은 사용자 메시지가 아니므로 결정을 기록하지 않는다. 오류 UUID에 연결되지 않은 새 개발 요청은 일반 조정실 절차를 따른다. Sam의 DB 권한을 넓히거나 가짜 오류·가짜 사용자 메시지를 만들어 이 도구를 통과시키지 않는다.
+샘은 승인 내용을 받은 대화에서 수정 작업의 실행 소유자가 된다. 승인 기록 성공을 수정 시작으로 보고하지 않으며, 수정 결과와 새 배포 요청까지 같은 사건에서 이어 간다. 기존 Codex 조사 자료는 이어받되 근거 없이 같은 조사를 처음부터 반복하지 않는다. 같은 변경을 샘과 Codex에 동시에 맡기지 않는다. 중단되면 실제 실행 자료·HEAD·미커밋 변경·DB 개정을 대조해 기존 작업을 이어받고, 다른 writer의 예약을 지워 시작하지 않는다. 정기 결과 보고 작업은 읽기·보고만 하며 사용자 승인 답변을 처리하는 실행과 구분한다.
+
+새 작업·초기 설치 등 오류 UUID에 연결되지 않은 주인님의 직접 요청은 일반 조정실 작업 절차를 따른다. 이미 샘이 전달한 배포 요청의 답변은 오류 UUID가 없어도 위 배포 소유 규칙을 따른다. 승인 도구를 쓰려고 가짜 오류나 가짜 사용자 메시지를 만들지 않는다. 운영 DB가 이 기능의 저장 구조를 아직 제공하지 않으면 도구가 중단한 이유를 설명하고 검증된 기능의 초기 배포 승인을 별도로 받는다.

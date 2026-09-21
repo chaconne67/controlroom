@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Run one DB-board action through main's single scheduled worker.
+"""One main-server Codex run; existing Exdigm command owns its DB record.
 
 Deployment supplies a restricted SSH identity and record-command environment.
 No timer is installed or enabled by this program. Persistent run files permit
@@ -21,12 +21,7 @@ import uuid
 
 CATEGORIES = ["user_action", "expected_stop", "external_wait", "defect", "unclassified"]
 ACTIONS = ["user_action", "external_wait", "approve_change", "approve_deploy", "verify_result", "none"]
-STRING_DETAILS = [
-    "root_cause", "owner", "required_action", "resume_condition", "proposal",
-    "alternatives", "recommendation_reason", "impact", "verification",
-    "rollback", "commit", "stop_reason",
-    "outcome_verification", "deployed_commit", "deployment_evidence",
-]
+STRING_DETAILS = ["root_cause", "owner", "required_action", "resume_condition", "proposal", "impact", "verification", "rollback", "commit", "stop_reason", "outcome_verification"]
 DETAILS = [*STRING_DETAILS, "test_targets"]
 SCHEMA = {
     "type": "object", "additionalProperties": False,
@@ -297,66 +292,15 @@ if read('rev-parse','HEAD')!=base or read('status','--porcelain') or read('rev-p
                                details["base_commit"], details["commit"], details["repair_ref"]]))
 
 
-def execute_approved_deployment(config, case, directory):
-    """Run the official deploy path for the exact owner-approved DB request."""
-    command = config.get("deploy_command")
-    if not isinstance(command, list) or not command or not all(
-        isinstance(item, str) and item for item in command
-    ):
-        raise RuntimeError("The single worker needs its restricted deploy command")
-    context = case.get("handling_context") or {}
-    required = {
-        "commit", "repair_ref", "approval_entry_id",
-        "approval_request_hash", "automation_run",
-    }
-    if any(not isinstance(context.get(key), str) or not context[key] for key in required):
-        raise ValueError("The deployment action is missing its approved DB evidence")
-    if (
-        context.get("approval_decision") != "approve"
-        or context.get("approval_request_type") != "approve_deploy"
-    ):
-        raise ValueError("The deployment action is not owner-approved")
-    payload = {
-        "error_id": case["id"],
-        "expected_revision": case["handling_revision"],
-        "automation_run": context["automation_run"],
-        "commit": context["commit"],
-        "repair_ref": context["repair_ref"],
-        "approval_entry_id": context["approval_entry_id"],
-        "request_hash": context["approval_request_hash"],
-    }
-    raw = run_command(
-        [*command, "execute"],
-        payload=json.dumps(payload, ensure_ascii=False),
-        timeout=7200,
-        evidence=directory / "deployment.json",
-    )
-    result = json.loads(raw)
-    if (
-        not isinstance(result, dict)
-        or result.get("error_id") != case["id"]
-        or result.get("approved_commit") != context["commit"]
-        or result.get("production_commit") != context["commit"]
-        or result.get("deployment_completed") is not True
-    ):
-        raise RuntimeError("The official deployment result did not match the approved DB request")
-    return result
-
-
 def prompt_for(case, config):
-    phase = {
-        "investigate": "오류를 조사하고 단순 결함이면 수정·검증·커밋하며, 복잡한 변경이면 구체적인 수정 승인을 요청하세요.",
-        "repair": "주인님이 DB에 승인한 수정안만 구현·검증·커밋하고 별도 배포 승인을 요청하세요.",
-        "verify_result": "배포 또는 외부 조치 뒤 원래 실패 업무의 실제 결과를 확인하고, 확인된 결과만 기록하세요.",
-    }.get(case.get("next_action"), "DB에 지정된 기술 행동만 수행하세요.")
-    return f"""Exdigm 운영 오류 DB 한 건에 대해 main 서버 Codex가 수행할 기술 작업입니다.
-현재 행동은 {case.get('next_action')}입니다. {phase}
-오류 조사와 기존 범위의 단순 결함 수정은 이미 허용된 자동 처리 범위입니다. 자료 조회·로그/코드 추적·기존 권한 안의 격리 재현과
+    return f"""주인님이 승인한 Exdigm 운영 실패 조사·자동 수정 한 건입니다.
+원인 조사와 수정 방향 결정은 이미 승인됐습니다. 자료 조회·로그/코드 추적·기존 권한 안의 격리 재현과
 검증 환경 확인은 이 실행에서 스스로 진행하세요. 자료가 부족하면 확보 가능한 기록과 재현 경로를 먼저
 조사하고 대안을 실행하세요. 조사 자체나 기존 범위의 다음 조사에 승인·거부·보류를 요청하지 마세요.
 먼저 이 조정실의 AGENTS.md, docs/README.md와 operational-error-triage-repair-policy-20260918.md를 읽으세요.
-현재 설치된 공용 지침과 관련 스킬을 그대로 적용하세요. 해당 지침의 트리거와 승인 경계를 임의로 넓히지
-마세요. SSP와 최소 구현, 기존 변경 보존, 공식 debug 검사, catalog 갱신, code-review-loop를 수행하세요.
+현재 설치된 공용 지침과 관련 스킬을 그대로 적용하세요. 문제해결 게이트를 명시적으로 적용하고
+현상 잠금→연속 질문→버드뷰→결과 대조→근본 원인 판정→해결책→적용·검증→재발 판정을 지키세요.
+SSP와 최소 구현, 기존 변경 보존, 공식 debug 검사, catalog 갱신, code-review-loop를 수행하세요.
 수정 중에는 원래 실패와 관련 성공 흐름을 필요한 범위에서 검사하세요. 수정·리뷰가 끝나면 깨끗한 커밋을
 approve_deploy로 반환하세요. 전체 테스트 기준선에는 기존 실패가 있으므로, approve_deploy에는 원래 실패·같은
 원인의 변형·관련 기존 성공을 검증하는 실제 pytest 파일 또는 node ID를 test_targets에 1~20개 지정하세요.
@@ -369,9 +313,7 @@ scripts/debug_workspace.sh check도 직접 실행해 종료 상태와 출력을 
 구조·업무 규칙·권한·데이터 의미가 바뀌거나 여러 해결 방향 중 주인님의 선택이 필요한 문제도 원인과
 대안을 조사하는 데는 승인이 필요 없습니다. 확인된 원인·권장 변경안·대안과 선택 이유·영향·검증·복구를
 마련한 뒤 적용 전에 approve_change로 수정 방향의 승인을 요청하세요. 조사할 계획은 변경안이 아닙니다.
-이 실행에서 next_action이 repair 또는 investigate라면 배포, push, 운영 체크아웃/데이터/권한 변경,
-사용자 승인 대행, 실고객 메일/알림 발송은 허용되지 않습니다. 승인된 배포는 이 실행기의 별도 결정론적
-경로가 처리하므로 Codex가 임의 배포 명령을 만들지 않습니다.
+배포, push, 운영 체크아웃/데이터/권한 변경, 사용자 승인 대행, 실고객 메일/알림 발송은 허용되지 않습니다.
 수정 커밋은 전체 SHA와 검사 증거를 남기고 approve_deploy로 끝내세요. 커밋 성공은 업무 복구 완료가 아닙니다.
 원래 필수 결과를 실제로 확인한 근거 없이는 none으로 닫지 마세요. unclassified는 추가 조사가 필요하다는
 뜻이며 사용자 결정이 필요하다는 뜻이 아닙니다. 결론을 내리기 전에 허용된 독립 조사를 마치세요.
@@ -407,10 +349,7 @@ def validate_result(result):
     required = {
         "user_action": ["owner", "required_action", "resume_condition", "verification", "stop_reason"],
         "external_wait": ["owner", "resume_condition", "verification", "stop_reason"],
-        "approve_change": [
-            "root_cause", "proposal", "alternatives", "recommendation_reason",
-            "impact", "verification", "rollback",
-        ],
+        "approve_change": ["root_cause", "proposal", "impact", "verification", "rollback"],
         "approve_deploy": ["commit", "verification", "rollback"],
         "verify_result": ["verification"],
         "none": ["stop_reason" if result["category"] == "expected_stop" else "outcome_verification"],
@@ -467,47 +406,16 @@ def execute_once(config, state_root):
                         raise RuntimeError("Case ownership changed; do not restart or overwrite human handling")
                     try:
                         if not result_file.exists():
-                            if case["next_action"] == "deploy":
-                                deployment = execute_approved_deployment(
-                                    config, case, directory
-                                )
-                                details = {key: "" for key in STRING_DETAILS}
-                                details.update(
-                                    root_cause=(case.get("handling_context") or {}).get(
-                                        "root_cause", ""
-                                    ),
-                                    verification=(
-                                        "공식 배포 경로가 승인된 커밋을 운영 체크아웃과 "
-                                        "실행 서비스에 반영했습니다. 원래 업무 결과 확인은 남았습니다."
-                                    ),
-                                    commit=deployment["approved_commit"],
-                                    deployed_commit=deployment["production_commit"],
-                                    deployment_evidence=deployment["deployment_log"],
-                                )
-                                save_json(
-                                    result_file,
-                                    {
-                                        "category": case["category"],
-                                        "next_action": "verify_result",
-                                        "status": "succeeded",
-                                        "action": (
-                                            "주인님이 승인한 커밋을 공식 운영 배포 경로로 "
-                                            "반영했고, 원래 업무 결과 확인을 예약했습니다."
-                                        ),
-                                        "details": {**details, "test_targets": []},
-                                    },
-                                )
-                            else:
-                                if (directory / "codex-started.json").exists():
-                                    raise RuntimeError("Previous execution is incomplete; inspect its process, files and commit before resuming")
-                                if preflight(config) != run["baseline"]:
-                                    raise RuntimeError("Workspace changed after claim")
-                                save_json(directory / "schema.json", SCHEMA)
-                                save_json(directory / "codex-started.json", {"run": run["id"], "deadline": time.time()+3600})
-                                command = [*config["codex_command"], "exec", "--sandbox", "danger-full-access", "-c", 'approval_policy="never"',
-                                           "--cd", config["project_root"], "--json", "--output-schema", str(directory / "schema.json"),
-                                           "--output-last-message", str(result_file), "-"]
-                                run_command(command, payload=prompt_for(case, config), timeout=3500, evidence=directory/"execution.jsonl")
+                            if (directory / "codex-started.json").exists():
+                                raise RuntimeError("Previous execution is incomplete; inspect its process, files and commit before resuming")
+                            if preflight(config) != run["baseline"]:
+                                raise RuntimeError("Workspace changed after claim")
+                            save_json(directory / "schema.json", SCHEMA)
+                            save_json(directory / "codex-started.json", {"run": run["id"], "deadline": time.time()+3600})
+                            command = [*config["codex_command"], "exec", "--sandbox", "danger-full-access", "-c", 'approval_policy="never"',
+                                       "--cd", config["project_root"], "--json", "--output-schema", str(directory / "schema.json"),
+                                       "--output-last-message", str(result_file), "-"]
+                            run_command(command, payload=prompt_for(case, config), timeout=3500, evidence=directory/"execution.jsonl")
                         try:
                             result = validate_result(json.loads(result_file.read_text(encoding="utf-8")))
                         except (ValueError, TypeError) as error:
@@ -543,25 +451,14 @@ def execute_once(config, state_root):
                             key: (json.dumps(value, ensure_ascii=False) if key == "test_targets" else value)
                             for key, value in result["details"].items() if value
                         }
-                        details["execution_evidence"] = str(
-                            directory / (
-                                "deployment.json"
-                                if case["next_action"] == "deploy"
-                                else "execution.jsonl"
-                            )
-                        )
+                        details["execution_evidence"] = str(directory/"execution.jsonl")
                         if result["next_action"] == "approve_deploy":
                             details["verification_commands"] = json.dumps(verified_commands)
                             details.update(base_commit=run["baseline"]["head"],
                                            repair_ref=f"refs/operational-repairs/{run['id']}",
                                            workspace_reserved="no")
-                        deployed = case["next_action"] == "deploy"
-                        unchanged = (
-                            not deployed
-                            and result["next_action"] != "approve_deploy"
-                            and preflight(config) == run["baseline"]
-                        )
-                        if unchanged or deployed:
+                        unchanged = result["next_action"]!="approve_deploy" and preflight(config)==run["baseline"]
+                        if unchanged:
                             details["workspace_reserved"]="no"
                         payload = {"error_id": case["id"], "status": result["status"], "action": result["action"],
                                    "category": result["category"], "next_action": result["next_action"],
@@ -593,11 +490,7 @@ def execute_once(config, state_root):
                 saved = json.loads(run_command([*config["record_command"], "--json-input"], payload=json.dumps(payload,ensure_ascii=False)))
                 save_json(directory/"recorded.json", saved)
                 if details.get("workspace_reserved") == "no":
-                    current = preflight(config)
-                    if case["next_action"] == "deploy":
-                        if current["head"] != details.get("deployed_commit"):
-                            raise RuntimeError("Deployed workspace does not match the recorded commit")
-                    elif current != run["baseline"]:
+                    if preflight(config) != run["baseline"]:
                         raise RuntimeError("Workspace changed before release; reconcile the reservation")
                     release.append(True)
                 outcome = {"state": "recorded", "id": case["id"], "next_action": saved["next_action"]}
