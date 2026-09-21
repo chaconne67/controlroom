@@ -47,6 +47,24 @@
 - 운영 웹 이미지는 `sha256:26e4f7c44f5822a924e722726ed8074fcfc8fa14ed5d8f1505fa2e618865ecf4`, 웹 컨테이너는 `7996cfb8102d0053e1620f9efb75ea466c74e1ec6bb5a13e67d3746471c31fe6`다. 웹만 교체했고 healthy·restart 0·공개 health `ok`다. Nginx 이미지와 컨테이너, 나머지 실행 컨테이너 26개의 ID·이미지는 그대로다. CSS SHA-256도 기존 `b350c89ecc33d9693f1ce9cbe418919acfd374e7fc69a52e64ce923da7167c9d`와 같다.
 - 배포·복구 자료는 main `/srv/consolidation/work/fundkeeper-profiling-cap-explanation-a4b2a5b6-20260921.nxGBhJ`에 있다. 복구가 필요하면 그 폴더의 `compose.production.coconut.json.before`를 정본 위치에 복원하고 web 한정 Compose 명령을 실행한다. 이전 웹 이미지 `sha256:c8bb10a5ebc74c9f2064b01f8d365d113f428868fa3285ddee80fa22bc210050`는 보존했다.
 
+## 별첨 v4 판정 기준·표 구성 반영 — 2026-09-21 13:29 KST
+
+운영 결과 화면에 추가한 점수 기준 성향과 최종 성향의 차이, 적용 상한과 판정 사유를 두 전략의 알고리즘 설명서 별첨에도 같은 기준으로 명시했다. 설문 배점·환산·판정·추천·운영 컨테이너는 바꾸지 않았다.
+
+- 코드 정본은 main `master`와 `origin/master`의 `585ef31782193df07ec810785ba9332faf38245d`다. 공통 별첨 생성기와 저장소 공통 PPTX 두 파일만 변경했고, 사용자 미추적 `.agents/`, `AGENTS.md`, `CLAUDE.md`는 보존했다.
+- 별첨은 9쪽이다. 설문표를 1~4번, 5~7번, 8~13번의 세 묶음으로 재배치했고, 번호·분류·질문·선택지·배점을 한 표에서 비교하도록 구성했다. 표 안의 머리글과 본문 글꼴 크기는 모두 9pt다. 긴 보조 안내는 문항·선택지·배점을 가리지 않도록 PowerPoint 발표자 노트에 보존했다.
+- 판정 기준 페이지에는 `원점수 합산 → 100점 환산 → 점수 기준 성향 → 성향 상한 확인 → 최종 성향` 순서를 명시했다. 7번 첫 응답과 8번 첫 응답은 안정형 이하, 1번 첫 응답은 안정추구형 이하이며, 여러 상한이 겹치면 더 보수적인 상한을 적용한다. 상한은 환산점수를 바꾸거나 성향을 높이지 않으며, 실제로 최종 성향을 낮춘 규칙만 결과 사유로 표시한다.
+- 88점 사례는 1·2번 첫 응답과 나머지 최고 배점으로 원점수 56점, 환산 88점, 점수 기준 공격형이다. 1번의 `투자원금 보전을 중시하는 안정적인 자산 관리` 응답에 적용되는 안정추구형 이하 기준 때문에 최종 안정추구형이 된다. 별첨의 사유 문구는 별도 복사본으로 관리하지 않고 실제 `process_survey()` 결과에서 생성한다.
+- 함께 실은 대조 사례는 8번 첫 응답의 94점·점수 기준 공격형·최종 안정형, 1번과 8번 첫 응답이 겹친 88점·점수 기준 공격형·최종 안정형이다. 중복 조건에서는 최종 판정을 만든 8번의 더 보수적인 안정형 상한을 설명한다.
+- 검증: 실제 문항 정의의 13문항·65선택지·배점과 PPTX가 일치하고, 두 전략 PPTX의 모든 표 글꼴이 9pt임을 확인했다. 두 PPTX의 9쪽 전체를 PowerPoint로 PDF 변환해 Poppler로 렌더링하고 잘림·겹침을 확인했으며, `slides_test.py`도 두 파일 모두 overflow 없음으로 통과했다. PPTX 패키지 무결성 검사와 22개 채점·판정 계약 검사도 통과했다. 레이아웃 추정기는 선택지가 많은 한 표를 밀집 표로 경고했지만 실제 PowerPoint/PDF 렌더와 overflow 검사에서는 잘림이 없었다.
+- 검증 한계: 운영 이미지에는 문서 생성용 `python-pptx`가 없어 서버 컨테이너에서 생성기를 재실행하지 않았다. 대신 로컬에서 생성·검증한 생성기와 공통 PPTX의 SHA-256을 서버 정본과 대조해 각각 `16ca6658e…`와 `119dee8e…`로 일치함을 확인했다.
+- 기존 v2·v3 파일은 보존했다. 아래 v4를 전략별 기존 PPTX 폴더와 PDF 하위 폴더에 새 파일로 올리고 이름·MIME·크기·상위 폴더를 재조회했다. 테스트베드 포털 제출은 실행하지 않았다.
+
+| 전략 | PPTX | PDF |
+|---|---|---|
+| 모멘텀국내ETF레시피 | [별첨1 v4 PPTX](https://docs.google.com/presentation/d/1CZg5gESwSoAwTmI-Chu8RjpCqwQ-YiO2/edit) | [별첨1 v4 PDF](https://drive.google.com/file/d/1Clpa2AiYmNQ6oER9oloUT4e1AmwLYYbE/view) |
+| 모멘텀퇴직연금레시피_P | [별첨1 v4 PPTX](https://docs.google.com/presentation/d/1_YogwbDixkK-bpME4ulrUHFaUBC15vFW/edit) | [별첨1 v4 PDF](https://drive.google.com/file/d/1f6D8akJQdinmHay9dD21Qa2t5CWuS-m5/view) |
+
 ### 코드 리뷰와 보호 계약
 
 code-review-loop를 주 에이전트가 수행했다. 기준은 f10060bb 대비 승인된 감점 변경이며, 요청한 7개 문항의 수치와 기존 분류·추천 연결이 일치하는지가 검토 질문이다. 입력은 HTTP q1~q13의 실제 선택지 배점, 출력은 기존 점수·성향·상한 이유와 상품 추천이다. 직접 소비자는 UserProfileView, 설문/결과/배점표 템플릿, 별첨 생성기다. DB·주문·인증·캐시·다른 화면은 비목표다.
