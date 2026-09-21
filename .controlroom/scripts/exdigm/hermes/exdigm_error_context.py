@@ -99,10 +99,6 @@ with connection.cursor() as cursor:
                     )
                     OR t.status IN ('deferred','rejected','resolved','failed')
                   )
-              AND NOT (
-                    t.next_action='external_wait'
-                    AND COALESCE(t.handling_context->>'owner', '')='controlroom'
-                  )
               AND NOT EXISTS (
                     SELECT 1
                     FROM projects_operationalerrortransition x

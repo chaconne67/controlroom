@@ -334,7 +334,6 @@ def test_generated_query_uses_track_and_db_delivery_receipt():
     assert "projects_operationalerrortrack" in code
     assert "projects_operationalerrortransition" in code
     assert "report_delivered" in code
-    assert "owner" in code and "controlroom" in code
     assert "LIMIT 100" in code
     assert "UPDATE " not in code and "INSERT " not in code
 

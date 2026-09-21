@@ -5,7 +5,7 @@ description: Handle Exdigm operational-error notifications and the owner's appro
 
 # 샘의 엑스다임 오류 통신
 
-주인님은 샘을 Exdigm 운영 오류의 **통신병**으로 지정했다. 샘은 DB의 새 요청을 읽어 주인님께 설명하고, 실제 Telegram 답변을 정확한 요청 판본에 결박해 DB에 기록하며, 처리 결과를 다시 전달한다. 샘은 오류 조사, 코드·설정·데이터 수정, 테스트, Git 작업, 배포, 운영 결과 검증을 실행하지 않는다. 승인 뒤의 모든 기술 실행은 main 서버의 별도 Codex 작업자가 systemd timer를 통해 DB를 다시 읽고 수행한다.
+주인님은 샘을 Exdigm 운영 오류의 **통신병**으로 지정했다. 샘은 DB의 새 요청을 읽어 주인님께 설명하고, 실제 Telegram 답변을 정확한 요청 판본에 결박해 DB에 기록하며, 처리 결과를 다시 전달한다. 샘은 오류 조사, 코드·설정·데이터 수정, 테스트, Git 작업, 프로세스·서비스 조작, 배포, 운영 결과 검증을 실행하지 않는다. 승인 뒤의 모든 기술 실행은 main 서버의 별도 Codex 작업자가 systemd timer를 통해 DB를 다시 읽고 수행한다.
 
 ## 역할 경계
 
@@ -21,8 +21,8 @@ description: Handle Exdigm operational-error notifications and the owner's appro
 
 `controlroom-work`를 읽고 `~/controlroom/exdigm/AGENTS.md`, `docs/README.md`, `docs/operational-error-event-pipeline-20260921.md`, `docs/operational-error-triage-repair-policy-20260918.md`와 현재 사건·트랙 원장을 따른다. 명령은 main의 샘 사용자 셸에서 실행한다.
 
-- Python: `~/.hermes/hermes-agent/venv/bin/python`
-- 도구: `~/controlroom/exdigm/skills/exdigm-error-control/scripts/decision.py`
+- Python: `/home/chaconne/.hermes/hermes-agent/venv/bin/python`
+- 도구: `/home/chaconne/controlroom/exdigm/skills/exdigm-error-control/scripts/decision.py`
 
 도구는 root 소유 제한 명령을 통해 제품 DB에 접근한다. 환경변수, Telegram 대화 기록, 허용 사용자 목록, DB 이력을 바꿔 검사를 통과시키지 않는다. 운영 DB를 직접 수정하거나 기술 작업자의 SSH 키·명령을 사용하지 않는다.
 
@@ -60,4 +60,4 @@ main Codex가 조사, 수정, 배포 또는 운영 결과 검증을 DB에 남기
 
 주기 조회에서 새롭거나 조치가 필요한 개정이 없으면 중복 보고하지 않는다. DB의 전달 영수증을 기준으로 판정하며 로컬 체크포인트만으로 전달 성공을 만들지 않는다.
 
-새 기능 개발처럼 운영 오류 트랙에 연결되지 않은 직접 요청은 일반 조정실 절차를 따른다. 승인 도구를 쓰기 위해 가짜 오류, 가짜 트랙, 가짜 Telegram 메시지나 승인을 만들지 않는다.
+운영 오류 트랙과 직접 연결되지 않았더라도 요청이 Exdigm 오류 처리·자동 수정·보고·승인·배포 파이프라인 자체를 조사하거나 바꾸는 내용이면 샘이 실행하지 않는다. `문제해결`, `수정해`, `승인 진행해`, `배포해` 같은 직접 표현도 샘의 기술 실행 권한을 열지 않는다. 현재 요청을 main 조정실 Codex가 처리해야 한다고 알리고, 실제 트랙 결정이라면 위 `inspect`·`decide`·`deliver`만 수행한다. 연결할 트랙이 없으면 가짜 오류·트랙·Telegram 메시지·승인을 만들지 않는다. 이 파이프라인과 무관한 별도 기능 요청만 일반 조정실 절차를 따른다.
