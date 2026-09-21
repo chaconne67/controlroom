@@ -31,7 +31,8 @@ class RepairTests(unittest.TestCase):
         self.addCleanup(self.temp.cleanup)
         self.root = Path(self.temp.name)
         self.config = {"record_command": ["record"], "codex_command": ["codex"],
-                       "code_ssh": ["ssh", "restricted"], "project_root": "/controlroom/exdigm",
+                       "code_ssh": ["ssh", "restricted"], "deploy_ssh": ["ssh", "deploy-host"],
+                       "project_root": "/controlroom/exdigm",
                        "debug_root": "/debug", "production_root": "/prod", "restricted_user": "repair-test-user"}
         self.calls = []
         self.case = {"id": str(uuid.uuid4()), "handling_revision": 2, "processing_status": "in_progress"}
@@ -39,6 +40,7 @@ class RepairTests(unittest.TestCase):
         self.releases = []
         self.verification_ok = True
         self.verification_calls = []
+        self.deployed = False
 
     @contextmanager
     def lease(self, *args):
@@ -53,14 +55,20 @@ class RepairTests(unittest.TestCase):
         if command[0] == "record":
             if "--claim-next" in command:
                 if self.case is not None:
-                    self.case.setdefault("handling_context", {"automation_run": command[-1], "workspace_reserved": "yes"})
+                    self.case.setdefault("handling_context", {}).update(
+                        automation_run=command[-1], workspace_reserved="yes"
+                    )
                 return json.dumps(self.case)
             if "--read" in command:
                 return json.dumps(self.case)
             payload = json.loads(kwargs["payload"])
             return json.dumps({**self.case, "next_action": payload["next_action"], "handling_revision": 3})
+        if command[:2] == ["ssh", "deploy-host"]:
+            return json.dumps({"state": "deployed", "commit": self.case["handling_context"]["commit"]})
         target = Path(command[command.index("--output-last-message")+1])
         target.write_text(json.dumps(self.reply))
+        if "execute --error-id" in kwargs.get("payload", ""):
+            self.deployed = True
         if kwargs.get("evidence"):
             events = [{"type": "thread.started", "thread_id": str(uuid.uuid4())}]
             kwargs["evidence"].write_text("\n".join(json.dumps(event) for event in events))
@@ -80,7 +88,7 @@ class RepairTests(unittest.TestCase):
         }
 
     def invoke(self):
-        with patch.object(repair, "preflight", return_value={"head": "a"*40}), \
+        with patch.object(repair, "preflight", side_effect=lambda config: {"head": ("b" if self.deployed else "a")*40}), \
              patch.object(repair, "workspace_lock", self.lease), \
              patch.object(repair, "run_command", side_effect=self.command), \
              patch.object(repair, "run_official_verification", side_effect=self.verify), \
@@ -299,6 +307,49 @@ class RepairTests(unittest.TestCase):
         self.assertEqual(self.verification_calls, [])
         self.assertFalse((self.root/"active.json").exists())
 
+    def approved_case(self, kind):
+        self.case["handling_revision"] = 4
+        details = {
+            "approval_decision": "approve", "approval_request_type": kind,
+            "approval_request_hash": "c" * 64, "approval_entry_id": str(uuid.uuid4()),
+            "approval_request_revision": "2",
+            "proposal": "Apply the bounded shared-contract repair", "impact": "Two consumers",
+            "verification": "Reproduce and run focused tests", "rollback": "Restore the prior commit",
+        }
+        if kind == "approve_deploy":
+            details.update(commit="b" * 40, approval_commit="b" * 40, base_commit="a" * 40,
+                           repair_ref="refs/operational-repairs/" + str(uuid.uuid4()))
+        self.case.update(next_action="repair", handling_context=details)
+
+    def test_approved_change_is_implemented_by_the_same_codex_runner(self):
+        self.approved_case("approve_change")
+        self.reply = result("approve_deploy")
+        outcome = self.invoke()
+        self.assertEqual(outcome["next_action"], "approve_deploy")
+        codex_call = next(kwargs for command, kwargs in self.calls if command[0] == "codex")
+        self.assertIn("Apply the bounded shared-contract repair", codex_call["payload"])
+        self.assertNotIn("deploy-host 'execute --error-id", codex_call["payload"])
+
+    def test_repair_action_without_exact_owner_approval_never_starts_codex(self):
+        self.case.update(next_action="repair", handling_context={})
+        with self.assertRaises(ValueError):
+            self.invoke()
+        self.assertFalse(any(command[0] == "codex" for command, _ in self.calls))
+
+    def test_approved_deploy_is_executed_by_codex_and_verified_by_the_runner(self):
+        self.approved_case("approve_deploy")
+        self.reply = result("verify_result")
+        self.reply.update(category="defect")
+        self.reply["details"].update(root_cause="Confirmed repair", verification="Official deployment verified")
+        outcome = self.invoke()
+        self.assertEqual(outcome["next_action"], "verify_result")
+        codex_call = next(kwargs for command, kwargs in self.calls if command[0] == "codex")
+        self.assertIn("deploy-host 'execute --error-id", codex_call["payload"])
+        self.assertNotIn("deploy-host 'deploy execute", codex_call["payload"])
+        self.assertEqual(sum(command[:2] == ["ssh", "deploy-host"] for command, _ in self.calls), 1)
+        self.assertEqual(self.verification_calls, [])
+        self.assertEqual(self.releases, [True])
+
     def test_deployment_needs_safe_focused_test_targets(self):
         value = result("approve_deploy")
         for targets in ([], ["../test_secret.py"], ["manage.py"], ["-k expression"],
@@ -516,7 +567,8 @@ class GitParkingTests(unittest.TestCase):
         self.git(self.prod, "worktree", "add", "--detach", str(self.debug), self.base)
         self.config = {"code_ssh": ["bash", "-c"], "debug_root": str(self.debug),
                        "production_root": str(self.prod), "record_command": ["record"],
-                       "codex_command": ["codex"], "project_root": str(self.root)}
+                       "codex_command": ["codex"], "deploy_ssh": ["deploy"],
+                       "project_root": str(self.root)}
 
     def git(self, root, *args):
         return subprocess.run(["git", "-C", str(root), *args], check=True, text=True,

@@ -6,7 +6,9 @@ import io
 import json
 import os
 from pathlib import Path
+import re
 import shlex
+import subprocess
 import sys
 import uuid
 
@@ -24,6 +26,14 @@ RESULT_ACTIONS = {
     "user_action", "external_wait", "approve_change", "approve_deploy",
     "verify_result", "none",
 }
+DEPLOY_DEBUG_ROOT = Path("/home/chaconne/exdigm-debug")
+DEPLOY_PRODUCTION_ROOT = Path("/home/chaconne/exdigm")
+DEPLOY_SCRIPT = DEPLOY_DEBUG_ROOT / "scripts/deploy/deploy.sh"
+DEPLOY_SERVICES = (
+    "Exdigm_exdigm_app",
+    "Exdigm_exdigm_sse",
+    "Exdigm_exdigm_notification_dispatcher",
+)
 
 
 def gbrain_args(arguments):
@@ -95,6 +105,135 @@ def record(arguments):
     call_command("record_operational_error_result", *arguments)
 
 
+def deploy_args(arguments):
+    """Accept only the fixed, revision-bound deployment protocol."""
+    if arguments == ["check"]:
+        return {"action": "check"}
+    flags = ("--error-id", "--revision", "--commit", "--automation-run")
+    if len(arguments) != 9 or arguments[0] not in {"execute", "verify"} \
+            or tuple(arguments[index] for index in (1, 3, 5, 7)) != flags:
+        raise ValueError("Invalid deployment request")
+    error_id = str(uuid.UUID(arguments[2]))
+    revision = int(arguments[4])
+    commit = arguments[6]
+    run_id = str(uuid.UUID(arguments[8]))
+    if revision < 1 or not re.fullmatch(r"[0-9a-f]{40}", commit):
+        raise ValueError("Invalid deployment identity")
+    return {"action": arguments[0], "error_id": error_id, "revision": revision,
+            "commit": commit, "automation_run": run_id}
+
+
+def authorize_deploy(request, case):
+    """Bind an exact approved request to the current main-runner claim."""
+    if str(case.get("id")) != request["error_id"] \
+            or case.get("handling_revision") != request["revision"] \
+            or case.get("processing_status") != "in_progress" \
+            or case.get("next_action") != "repair":
+        raise ValueError("Deployment case is not the current claimed repair")
+    details = case.get("handling_context")
+    if not isinstance(details, dict) or any(details.get(key) != value for key, value in {
+        "approval_decision": "approve",
+        "approval_request_type": "approve_deploy",
+        "approval_commit": request["commit"],
+        "commit": request["commit"],
+        "automation_run": request["automation_run"],
+        "workspace_reserved": "yes",
+    }.items()):
+        raise ValueError("Deployment approval or ownership does not match")
+    if not re.fullmatch(r"[0-9a-f]{40}", details.get("base_commit", "")) \
+            or not re.fullmatch(r"refs/operational-repairs/[0-9a-f-]{36}", details.get("repair_ref", "")) \
+            or not re.fullmatch(r"[0-9a-f]{64}", details.get("approval_request_hash", "")):
+        raise ValueError("Deployment evidence is incomplete")
+    approval_id = str(uuid.UUID(details.get("approval_entry_id", "")))
+    run_id = request["automation_run"]
+    history = case.get("processing_history")
+    if not isinstance(history, list):
+        raise ValueError("Deployment history is unavailable")
+    approval = [item for item in history if item.get("entry_id") == approval_id]
+    claim = [item for item in history if item.get("entry_id") == run_id]
+    if len(approval) != 1 or approval[0].get("revision") != request["revision"] - 1 \
+            or approval[0].get("next_action") != "repair" \
+            or approval[0].get("handling_context", {}).get("approval_request_hash") != details["approval_request_hash"] \
+            or len(claim) != 1 or claim[0].get("revision") != request["revision"]:
+        raise ValueError("Deployment approval is not the immediately claimed decision")
+    return details
+
+
+def read_deploy_case(error_id):
+    ids = subprocess.check_output([
+        "docker", "ps", "-q", "--filter",
+        "label=com.docker.swarm.service.name=Exdigm_exdigm_app",
+    ], text=True).split()
+    if len(ids) != 1:
+        raise RuntimeError("One active Exdigm app task is required")
+    output = subprocess.check_output([
+        "docker", "exec", ids[0], "python", "manage.py",
+        "record_operational_error_result", error_id, "--read",
+    ], text=True)
+    return json.loads(output)
+
+
+def git_read(root, *arguments):
+    return subprocess.check_output(
+        ["git", "-C", str(root), *arguments], text=True
+    ).strip()
+
+
+def deployment_state(commit):
+    production = git_read(DEPLOY_PRODUCTION_ROOT, "rev-parse", "HEAD")
+    debug = git_read(DEPLOY_DEBUG_ROOT, "rev-parse", "HEAD")
+    if git_read(DEPLOY_PRODUCTION_ROOT, "status", "--porcelain") \
+            or git_read(DEPLOY_DEBUG_ROOT, "status", "--porcelain"):
+        raise RuntimeError("Deployment worktrees must be clean")
+    remote = git_read(DEPLOY_DEBUG_ROOT, "ls-remote", "origin", "refs/heads/main").split()
+    if len(remote) != 2 or remote[0] != commit or production != commit or debug != commit:
+        raise RuntimeError("Git deployment state does not match the approved commit")
+    services = {}
+    for service in DEPLOY_SERVICES:
+        ids = subprocess.check_output([
+            "docker", "ps", "-q", "--filter", f"label=com.docker.swarm.service.name={service}",
+        ], text=True).split()
+        if len(ids) != 1:
+            raise RuntimeError("One active task is required for every deployed service")
+        source = subprocess.check_output(
+            ["docker", "exec", ids[0], "cat", "/app/.source-commit"], text=True
+        ).strip()
+        if source != commit:
+            raise RuntimeError("A running service does not use the approved commit")
+        services[service] = source
+    return {"production": production, "debug": debug, "origin_main": remote[0],
+            "services": services}
+
+
+def deploy(arguments):
+    request = deploy_args(arguments)
+    if request["action"] == "check":
+        import pwd
+        if os.geteuid() == 0 or pwd.getpwuid(os.geteuid()).pw_name != "chaconne" \
+                or not DEPLOY_SCRIPT.is_file() or not os.access(DEPLOY_SCRIPT, os.X_OK):
+            raise RuntimeError("Approved deployment gateway is not ready")
+        print(json.dumps({"ready": True, "executor": "chaconne",
+                          "deploy_script": str(DEPLOY_SCRIPT)}))
+        return
+    details = authorize_deploy(request, read_deploy_case(request["error_id"]))
+    if git_read(DEPLOY_DEBUG_ROOT, "rev-parse", details["repair_ref"]) != request["commit"]:
+        raise RuntimeError("Saved repair reference does not match the approved commit")
+    if request["action"] == "execute":
+        production = git_read(DEPLOY_PRODUCTION_ROOT, "rev-parse", "HEAD")
+        debug = git_read(DEPLOY_DEBUG_ROOT, "rev-parse", "HEAD")
+        if production != request["commit"]:
+            if production != details["base_commit"] or debug not in {details["base_commit"], request["commit"]} \
+                    or git_read(DEPLOY_DEBUG_ROOT, "status", "--porcelain"):
+                raise RuntimeError("Deployment base or debug workspace changed")
+            if debug != request["commit"]:
+                subprocess.run([
+                    "git", "-C", str(DEPLOY_DEBUG_ROOT), "switch", "--detach", request["commit"],
+                ], check=True)
+            subprocess.run([str(DEPLOY_SCRIPT), "prod"], cwd=DEPLOY_DEBUG_ROOT, check=True)
+    receipt = deployment_state(request["commit"])
+    print(json.dumps({"state": "deployed", "commit": request["commit"], **receipt}))
+
+
 def main():
     arguments = shlex.split(os.environ.get("SSH_ORIGINAL_COMMAND", ""))
     mode = sys.argv[1] if len(sys.argv) == 2 else ""
@@ -105,6 +244,8 @@ def main():
                  ["gbrain-host", *gbrain_args(arguments)])
     elif mode == "record":
         record(arguments)
+    elif mode == "deploy":
+        deploy(arguments)
     else:
         raise ValueError("Unsupported access mode")
 

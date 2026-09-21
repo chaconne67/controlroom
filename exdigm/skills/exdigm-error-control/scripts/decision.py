@@ -108,7 +108,11 @@ def decide(profile, environment, error_id, revision, request_hash, decision, rpc
                        "approval_request_hash": request_hash, "approval_request_type": request["next_action"],
                        "approval_commit": request["details"].get("commit", ""), "approval_entry_id": entry_id}
             action = request["next_action"]
-            if decision == "reject":
+            if decision == "approve":
+                # Sam records the owner's decision and hands execution back to
+                # the main-server coordinator.  Sam never performs the work.
+                action = "repair"
+            elif decision == "reject":
                 action = "user_action"
                 details.update(owner="controlroom", required_action="주인님의 거절 사유에 맞게 요청을 검토하세요.",
                                resume_condition="검토한 새 요청에 대한 주인님의 명시적 지시")
@@ -124,7 +128,8 @@ def decide(profile, environment, error_id, revision, request_hash, decision, rpc
             "request_revision": revision, "recorded_revision": receipts[0]["revision"],
             "current_revision": saved["handling_revision"], "next_action": saved["next_action"],
             "commit": receipts[0]["handling_context"].get("approval_commit", ""),
-            "execution_allowed": decision == "approve" and saved["handling_revision"] == receipts[0]["revision"]}
+            "execution_allowed": (decision == "approve" and saved["next_action"] == "repair"
+                                  and saved["handling_revision"] == receipts[0]["revision"])}
 
 
 def main():

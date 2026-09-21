@@ -13,6 +13,7 @@ import json
 import os
 from pathlib import Path
 from pathlib import PurePosixPath
+import re
 import shlex
 import signal
 import selectors
@@ -167,6 +168,10 @@ def preflight(config):
     import pwd
     if pwd.getpwuid(os.getuid()).pw_name != config["restricted_user"] or os.getuid() == 0:
         raise RuntimeError("Run from the provisioned restricted main-server account")
+    deploy_ssh = config.get("deploy_ssh")
+    if not isinstance(deploy_ssh, list) or not deploy_ssh \
+            or any(not isinstance(value, str) or not value for value in deploy_ssh):
+        raise RuntimeError("The approved deployment gateway is required")
     protected_paths = config.get("protected_runtime_paths")
     if (not isinstance(protected_paths, list) or not protected_paths
             or any(not isinstance(path, str) or not PurePosixPath(path).is_absolute()
@@ -292,13 +297,69 @@ if read('rev-parse','HEAD')!=base or read('status','--porcelain') or read('rev-p
                                details["base_commit"], details["commit"], details["repair_ref"]]))
 
 
+def approved_stage(case):
+    if case.get("next_action") != "repair":
+        return ""
+    details = case.get("handling_context")
+    if not isinstance(details, dict) or details.get("approval_decision") != "approve" \
+            or details.get("approval_request_type") not in {"approve_change", "approve_deploy"} \
+            or not re.fullmatch(r"[0-9a-f]{64}", details.get("approval_request_hash", "")) \
+            or details.get("approval_request_revision") != str(case["handling_revision"] - 2):
+        raise ValueError("A repair action needs an exact owner-approved request")
+    try:
+        uuid.UUID(details.get("approval_entry_id", ""))
+    except (ValueError, TypeError, AttributeError) as error:
+        raise ValueError("A repair action needs the owner's decision receipt") from error
+    if details["approval_request_type"] == "approve_deploy" \
+            and (not re.fullmatch(r"[0-9a-f]{40}", details.get("commit", ""))
+                 or details.get("approval_commit") != details["commit"]):
+        raise ValueError("Deployment approval does not match the repair commit")
+    return details["approval_request_type"]
+
+
+def deployment_gateway(config, case, action):
+    details = case["handling_context"]
+    command = shlex.join([
+        action, "--error-id", case["id"], "--revision", str(case["handling_revision"]),
+        "--commit", details["commit"], "--automation-run", details["automation_run"],
+    ])
+    if action == "execute":
+        return shlex.join([*config["deploy_ssh"], command])
+    receipt = json.loads(run_command([*config["deploy_ssh"], command], timeout=60))
+    if receipt.get("state") != "deployed" or receipt.get("commit") != details["commit"]:
+        raise RuntimeError("Deployment gateway did not verify the approved commit")
+    return receipt
+
+
 def prompt_for(case, config):
+    stage = approved_stage(case)
+    if stage == "approve_deploy":
+        deploy_command = deployment_gateway(config, case, "execute")
+        return f"""주인님이 정확한 커밋의 Exdigm 운영 배포를 승인했고, main 실행기가 그 DB 결정을 확보했습니다.
+샘은 승인 기록만 했으며 이 작업을 실행하지 않습니다. 이 main Codex 실행이 배포와 사후 확인을 담당합니다.
+먼저 이 조정실의 AGENTS.md, docs/README.md, operational-error-triage-repair-policy-20260918.md와
+exdigm-deploy 스킬을 읽으세요. 코드·테스트·커밋을 새로 만들거나 수정하지 마세요. 사건 자료의 승인 요청 종류,
+승인 결정, 요청 해시, 정확한 commit/base_commit/repair_ref와 현재 실행 소유를 대조하세요.
+일치할 때만 아래 명령을 정확히 한 번 실행하세요. 이 강제 진입점이 DB 최신 개정과 작업 소유를 다시 확인하고
+기존 공식 scripts/deploy/deploy.sh prod만 실행합니다. 다른 SSH·push·deploy 명령은 사용하지 마세요.
+명령: {deploy_command}
+명령이 성공하면 출력의 GitHub main·운영·debug·실행 서비스 커밋 일치를 확인해 verify_result/succeeded로
+반환하세요. 실패나 불명확한 연결 종료는 재시도하지 말고 external_wait/failed와 실제 관측 근거를 반환하세요.
+오류 DB 결과는 실행기가 저장하므로 직접 갱신하지 마세요. 최종 응답은 제공된 JSON schema를 따르고,
+test_targets는 빈 배열이어야 합니다. 근거 없는 필드는 빈 문자열로 두며 값을 지어내지 마세요.
+사건 자료 JSON:\n{json.dumps(case, ensure_ascii=False)}
+"""
+    approved_change = ""
+    if stage == "approve_change":
+        approved_change = """주인님이 이 사건의 handling_context에 기록된 proposal·impact·verification·rollback 범위를
+승인했습니다. 그 승인 범위를 구현하되 새 선택이나 더 넓은 구조 변경이 필요하면 적용하지 말고 새 approve_change
+요청으로 남기세요. 승인된 수정 뒤에도 운영 배포는 별도 approve_deploy 승인이 필요합니다.\n"""
     return f"""주인님이 승인한 Exdigm 운영 실패 조사·자동 수정 한 건입니다.
 원인 조사와 수정 방향 결정은 이미 승인됐습니다. 자료 조회·로그/코드 추적·기존 권한 안의 격리 재현과
 검증 환경 확인은 이 실행에서 스스로 진행하세요. 자료가 부족하면 확보 가능한 기록과 재현 경로를 먼저
 조사하고 대안을 실행하세요. 조사 자체나 기존 범위의 다음 조사에 승인·거부·보류를 요청하지 마세요.
 먼저 이 조정실의 AGENTS.md, docs/README.md와 operational-error-triage-repair-policy-20260918.md를 읽으세요.
-현재 설치된 공용 지침과 관련 스킬을 그대로 적용하세요. 문제해결 게이트를 명시적으로 적용하고
+현재 설치된 공용 지침과 관련 스킬을 그대로 적용하세요. {approved_change}문제해결 게이트를 명시적으로 적용하고
 현상 잠금→연속 질문→버드뷰→결과 대조→근본 원인 판정→해결책→적용·검증→재발 판정을 지키세요.
 SSP와 최소 구현, 기존 변경 보존, 공식 debug 검사, catalog 갱신, code-review-loop를 수행하세요.
 수정 중에는 원래 실패와 관련 성공 흐름을 필요한 범위에서 검사하세요. 수정·리뷰가 끝나면 깨끗한 커밋을
@@ -331,7 +392,7 @@ required_action에는 주인님이 해야 할 최소 행동, resume_condition에
 """
 
 
-def validate_result(result):
+def validate_result(result, stage=""):
     if not isinstance(result, dict) or set(result) != set(SCHEMA["required"]):
         raise ValueError("Result keys do not match the output contract")
     if result["category"] not in CATEGORIES or result["next_action"] not in ACTIONS or result["status"] not in {"succeeded", "failed"}:
@@ -360,6 +421,11 @@ def validate_result(result):
         raise ValueError("An unclassified case cannot be closed")
     if any(not result["details"][key].strip() for key in required):
         raise ValueError("Missing required next-action evidence: " + ", ".join(required))
+    if stage == "approve_deploy" and not (
+        (result["status"] == "succeeded" and result["next_action"] == "verify_result")
+        or (result["status"] == "failed" and result["next_action"] in {"user_action", "external_wait"})
+    ):
+        raise ValueError("An approved deployment must report verified success or a concrete blocker")
     return result
 
 
@@ -389,6 +455,7 @@ def execute_once(config, state_root):
                     save_json(case_file, case)
             if case_file.exists():
                 case = json.loads(case_file.read_text())
+                stage = approved_stage(case)
                 payload_file = directory / "result-payload.json"
                 interrupted_file = directory / "interrupted-payload.json"
                 if interrupted_file.exists():
@@ -417,7 +484,7 @@ def execute_once(config, state_root):
                                        "--output-last-message", str(result_file), "-"]
                             run_command(command, payload=prompt_for(case, config), timeout=3500, evidence=directory/"execution.jsonl")
                         try:
-                            result = validate_result(json.loads(result_file.read_text(encoding="utf-8")))
+                            result = validate_result(json.loads(result_file.read_text(encoding="utf-8")), stage)
                         except (ValueError, TypeError) as error:
                             if (directory / "format-retry.json").exists():
                                 raise
@@ -434,7 +501,7 @@ def execute_once(config, state_root):
                                        "-c", 'approval_policy="never"', "--json", "--output-schema", str(directory/"schema.json"),
                                        "--output-last-message", str(result_file), "-"]
                             run_command(command, payload=correction, timeout=remaining, evidence=directory/"format-execution.jsonl")
-                            result = validate_result(json.loads(result_file.read_text(encoding="utf-8")))
+                            result = validate_result(json.loads(result_file.read_text(encoding="utf-8")), stage)
                         if result["next_action"] == "approve_deploy":
                             commit = result["details"]["commit"]
                             if len(commit)!=40 or any(char not in "0123456789abcdef" for char in commit):
@@ -457,7 +524,15 @@ def execute_once(config, state_root):
                             details.update(base_commit=run["baseline"]["head"],
                                            repair_ref=f"refs/operational-repairs/{run['id']}",
                                            workspace_reserved="no")
-                        unchanged = result["next_action"]!="approve_deploy" and preflight(config)==run["baseline"]
+                        if stage == "approve_deploy" and result["next_action"] == "verify_result":
+                            receipt = deployment_gateway(config, case, "verify")
+                            details.update(commit=case["handling_context"]["commit"],
+                                           base_commit=case["handling_context"]["base_commit"],
+                                           repair_ref=case["handling_context"]["repair_ref"],
+                                           verification_commands=json.dumps(receipt),
+                                           workspace_reserved="no")
+                        unchanged = (stage != "approve_deploy" and result["next_action"] != "approve_deploy"
+                                     and preflight(config) == run["baseline"])
                         if unchanged:
                             details["workspace_reserved"]="no"
                         payload = {"error_id": case["id"], "status": result["status"], "action": result["action"],
@@ -490,7 +565,9 @@ def execute_once(config, state_root):
                 saved = json.loads(run_command([*config["record_command"], "--json-input"], payload=json.dumps(payload,ensure_ascii=False)))
                 save_json(directory/"recorded.json", saved)
                 if details.get("workspace_reserved") == "no":
-                    if preflight(config) != run["baseline"]:
+                    expected = (details.get("commit") if stage == "approve_deploy"
+                                and payload["next_action"] == "verify_result" else run["baseline"]["head"])
+                    if preflight(config).get("head") != expected:
                         raise RuntimeError("Workspace changed before release; reconcile the reservation")
                     release.append(True)
                 outcome = {"state": "recorded", "id": case["id"], "next_action": saved["next_action"]}

@@ -57,6 +57,7 @@ class DecisionTests(unittest.TestCase):
         result = self.invoke()
         self.assertTrue(result["execution_allowed"])
         self.assertEqual(result["commit"], "a"*40)
+        self.assertEqual(result["next_action"], "repair")
         details = self.case["handling_context"]
         self.assertEqual(details["approval_actor"], "sam")
         self.assertEqual(details["approval_message_id"], "456")
@@ -148,7 +149,7 @@ class DecisionTests(unittest.TestCase):
         self.request_hash = decision.request_view(self.case)["request_hash"]
         self.assertTrue(self.invoke()["execution_allowed"])
         self.assertEqual(self.case["handling_context"]["proposal"], "Change shared structure")
-        self.assertEqual(self.case["next_action"], "approve_change")
+        self.assertEqual(self.case["next_action"], "repair")
 
 
 if __name__ == "__main__":
