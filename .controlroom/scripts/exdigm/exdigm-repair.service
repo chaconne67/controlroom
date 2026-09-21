@@ -1,5 +1,5 @@
 [Unit]
-Description=Exdigm single Codex investigation and repair
+Description=Exdigm Codex event-track investigation repair and verification
 After=network-online.target
 Wants=network-online.target
 
@@ -11,7 +11,7 @@ WorkingDirectory=/home/chaconne/controlroom/exdigm
 Environment=HOME=/var/lib/exdigm-repair
 Environment=CODEX_HOME=/var/lib/exdigm-repair/.codex
 Environment=PATH=/usr/local/bin:/usr/bin:/bin
-ExecStart=/usr/bin/python3 /home/chaconne/controlroom/.controlroom/scripts/exdigm/repair_once.py --config /etc/exdigm-repair/config.json --state-root /var/lib/exdigm-repair/runs
+ExecStart=/usr/bin/python3 /home/chaconne/controlroom/.controlroom/scripts/exdigm/pipeline_once.py --config /etc/exdigm-repair/config.json --state-root /var/lib/exdigm-repair/pipeline-runs
 TimeoutStartSec=120min
 KillMode=control-group
 UMask=0077

@@ -1,0 +1,28 @@
+[Unit]
+Description=Exdigm owner-approved deployment by main-server Codex
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=exdigm-deploy
+Group=exdigm-deploy
+WorkingDirectory=/home/chaconne/controlroom/exdigm
+Environment=HOME=/var/lib/exdigm-deploy
+Environment=CODEX_HOME=/var/lib/exdigm-deploy/.codex
+Environment=PATH=/usr/local/bin:/usr/bin:/bin
+ExecStart=/usr/bin/python3 /home/chaconne/controlroom/.controlroom/scripts/exdigm/deploy_once.py --config /etc/exdigm-deploy/config.json --state-root /var/lib/exdigm-deploy/runs
+TimeoutStartSec=180min
+KillMode=control-group
+UMask=0077
+NoNewPrivileges=true
+ProtectSystem=strict
+ReadWritePaths=/var/lib/exdigm-deploy
+PrivateTmp=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+RestrictSUIDSGID=true
+MemoryMax=2G
+CPUQuota=100%
+TasksMax=128
