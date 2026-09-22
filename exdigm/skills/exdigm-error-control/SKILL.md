@@ -23,7 +23,7 @@ main에서 10분마다 실행되는 Hermes cron이 이 스킬의 정기 진입�
    - 마지막 보고 뒤 새로 생긴 오류 중 조사나 주인님의 판단이 필요한 오류
    과거 `next_action=none`, 성공 완료, 시험용 오류는 새 증거가 없으면 다시 보고하지 않는다.
 4. 조사 대상이 없으면 다른 문서·GBrain·Git·코드를 조회하지 말고 최종 응답을 정확히 `NO_REPLY`로 끝낸다.
-5. 조사 대상이 있을 때만 프로젝트 `AGENTS.md`, 관련 진행 문서와 GBrain을 최소 범위로 확인한다. hostname이 `main`이면 GBrain은 SSH를 거치지 않고 `/srv/consolidation/infra/gbrain-host ... --source default`로 조회한다. main 자신에게 SSH하지 않는다.
+5. 조사 대상이 있을 때만 프로젝트 `AGENTS.md`, 관련 진행 문서와 GBrain을 최소 범위로 확인한다. hostname이 `main`이면 GBrain DB는 로컬이다. SSH나 `gbrain-remote-proxy`를 사용하지 말고 `/srv/consolidation/infra/gbrain-host get project/exdigm-operating-context --source default`와 같은 로컬 명령을 실행한다. PC·노트북에서만 `~/.gbrain-agent.md`가 지정한 main SSH 프록시를 사용한다.
 
 상태 파일은 알림 중복 방지용이며 Exdigm DB의 처리 상태를 대신하지 않는다.
 
