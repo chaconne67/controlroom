@@ -4,6 +4,9 @@
 !/README.md
 !/.gitignore
 !/.gitattributes
+!/agent-client/
+/agent-client/*
+!/agent-client/docs/
 !/ceoloan/
 /ceoloan/*
 !/ceoloan/docs/
