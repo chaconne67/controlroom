@@ -8,8 +8,6 @@
 
 ## 진행 중 작업
 
-- [Mailplug 앱 비밀번호 변경 뒤 계정 접속 실패의 오류장부 기록 — 개발 커밋·검증 완료, 운영 배포 승인 대기](operational-error-alerts-20260914.md)
-
 - [혼합 언어 이력서 추출 오류 60ead5b9 — 수정·검증·운영 반영 승인, 샘플 확인으로 후보자 등록 제외·공유 서버 정리 완료 대기](resume-mixed-source-error-20260921.md)
 
 - [전체 시스템 보안 점검 — 내부 보고서·개선 계획 보관 안내](security-audit-20260920.md)
@@ -44,7 +42,7 @@
 
 - [Drive 추천인재 목록 제외 — 운영 반영 완료, 과거 실패 행은 보존](resume-roster-error-20260916.md)
 
-- [운영 오류·작업 실패 DB 기록 — 운영 배포·실제 DB 기록·메시지 없음 확인 완료](operational-error-alerts-20260914.md)
+- [운영 오류·작업 실패 DB 기록 — Mailplug 계정 접속 실패 직접 기록 `2b28b98b` 운영 반영·정상 메일 수집 확인 완료](operational-error-alerts-20260914.md)
 
 - [Hermes 기본 모델 3.8 Flash 갱신 — 직원 6개 운영 반영·도구 호출·보존 검증 완료](hermes-model-update-20260915.md)
 
