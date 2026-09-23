@@ -2,6 +2,16 @@
 
 현재는 Exdigm의 오류 hook이 임시 파일에 기록하고, 기존 알림 워커 `deliver_notification_dispatches`가 약 5초마다 파일과 업무 실패 상태를 읽어 `OperationalError`에 저장한다. 워커는 실제 서비스 `Exdigm_exdigm_notification_dispatcher`이며 오류 전용 신규 워커가 아니다. 아래 운영 증거는 이 현재 수집 구조의 이력이다.
 
+## Mailplug 계정 접속 실패 직접 기록 — 2026-09-23 개발 완료·운영 미배포
+
+- 요청 배경: Mailplug에서 회사메일 앱 비밀번호가 바뀐 뒤 Outlook은 새 비밀번호로 복구됐지만, Exdigm의 저장값이 이전 값이면 계정 접속이 반복 실패한다. 2026-09-22 실제 장애에서는 `553 sorry, that password allowed relay (#5.7.5)`가 약 1분마다 발생했으나 `CompanyEmailAccount.last_error`에만 잠시 남고 `OperationalError`에는 기록되지 않았다.
+- 확인된 누락 원인: `MailChecker`가 계정별 예외를 잡아 `last_error`만 저장하고 전체 작업은 다른 계정을 계속 처리한 뒤 정상 종료했다. 따라서 미처리 예외·ERROR 로그 수집 경로가 이 실패를 볼 수 없었다.
+- 개발 변경: 기존 `_record_account_failure`에서 계정 상태 저장 직후 같은 DB 트랜잭션으로 `record_operation_failure`를 호출한다. 오류 종류는 `mailplug_account_check_failed`, 원본 모델과 계정 번호·계정 주소·실제 오류문구·예외 호출 위치를 남긴다. 앱 비밀번호 값은 전달하거나 기록하지 않는다.
+- 중복 계약: 같은 계정의 반복 접속 실패는 5분 구간마다 대표 1건만 만들고, 서로 다른 계정은 각각 기록한다. 한 계정의 실패가 다른 계정 수집을 중단하지 않는 기존 동작과 드라이런 무기록을 유지한다. 오류장부 기록 실패 시 계정 실패 상태만 단독 확정되지 않도록 둘을 함께 되돌린다.
+- 개발 커밋: 원격 디버깅 worktree의 detached HEAD `2b28b98b3538b7be63ffee7f8f5a6a580e18cfa9` (`Record Mailplug account check failures`). `origin/main`과 운영 checkout에는 아직 반영하지 않았다.
+- 검증: 신규 검사는 구현 전 오류장부 0건으로 실패하고 구현 후 통과했다. Mailplug 관련 11개, 오류장부 70개, Django `check`, Ruff, diff 검사, 코드 지식 색인 검사가 모두 통과했다. 최종 직접 코드 리뷰의 승인 finding과 열린 계약 질문은 없다.
+- 운영 경계: 이 변경은 배포 뒤 새로 발생하는 실패부터 기록한다. 2026-09-22의 과거 실패를 소급해 오류장부에 만들지 않았고, 운영 DB·계정 비밀번호·메일 데이터·일반 알림·Hermes·배포 인프라는 변경하지 않았다. 운영 반영은 별도 배포 승인 후 공식 `scripts/deploy/deploy.sh prod` 경로로 진행한다.
+
 ## 한국 시간·처리 결과 변경 — 2026-09-16 운영 반영 완료
 
 - 주인님이 오류의 발생·기록 시간을 Asia/Seoul로 통일하고 처리 상태·조치 내용·성공/실패·처리 시각을 기록하도록 지시했다.
