@@ -4,7 +4,7 @@
 
 - 작업 위치는 현재 조정실 루트의 실제 `ziin` 폴더입니다. 모든 OS의 PC·노트북·main 서버 조정실은 `~/controlroom/ziin`입니다. `~`는 Windows의 `USERPROFILE`, macOS·Linux의 `HOME`입니다.
 - 개발 에이전트는 선택한 조정실 장비에서만 실행합니다. 아래 서버의 코드·Git·검증·배포 경로는 SSH로 사용하며 제품 기능의 기존 AI·LLM 실행은 보존합니다.
-- 새 세션은 `~/.gbrain-agent.md`를 읽고, 공용 최신 `project/windows-control-tower-operating-context`와 `project/ziin-operating-context`를 확인합니다.
+- 새 세션은 전역 `~/.gbrain-agent.md`를 먼저 읽고, 이 `AGENTS.md`와 같은 폴더의 `.gbrain-agent.md`를 추가로 읽습니다. 두 카드가 지정한 GBrain 문서를 확인한 뒤 작업합니다.
 - 아래 Linux 경로와 명령은 명시된 원격 호스트의 셸에서 실행합니다. 조정실 OS에 맞춰 서버 경로를 바꾸거나 운영 코드를 조정실에 복제하지 않습니다.
 - 기획·리서치·작업 계획은 `docs/README.md`에서 찾습니다. 정본은 현재 프로젝트의 실제 `docs` 폴더이며 GitHub controlroom 저장소의 `ziin/docs`와 같은 위치입니다.
 - 작업을 이어받을 때는 `docs/README.md`의 진행 중 작업 링크와 해당 계획의 재개 정보를 읽고 실제 서버 Git 상태와 대조합니다. 작업을 마치거나 옮기기 전에 그 계획에 재개 정보를 갱신하며 병렬 작업은 각 계획에서 관리합니다.
@@ -53,18 +53,6 @@ git status --short
 
 위 `cd`와 Git 명령은 SSH 접속 후 서버 셸에서 실행합니다. 코드 검증·커밋 후 푸시는 `git push origin main`입니다. 기존 수정·신규 파일을 보존하고 이번에 검증한 변경만 포함합니다.
 
-## 작업 전 GBrain
-
-- 먼저 전역 GBrain 카드 `~/.gbrain-agent.md`를 읽고 그 규칙을 따릅니다.
-- 아래 문서를 작업과 직접 관련된 범위에서 조회합니다.
-  - `project/ziin-operating-context`
-  - `project/ziin-landing-page`
-  - `feedback/ziin-copy-and-design-rules`
-  - `project/ziin-design-assets`
-  - `project/ziin-chatbot-deploy`
-- 제품 기능을 다룰 때는 관련 Exdigm 문서와 실제 운영 코드까지 확인합니다.
-- 권위 순서는 검증된 실제 코드·운영 상태, 최신 사용자 결정과 작업 지시, 프로젝트 문서, GBrain입니다.
-
 ## 공식 작업 경로
 
 1. SSH로 main의 실제 저장소 Git 상태와 기존 사용자 변경, 보호할 원본을 확인합니다.
@@ -105,12 +93,6 @@ git status --short
 - 현재 조정실의 `AGENTS.md`는 controlroom 저장소가 관리하는 실제 파일입니다. 원격 저장소의 기존 지침 링크·Git 제외 상태는 이번 이전에서 변경하지 않습니다.
 - `.env`, 인증서, 런타임 상태 파일을 커밋하거나 이미지에 넣지 않습니다.
 - 강제 푸시, 기존 이력 삭제, 사용자 변경 되돌리기를 하지 않습니다.
-
-## GBrain 기록
-
-- 검증된 사실, 반복할 결정, 사용자 피드백, 재현·원인이 확정된 디버깅 결과만 기록합니다.
-- 원문 로그, 대화 전문, 비밀값, 개인정보, 검증되지 않은 추측은 기록하지 않습니다.
-- 디버깅 문서는 재현 조건과 근본 원인이 확정된 뒤에만 만듭니다.
 
 ## 보관 디스크·DB 백업
 

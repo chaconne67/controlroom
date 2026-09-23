@@ -299,7 +299,7 @@ def project_names(root, data):
     names |= {p.split('/')[0] for p in data['sources'].values() if not p.startswith('.controlroom/')}
     for relative in git(root, 'ls-files', '-z', check=False).stdout.split('\0'):
         parts = Path(relative).parts
-        if len(parts) > 1 and not parts[0].startswith('.') and parts[1] in {'docs', 'skills', 'AGENTS.md', 'CLAUDE.md'}:
+        if len(parts) > 1 and not parts[0].startswith('.') and parts[1] in {'docs', 'skills', 'AGENTS.md', 'CLAUDE.md', '.gbrain-agent.md'}:
             names.add(parts[0])
     return names
 
@@ -311,10 +311,14 @@ def validate(root):
         if not re.fullmatch(r'[A-Za-z0-9_-]+', name):
             raise RuntimeError(f'Invalid project directory: {name}')
     units = [root / TOOLKIT, root / '.github']
-    units += [root / name / unit for name in project_names(root, data) for unit in ('docs', 'skills', 'AGENTS.md', 'CLAUDE.md')]
+    units += [root / name / unit for name in project_names(root, data) for unit in ('docs', 'skills', 'AGENTS.md', 'CLAUDE.md', '.gbrain-agent.md')]
     for unit in units:
         if linked(unit) or (unit.is_dir() and any(linked(p) for p in unit.rglob('*'))):
             raise RuntimeError(f'Managed source must contain physical entries: {unit}')
+    for relative in git(root, 'ls-files', '-z').stdout.split('\0'):
+        parts = Path(relative).parts
+        if len(parts) == 2 and parts[1] == '.gbrain-agent.md' and not (root / relative).is_file():
+            raise RuntimeError(f'Missing project GBrain card: {relative}')
     for name, relative in paths.items():
         path = root / relative
         if name != path.name or Path(relative).is_absolute() or '..' in Path(relative).parts or linked(path) or not (path / 'SKILL.md').is_file():
@@ -486,14 +490,14 @@ def apply(source, home, agent, preserve_config=None, legacy_cleanup=True, refres
     for project_name in project_names(source, data) - code_names:
         project = source / project_name
         if not refresh_only and project.is_dir():
-            for name in ('docs', 'skills', 'AGENTS.md', 'CLAUDE.md'):
+            for name in ('docs', 'skills', 'AGENTS.md', 'CLAUDE.md', '.gbrain-agent.md'):
                 if (project / name).exists():
                     copies.append((project / name, workspace / project.name / name))
     if not refresh_only and (workspace / '.git').exists():
         previous_units = set()
         for relative in git(workspace, 'ls-files', '-z').stdout.split('\0'):
             parts = Path(relative).parts
-            if len(parts) > 1 and not parts[0].startswith('.') and parts[1] in {'docs', 'skills', 'AGENTS.md', 'CLAUDE.md'}:
+            if len(parts) > 1 and not parts[0].startswith('.') and parts[1] in {'docs', 'skills', 'AGENTS.md', 'CLAUDE.md', '.gbrain-agent.md'}:
                 previous_units.add(Path(*parts[:2]))
         for unit in sorted(previous_units):
             if not exists(source / unit):
@@ -735,7 +739,7 @@ def update(home, agent=None, prepared=None, workspace=None):
                 elif item.name in set(code_projects(prepared)):
                     replace(item, source / item.name, home)
                 elif item.name in project_names(prepared, manifest(prepared)):
-                    for name in ('docs', 'skills', 'AGENTS.md', 'CLAUDE.md'):
+                    for name in ('docs', 'skills', 'AGENTS.md', 'CLAUDE.md', '.gbrain-agent.md'):
                         if (item / name).exists():
                             replace(item / name, source / item.name / name, home)
         validate(source)
@@ -809,7 +813,7 @@ def allowed(path, role, projects, code_names=()):
         return True
     if parts and parts[0] == TOOLKIT:
         return role in CENTRAL or not path.startswith('.controlroom/gbrain-cards/') or path == f'.controlroom/gbrain-cards/{role}.md'
-    return len(parts) > 1 and parts[0] in projects and (role in CENTRAL or parts[0] == role) and parts[1] in {'docs', 'skills', 'AGENTS.md', 'CLAUDE.md'}
+    return len(parts) > 1 and parts[0] in projects and (role in CENTRAL or parts[0] == role) and parts[1] in {'docs', 'skills', 'AGENTS.md', 'CLAUDE.md', '.gbrain-agent.md'}
 
 
 def push(home, message, workspace=None):

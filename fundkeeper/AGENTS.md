@@ -4,7 +4,7 @@
 
 - 작업 위치는 현재 조정실 루트의 실제 `fundkeeper` 폴더입니다. 모든 OS의 PC·노트북·main 서버 조정실은 `~/controlroom/fundkeeper`입니다. `~`는 Windows의 `USERPROFILE`, macOS·Linux의 `HOME`입니다.
 - 개발 에이전트는 선택한 조정실 장비에서만 실행합니다. 아래 서버의 코드·Git·검증·배포 경로는 SSH로 사용하며 제품 기능의 기존 AI·LLM 실행은 보존합니다.
-- 새 세션은 `~/.gbrain-agent.md`를 읽고, 공용 최신 `project/windows-control-tower-operating-context`와 `project/fundkeeper-operating-context`를 확인합니다.
+- 새 세션은 전역 `~/.gbrain-agent.md`를 먼저 읽고, 이 `AGENTS.md`와 같은 폴더의 `.gbrain-agent.md`를 추가로 읽습니다. 두 카드가 지정한 GBrain 문서를 확인한 뒤 작업합니다.
 - 아래 Linux 경로와 명령은 명시된 원격 호스트의 셸에서 실행합니다. 조정실 OS에 맞춰 서버 경로를 바꾸거나 운영 코드를 조정실에 복제하지 않습니다.
 - 기획·리서치·작업 계획은 `docs/README.md`에서 찾습니다. 정본은 현재 프로젝트의 실제 `docs` 폴더이며 GitHub controlroom 저장소의 `fundkeeper/docs`와 같은 위치입니다.
 - 작업을 이어받을 때는 `docs/README.md`의 진행 중 작업 링크와 해당 계획의 재개 정보를 읽고 실제 서버 Git 상태와 대조합니다. 작업을 마치거나 옮기기 전에 그 계획에 재개 정보를 갱신하며 병렬 작업은 각 계획에서 관리합니다.
@@ -37,7 +37,7 @@
 
 ## 공식 작업 경로
 
-1. GBrain의 `project/fundkeeper-operating-context`를 확인합니다.
+1. 프로젝트 카드가 지정한 GBrain 맥락을 확인합니다.
 2. SSH로 원격 저장소의 브랜치·변경·미추적 파일을 확인합니다.
 3. 요청 범위와 관련된 실제 코드·설정·호출 경로를 읽습니다.
 4. 기존 사용자 변경을 보존하고 요청 파일만 최소 수정합니다.

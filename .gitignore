@@ -13,18 +13,21 @@
 !/ceoloan/skills/
 !/ceoloan/AGENTS.md
 !/ceoloan/CLAUDE.md
+!/ceoloan/.gbrain-agent.md
 !/exdigm/
 /exdigm/*
 !/exdigm/docs/
 !/exdigm/skills/
 !/exdigm/AGENTS.md
 !/exdigm/CLAUDE.md
+!/exdigm/.gbrain-agent.md
 !/fundkeeper/
 /fundkeeper/*
 !/fundkeeper/docs/
 !/fundkeeper/skills/
 !/fundkeeper/AGENTS.md
 !/fundkeeper/CLAUDE.md
+!/fundkeeper/.gbrain-agent.md
 !/gbrain/
 /gbrain/*
 !/gbrain/docs/
@@ -43,6 +46,7 @@
 !/rndlog/skills/
 !/rndlog/AGENTS.md
 !/rndlog/CLAUDE.md
+!/rndlog/.gbrain-agent.md
 !/testbed/
 /testbed/*
 !/testbed/docs/
@@ -55,6 +59,7 @@
 !/ziin/skills/
 !/ziin/AGENTS.md
 !/ziin/CLAUDE.md
+!/ziin/.gbrain-agent.md
 !/venture/
 .env*
 *.pem

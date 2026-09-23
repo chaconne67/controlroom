@@ -6,7 +6,7 @@
 
 ## 원본 변경과 동기화
 
-앱 폴더 대신 위 원본을 편집합니다. 공통 지침 원본은 `.controlroom/codex/AGENTS.md`, `.controlroom/claude/CLAUDE.md`이며, 역할 카드 원본은 `.controlroom/gbrain-cards/<역할>.md`입니다. 새 규칙의 필요성과 승인 범위·기존 성공 동작을 확인하고 변경 전 상태를 잠근 뒤 수정·검증·리뷰합니다. 상위 지침 변경은 사용자 승인 범위를 기준으로 기존 게이트와 실제 소비자 검증을 유지합니다. GBrain 카드가 있으면 공용 문서 변경 계약에 맞춰 결과를 기록합니다.
+앱 폴더 대신 위 원본을 편집합니다. 공통 지침 원본은 `.controlroom/codex/AGENTS.md`, `.controlroom/claude/CLAUDE.md`이며, 전역 역할 카드 원본은 `.controlroom/gbrain-cards/<역할>.md`입니다. 프로젝트별 GBrain 카드는 `<프로젝트>/.gbrain-agent.md`에 두고 해당 프로젝트 `AGENTS.md`에서 경로를 지정합니다. 새 규칙의 필요성과 승인 범위·기존 성공 동작을 확인하고 변경 전 상태를 잠근 뒤 수정·검증·리뷰합니다. 상위 지침 변경은 사용자 승인 범위를 기준으로 기존 게이트와 실제 소비자 검증을 유지합니다. GBrain 카드가 있으면 공용 문서 변경 계약에 맞춰 결과를 기록합니다.
 
 ```bash
 python ~/controlroom/.controlroom/scripts/check-skill-deps.py
@@ -38,4 +38,4 @@ bash ~/controlroom/.controlroom/install.sh rndlog
 bash ~/controlroom/.controlroom/install.sh --new analytics --dry-run
 ```
 
-기존 역할명과 중앙 정책·GBrain 저장공간 규칙은 유지합니다. 새 역할의 실제 생성은 기존 중앙 등록 절차를 사용하며 중앙 등록 권한이 별도로 필요합니다. 이 구조 정리는 서버의 GBrain 소스·정책·서비스를 재배치하지 않습니다. 카드가 없으면 GBrain 관련 규칙을 건너뜁니다. 자세한 권한·조회·쓰기 계약은 `~/.gbrain-agent.md`와 공용 운영 프로토콜을 따릅니다.
+기존 역할명과 중앙 정책·GBrain 저장공간 규칙은 유지합니다. 새 역할의 실제 생성은 기존 중앙 등록 절차를 사용하며 중앙 등록 권한이 별도로 필요합니다. 이 구조 정리는 서버의 GBrain 소스·정책·서비스를 재배치하지 않습니다. 모든 세션은 전역 `~/.gbrain-agent.md`를 먼저 읽고, 프로젝트 `AGENTS.md`가 별도 카드를 지정하면 프로젝트 카드를 추가로 읽습니다. 일반 작업 폴더에는 전역 카드만 적용됩니다. 자세한 권한·조회·쓰기 계약은 전역 카드와 공용 운영 프로토콜을 따릅니다.

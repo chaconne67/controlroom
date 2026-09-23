@@ -131,8 +131,10 @@ class KitFixture:
                     '.gitattributes': '**/docs/** -text\n', '.controlroom/common.txt': 'base\n',
                     '.controlroom/codex/AGENTS.md': 'codex\n', '.controlroom/claude/CLAUDE.md': 'claude\n',
                     'rndlog/AGENTS.md': 'rndlog instructions\n', 'rndlog/CLAUDE.md': 'rndlog instructions\n',
-                    'ceoloan/AGENTS.md': 'ceoloan instructions\n',
+                    'rndlog/.gbrain-agent.md': 'rndlog project card\n',
+                    'ceoloan/AGENTS.md': 'ceoloan instructions\n', 'ceoloan/.gbrain-agent.md': 'ceoloan project card\n',
                     'exdigm/AGENTS.md': 'remote Exdigm instructions\n', 'exdigm/CLAUDE.md': '@AGENTS.md\n',
+                    'exdigm/.gbrain-agent.md': 'exdigm project card\n',
                     'exdigm/docs/README.md': 'remote project documentation\n',
                     'exdigm/skills/exdigm-example/SKILL.md': 'Exdigm skill\n',
                     'rndlog/docs/plan.md': 'first step\r\n', 'ceoloan/docs/plan.md': 'ceoloan\n',
@@ -247,13 +249,19 @@ class KitSyncTests(unittest.TestCase):
 
     def test_pull_repairs_upstream_fast_forwards_and_installs(self):
         home, repo = self.fixture.clone()
+        self.assertEqual((repo / 'ceoloan/.gbrain-agent.md').read_text(), 'ceoloan project card\n')
+        self.assertEqual((repo / 'exdigm/.gbrain-agent.md').read_text(), 'exdigm project card\n')
         run('git', 'branch', '--unset-upstream', cwd=repo)
         (self.fixture.seed / 'README.md').write_text('remote update\n')
+        (self.fixture.seed / 'rndlog/.gbrain-agent.md').write_text('updated rndlog project card\n')
         self.fixture.commit_seed('remote update', True)
         self.fixture.kit(home, 'kitpull')
         self.assertEqual((repo / 'README.md').read_text(), 'remote update\n')
+        self.assertEqual((repo / 'rndlog/.gbrain-agent.md').read_text(), 'updated rndlog project card\n')
         self.assertEqual(run('git', 'rev-parse', '--abbrev-ref', '@{upstream}', cwd=repo).stdout.strip(), 'origin/main')
         self.fixture.kit(home, 'kitpull --verify')
+        (repo / 'rndlog/.gbrain-agent.md').unlink()
+        self.assertNotEqual(self.fixture.kit(home, 'kitpull --verify', False).returncode, 0)
 
     def test_standalone_commands_use_same_pull_and_push_paths(self):
         home, repo = self.fixture.clone(spaces=True)
@@ -336,7 +344,9 @@ class KitSyncTests(unittest.TestCase):
     def test_non_main_agent_can_push_only_its_domain(self):
         home, repo = self.fixture.clone('rndlog')
         (repo / 'rndlog/docs/plan.md').write_text('own plan\n')
+        (repo / 'rndlog/.gbrain-agent.md').write_text('own project card\n')
         self.fixture.kit(home, 'kitpush')
+        self.assertEqual((repo / 'rndlog/.gbrain-agent.md').read_text(), 'own project card\n')
         (repo / 'ceoloan/AGENTS.md').write_text('foreign instructions\n')
         before = run('git', 'rev-parse', 'HEAD', cwd=repo).stdout
         self.assertNotEqual(self.fixture.kit(home, 'kitpush', False).returncode, 0)

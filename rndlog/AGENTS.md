@@ -4,7 +4,7 @@
 
 - 작업 위치는 현재 조정실 루트의 실제 `rndlog` 폴더입니다. 모든 OS의 PC·노트북·main 서버 조정실은 `~/controlroom/rndlog`입니다. `~`는 Windows의 `USERPROFILE`, macOS·Linux의 `HOME`입니다.
 - 개발 에이전트는 선택한 조정실 장비에서만 실행합니다. 아래 서버의 코드·Git·검증·배포 경로는 SSH로 사용하며 제품 기능의 기존 AI·LLM 실행은 보존합니다.
-- 새 세션은 `~/.gbrain-agent.md`를 읽고, 공용 최신 `project/windows-control-tower-operating-context`와 `project/rndlog-operating-context`를 확인합니다.
+- 새 세션은 전역 `~/.gbrain-agent.md`를 먼저 읽고, 이 `AGENTS.md`와 같은 폴더의 `.gbrain-agent.md`를 추가로 읽습니다. 두 카드가 지정한 GBrain 문서를 확인한 뒤 작업합니다.
 - 아래 Linux 경로와 명령은 명시된 원격 호스트의 셸에서 실행합니다. 조정실 OS에 맞춰 서버 경로를 바꾸거나 운영 코드를 조정실에 복제하지 않습니다.
 - 기획·리서치·작업 계획은 `docs/README.md`에서 찾습니다. 정본은 현재 프로젝트의 실제 `docs` 폴더이며 GitHub controlroom 저장소의 `rndlog/docs`와 같은 위치입니다.
 - 작업을 이어받을 때는 `docs/README.md`의 진행 중 작업 링크와 해당 계획의 재개 정보를 읽고 실제 서버 Git 상태와 대조합니다. 작업을 마치거나 옮기기 전에 그 계획에 재개 정보를 갱신하며 병렬 작업은 각 계획에서 관리합니다.
@@ -63,13 +63,6 @@ git status --short
   `deliverables/drafts/`는 기존 HTML과 신규 DOCX 작업본, `deliverables/final/`은 기존 PDF와 검토 완료 DOCX 산출물입니다.
 - 공통 참고자료·샘플·양식·도구는 `resources/`에 두고 고객사 파일과 섞지 않습니다.
 - 앱의 공식 DB는 `company_main` 하나이며 RNDLOG 업무 테이블은 `rndlog` 스키마에 둡니다.
-
-## 작업 전 GBrain
-
-GBrain 본체는 main에 있습니다. 로컬 카드의 main 직접 CLI로 다음 공용 문서를 읽습니다. 회사별 제출·연구자료 저장 위치는 `project/rndlog-file-upload-storage`를 함께 확인합니다.
-
-- `project/rndlog-operating-context`
-- 작업 기능명·화면명·모델명으로 찾은 관련 페이지
 
 ## 공식 작업 경로
 
