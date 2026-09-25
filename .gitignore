@@ -4,9 +4,11 @@
 !/README.md
 !/.gitignore
 !/.gitattributes
-!/agent-client/
-/agent-client/*
-!/agent-client/docs/
+!/crema/
+/crema/*
+!/crema/docs/
+!/crema/AGENTS.md
+!/crema/CLAUDE.md
 !/ceoloan/
 /ceoloan/*
 !/ceoloan/docs/
