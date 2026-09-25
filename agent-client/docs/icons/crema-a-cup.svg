@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024">
+<defs>
+  <linearGradient id="a-cup-bg" x1="0" y1="0" x2="1" y2="1">
+    <stop offset="0" stop-color="#3b2418"/>
+    <stop offset="1" stop-color="#1a0f0a"/>
+  </linearGradient>
+  <radialGradient id="a-cup-crema" cx="0.42" cy="0.38" r="0.72">
+    <stop offset="0" stop-color="#f6d19a"/>
+    <stop offset="0.5" stop-color="#d99a55"/>
+    <stop offset="1" stop-color="#9a5527"/>
+  </radialGradient></defs>
+  <rect width="1024" height="1024" rx="228" fill="url(#a-cup-bg)"/>
+  <circle cx="512" cy="530" r="340" fill="#140b07" opacity="0.45"/>
+  <circle cx="512" cy="512" r="338" fill="#f7eee2"/>
+  <circle cx="512" cy="512" r="300" fill="#e9dccb"/>
+  <circle cx="512" cy="512" r="282" fill="#4a250f"/>
+  <circle cx="512" cy="512" r="268" fill="url(#a-cup-crema)"/>
+  <path d="M400 430 C 450 360 590 350 640 430 C 690 510 630 610 540 612 C 460 614 420 548 452 500 C 480 458 548 462 560 505 C 570 540 540 560 516 548"
+        fill="none" stroke="#fde9c6" stroke-width="30" stroke-linecap="round" opacity="0.9"/>
+  <circle cx="630" cy="382" r="14" fill="#fde9c6" opacity="0.7"/>
+  <circle cx="372" cy="600" r="10" fill="#fde9c6" opacity="0.55"/>
+</svg>

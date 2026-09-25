@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024">
+<defs>
+  <linearGradient id="c-bubble-bg" x1="0" y1="0" x2="1" y2="1">
+    <stop offset="0" stop-color="#3b2418"/>
+    <stop offset="1" stop-color="#1a0f0a"/>
+  </linearGradient>
+  <radialGradient id="c-bubble-crema" cx="0.42" cy="0.38" r="0.72">
+    <stop offset="0" stop-color="#f6d19a"/>
+    <stop offset="0.5" stop-color="#d99a55"/>
+    <stop offset="1" stop-color="#9a5527"/>
+  </radialGradient></defs>
+  <rect width="1024" height="1024" rx="228" fill="#f5ebdd"/>
+  <clipPath id="c-bubble-bubble">
+    <path d="M512 196 C 720 196 852 320 852 488 C 852 656 720 780 512 780 C 468 780 428 775 392 764 L 262 836 C 244 846 226 828 234 810 L 280 710 C 210 654 172 578 172 488 C 172 320 304 196 512 196 Z"/>
+  </clipPath>
+  <g clip-path="url(#c-bubble-bubble)">
+    <rect width="1024" height="1024" fill="#3b1f10"/>
+    <path d="M150 420 C 300 370 420 470 560 420 C 690 374 790 440 880 410 L 880 150 L 150 150 Z" fill="url(#c-bubble-crema)"/>
+    <path d="M150 420 C 300 370 420 470 560 420 C 690 374 790 440 880 410" fill="none" stroke="#f6d19a" stroke-width="22" opacity="0.8"/>
+    <circle cx="380" cy="300" r="22" fill="#fde9c6" opacity="0.7"/>
+    <circle cx="640" cy="330" r="14" fill="#fde9c6" opacity="0.6"/>
+  </g>
+</svg>
