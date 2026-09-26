@@ -515,11 +515,13 @@ def _capsule(g, x, y, w, h, argb):
 class Overlay:
     """Black pill above the taskbar: live waveform while listening, a slow ripple while processing,
     red when something failed. Click-through, never takes focus, fades in and out."""
-    W, H, MARGIN = 132, 36, 10  # pill and shadow margin in 96-dpi pixels
+    W, H, MARGIN = 132, 36, 10  # pill and shadow margin in 96-dpi pixels, before SIZE
+    SIZE = 0.8  # overall pill scale; the position above the taskbar does not change
 
     def __init__(self, app):
         self.app, self.state, self.locked, self.alpha = app, None, False, 0
-        self.s = user32.GetDpiForSystem() / 96
+        self.dpi = user32.GetDpiForSystem() / 96
+        self.s = self.dpi * self.SIZE
         self.bw = round((self.W + 2 * self.MARGIN) * self.s)
         self.bh = round((self.H + 2 * self.MARGIN) * self.s)
         token = ctypes.c_size_t()
@@ -555,9 +557,8 @@ class Overlay:
             return
         self.alpha = min(self.alpha + 40, 255) if state else max(self.alpha - 28, 0)
         self.draw()
-        s = self.s
         x = (user32.GetSystemMetrics(0) - self.bw) // 2
-        y = user32.GetSystemMetrics(1) - round(95 * s) - self.bh // 2
+        y = user32.GetSystemMetrics(1) - round(95 * self.dpi) - self.bh // 2
         user32.UpdateLayeredWindow(self.hwnd, None, ctypes.byref(wt.POINT(x, y)), ctypes.byref(wt.SIZE(self.bw, self.bh)),
                                    self.dc, ctypes.byref(wt.POINT(0, 0)), 0,
                                    ctypes.byref(BLENDFUNCTION(0, 0, self.alpha, 1)), 2)  # AC_SRC_ALPHA, ULW_ALPHA
