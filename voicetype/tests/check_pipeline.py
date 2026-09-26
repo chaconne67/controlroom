@@ -26,10 +26,10 @@ async def realtime_chunks(path, marks):
 
 async def main(paths):
     s = voicetype.load_settings()
-    polisher = voicetype.Polisher(s)
+    polisher = voicetype.Polisher(s, voicetype.TypoNotes(voicetype.HOME / "typo_notes.json"))
     for path in paths:
         marks = {}
-        raw = await voicetype.transcribe(realtime_chunks(path, marks), s["soniox_api_key"], s["terms"])
+        raw = await voicetype.transcribe(realtime_chunks(path, marks), s["soniox_api_key"], lambda: s["terms"])
         stt = time.perf_counter() - marks["released"]
         text = await asyncio.to_thread(polisher.polish, raw, "WindowsTerminal.exe") if raw else raw
         total = time.perf_counter() - marks["released"]
