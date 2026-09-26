@@ -1,0 +1,9 @@
+[project]
+name = "voicetype"
+version = "0.1.0"
+description = "CapsLock push-to-talk Korean dictation for any Windows text field"
+requires-python = ">=3.13"
+dependencies = [
+    "sounddevice>=0.5",
+    "websockets>=15",
+]

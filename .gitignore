@@ -63,6 +63,8 @@
 !/ziin/CLAUDE.md
 !/ziin/.gbrain-agent.md
 !/venture/
+!/voicetype/
+/voicetype/.venv/
 .env*
 *.pem
 *.key
