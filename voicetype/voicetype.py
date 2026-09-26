@@ -1,20 +1,23 @@
 """VoiceType: hold CapsLock, speak Korean, release -> corrected text is pasted at the cursor.
 
 Path: key hook -> microphone -> Soniox real-time STT -> Gemini correction -> clipboard paste.
+A small pill overlay (waveform / processing ripple / error) shows the state.
 Settings and keys live in ~/.voicetype (never in Git).
 """
 
+import array
 import asyncio
 import ctypes
 import ctypes.wintypes as wt
 import http.client
 import json
 import logging
+import math
 import sys
 import threading
 import time
-import tkinter as tk
 import tomllib
+from collections import deque
 from pathlib import Path
 
 import sounddevice as sd
@@ -188,11 +191,6 @@ user32.SetClipboardData.argtypes = [wt.UINT, wt.HANDLE]
 user32.SetClipboardData.restype = wt.HANDLE
 user32.RegisterClipboardFormatW.argtypes = [wt.LPCWSTR]
 user32.RegisterClipboardFormatW.restype = wt.UINT
-user32.GetParent.argtypes = [wt.HWND]
-user32.GetParent.restype = wt.HWND
-user32.GetWindowLongPtrW.argtypes = [wt.HWND, ctypes.c_int]
-user32.GetWindowLongPtrW.restype = ctypes.c_ssize_t
-user32.SetWindowLongPtrW.argtypes = [wt.HWND, ctypes.c_int, ctypes.c_ssize_t]
 kernel32.GetModuleHandleW.argtypes = [wt.LPCWSTR]
 kernel32.GetModuleHandleW.restype = wt.HMODULE
 kernel32.OpenProcess.restype = wt.HANDLE
@@ -318,12 +316,17 @@ class Session:
         self.released = None
         self.done = self.loop.create_future()
         self.stream = sd.RawInputStream(samplerate=SAMPLE_RATE, channels=1, dtype="int16",
-                                        blocksize=SAMPLE_RATE // 10, callback=self._on_audio)
+                                        blocksize=SAMPLE_RATE // 20, callback=self._on_audio)
         self.stream.start()
         self.task = asyncio.create_task(self.run())
 
     def _on_audio(self, indata, frames, when, status):
-        self.loop.call_soon_threadsafe(self.audio.put_nowait, bytes(indata))
+        chunk = bytes(indata)
+        self.loop.call_soon_threadsafe(self.audio.put_nowait, chunk)
+        samples = array.array("h", chunk)
+        rms = math.sqrt(sum(s * s for s in samples) / max(len(samples), 1))
+        # -72 dBFS -> flat, -28 dBFS -> full height (this PC's mic idles near -90 dBFS)
+        self.state.levels.append(min(max((20 * math.log10(max(rms, 1) / 32768) + 72) / 44, 0.0), 1.0))
 
     def stop(self):
         self.released = time.perf_counter()
@@ -376,6 +379,7 @@ class App:
         self.toggle = False
         self.error_until = 0.0
         self.last = None
+        self.levels = deque([0.0] * BARS, maxlen=BARS)  # microphone loudness, newest last
 
     def on_key(self, event):
         """Runs on the asyncio thread. Hold = push-to-talk; short tap = start, next press = stop."""
@@ -385,6 +389,7 @@ class App:
                 self._stop()
             elif not self.recording:
                 self.pressed_at, self.toggle = now, False
+                self.levels.extend([0.0] * BARS)
                 try:
                     self.recording = Session(self, self.last.done if self.last else None)
                 except Exception:
@@ -407,47 +412,202 @@ class App:
         self.error_until = time.perf_counter() + 2
 
     def status(self):
+        """(state, locked) for the overlay; locked means toggle mode is keeping the mic on."""
         if time.perf_counter() < self.error_until:
-            return "오류", "#c0392b"
+            return "error", False
         if self.recording:
-            return "● 듣는 중", "#d35400"
+            return "recording", self.toggle
         if self.active:
-            return "… 정리 중", "#2c3e50"
-        return None
+            return "processing", False
+        return None, False
 
 
-def show_overlay(app):
-    """Small click-through status pill above the taskbar; never takes focus."""
-    root = tk.Tk()
-    root.overrideredirect(True)
-    root.attributes("-topmost", True)
-    root.attributes("-alpha", 0.0)
-    label = tk.Label(root, font=("Malgun Gothic", 11, "bold"), fg="white", padx=14, pady=4)
-    label.pack()
-    root.update_idletasks()
-    hwnd = user32.GetParent(root.winfo_id())
-    GWL_EXSTYLE, NOACTIVATE, TOOLWINDOW, TRANSPARENT, LAYERED = -20, 0x08000000, 0x80, 0x20, 0x80000
-    user32.SetWindowLongPtrW(hwnd, GWL_EXSTYLE, user32.GetWindowLongPtrW(hwnd, GWL_EXSTYLE)
-                             | NOACTIVATE | TOOLWINDOW | TRANSPARENT | LAYERED)
+# ---------- Status overlay: Win32 layered window drawn with GDI+ ----------
 
-    def tick():
-        current = app.status()
-        if current:
-            text, color = current
-            label.config(text=text, bg=color)
-            root.update_idletasks()
-            x = (root.winfo_screenwidth() - root.winfo_reqwidth()) // 2
-            root.geometry(f"+{x}+{root.winfo_screenheight() - 110}")
-            root.attributes("-alpha", 0.92)
-        else:
-            root.attributes("-alpha", 0.0)
-        root.after(80, tick)
+gdiplus = ctypes.WinDLL("gdiplus")
+gdi32 = ctypes.WinDLL("gdi32", use_last_error=True)
+WNDPROC = ctypes.WINFUNCTYPE(LRESULT, wt.HWND, wt.UINT, wt.WPARAM, wt.LPARAM)
 
-    tick()
-    root.mainloop()
+
+class GdiplusStartupInput(ctypes.Structure):
+    _fields_ = [("GdiplusVersion", ctypes.c_uint32), ("DebugEventCallback", ctypes.c_void_p),
+                ("SuppressBackgroundThread", wt.BOOL), ("SuppressExternalCodecs", wt.BOOL)]
+
+
+class BITMAPINFOHEADER(ctypes.Structure):
+    _fields_ = [("biSize", wt.DWORD), ("biWidth", wt.LONG), ("biHeight", wt.LONG), ("biPlanes", wt.WORD),
+                ("biBitCount", wt.WORD), ("biCompression", wt.DWORD), ("biSizeImage", wt.DWORD),
+                ("biXPelsPerMeter", wt.LONG), ("biYPelsPerMeter", wt.LONG), ("biClrUsed", wt.DWORD),
+                ("biClrImportant", wt.DWORD)]
+
+
+class BLENDFUNCTION(ctypes.Structure):
+    _fields_ = [("BlendOp", ctypes.c_ubyte), ("BlendFlags", ctypes.c_ubyte),
+                ("SourceConstantAlpha", ctypes.c_ubyte), ("AlphaFormat", ctypes.c_ubyte)]
+
+
+class WNDCLASSW(ctypes.Structure):
+    _fields_ = [("style", wt.UINT), ("lpfnWndProc", WNDPROC), ("cbClsExtra", ctypes.c_int),
+                ("cbWndExtra", ctypes.c_int), ("hInstance", wt.HINSTANCE), ("hIcon", wt.HICON),
+                ("hCursor", wt.HANDLE), ("hbrBackground", wt.HBRUSH), ("lpszMenuName", wt.LPCWSTR),
+                ("lpszClassName", wt.LPCWSTR)]
+
+
+_P, _F, _I = ctypes.c_void_p, ctypes.c_float, ctypes.c_int
+for _name, _args in {
+    "GdiplusStartup": [ctypes.POINTER(ctypes.c_size_t), ctypes.POINTER(GdiplusStartupInput), _P],
+    "GdipCreateBitmapFromScan0": [_I, _I, _I, _I, _P, ctypes.POINTER(_P)],
+    "GdipGetImageGraphicsContext": [_P, ctypes.POINTER(_P)],
+    "GdipSetSmoothingMode": [_P, _I],
+    "GdipGraphicsClear": [_P, ctypes.c_uint32],
+    "GdipFlush": [_P, _I],
+    "GdipCreatePath": [_I, ctypes.POINTER(_P)],
+    "GdipAddPathArc": [_P, _F, _F, _F, _F, _F, _F],
+    "GdipClosePathFigure": [_P],
+    "GdipDeletePath": [_P],
+    "GdipCreateSolidFill": [ctypes.c_uint32, ctypes.POINTER(_P)],
+    "GdipFillPath": [_P, _P, _P],
+    "GdipFillEllipse": [_P, _P, _F, _F, _F, _F],
+    "GdipDeleteBrush": [_P],
+}.items():
+    getattr(gdiplus, _name).argtypes = _args
+gdi32.CreateCompatibleDC.argtypes = [wt.HDC]
+gdi32.CreateCompatibleDC.restype = wt.HDC
+gdi32.CreateDIBSection.argtypes = [wt.HDC, _P, wt.UINT, ctypes.POINTER(_P), wt.HANDLE, wt.DWORD]
+gdi32.CreateDIBSection.restype = wt.HBITMAP
+gdi32.SelectObject.argtypes = [wt.HDC, wt.HGDIOBJ]
+user32.RegisterClassW.argtypes = [ctypes.POINTER(WNDCLASSW)]
+user32.CreateWindowExW.argtypes = [wt.DWORD, wt.LPCWSTR, wt.LPCWSTR, wt.DWORD, _I, _I, _I, _I,
+                                   wt.HWND, wt.HMENU, wt.HINSTANCE, _P]
+user32.CreateWindowExW.restype = wt.HWND
+user32.DefWindowProcW.argtypes = [wt.HWND, wt.UINT, wt.WPARAM, wt.LPARAM]
+user32.DefWindowProcW.restype = LRESULT
+user32.SetTimer.argtypes = [wt.HWND, ctypes.c_size_t, wt.UINT, _P]
+user32.UpdateLayeredWindow.argtypes = [wt.HWND, wt.HDC, ctypes.POINTER(wt.POINT), ctypes.POINTER(wt.SIZE), wt.HDC,
+                                       ctypes.POINTER(wt.POINT), wt.DWORD, ctypes.POINTER(BLENDFUNCTION), wt.DWORD]
+user32.ShowWindow.argtypes = [wt.HWND, _I]
+user32.IsWindowVisible.argtypes = [wt.HWND]
+user32.TranslateMessage.argtypes = [ctypes.POINTER(wt.MSG)]
+user32.DispatchMessageW.argtypes = [ctypes.POINTER(wt.MSG)]
+user32.SetProcessDpiAwarenessContext.argtypes = [_P]
+
+BARS = 18  # waveform bars; the microphone delivers one loudness value per 50 ms
+
+
+def _capsule(g, x, y, w, h, argb):
+    """Fill an anti-aliased pill (rounded ends on the short side)."""
+    d = min(w, h)
+    path, brush = _P(), _P()
+    gdiplus.GdipCreatePath(0, ctypes.byref(path))
+    if w >= h:
+        gdiplus.GdipAddPathArc(path, x, y, d, d, 90, 180)
+        gdiplus.GdipAddPathArc(path, x + w - d, y, d, d, 270, 180)
+    else:
+        gdiplus.GdipAddPathArc(path, x, y, d, d, 180, 180)
+        gdiplus.GdipAddPathArc(path, x, y + h - d, d, d, 0, 180)
+    gdiplus.GdipClosePathFigure(path)
+    gdiplus.GdipCreateSolidFill(argb, ctypes.byref(brush))
+    gdiplus.GdipFillPath(g, brush, path)
+    gdiplus.GdipDeleteBrush(brush)
+    gdiplus.GdipDeletePath(path)
+
+
+class Overlay:
+    """Black pill above the taskbar: live waveform while listening, a slow ripple while processing,
+    red when something failed. Click-through, never takes focus, fades in and out."""
+    W, H, MARGIN = 132, 36, 10  # pill and shadow margin in 96-dpi pixels
+
+    def __init__(self, app):
+        self.app, self.state, self.locked, self.alpha = app, None, False, 0
+        self.s = user32.GetDpiForSystem() / 96
+        self.bw = round((self.W + 2 * self.MARGIN) * self.s)
+        self.bh = round((self.H + 2 * self.MARGIN) * self.s)
+        token = ctypes.c_size_t()
+        gdiplus.GdiplusStartup(ctypes.byref(token), ctypes.byref(GdiplusStartupInput(1)), None)
+        # One premultiplied BGRA surface: GDI+ draws into it, UpdateLayeredWindow shows it.
+        header = BITMAPINFOHEADER(ctypes.sizeof(BITMAPINFOHEADER), self.bw, -self.bh, 1, 32)
+        self.bits = _P()
+        self.dc = gdi32.CreateCompatibleDC(None)
+        gdi32.SelectObject(self.dc, gdi32.CreateDIBSection(self.dc, ctypes.byref(header), 0, ctypes.byref(self.bits), None, 0))
+        bitmap, self.g = _P(), _P()
+        gdiplus.GdipCreateBitmapFromScan0(self.bw, self.bh, self.bw * 4, 0xE200B, self.bits, ctypes.byref(bitmap))  # 32bppPARGB
+        gdiplus.GdipGetImageGraphicsContext(bitmap, ctypes.byref(self.g))
+        gdiplus.GdipSetSmoothingMode(self.g, 4)  # anti-alias
+        self.wndproc = WNDPROC(self._wndproc)
+        wc = WNDCLASSW(lpfnWndProc=self.wndproc, hInstance=kernel32.GetModuleHandleW(None), lpszClassName="VoiceTypeOverlay")
+        user32.RegisterClassW(ctypes.byref(wc))
+        # layered | click-through | topmost | tool window (no taskbar button) | no-activate ; WS_POPUP
+        self.hwnd = user32.CreateWindowExW(0x80000 | 0x20 | 0x8 | 0x80 | 0x08000000, "VoiceTypeOverlay", "VoiceType",
+                                           0x80000000, 0, 0, self.bw, self.bh, None, None, wc.hInstance, None)
+        user32.SetTimer(self.hwnd, 1, 16, None)
+
+    def _wndproc(self, hwnd, msg, wparam, lparam):
+        if msg == 0x113:  # WM_TIMER
+            self.frame()
+            return 0
+        return user32.DefWindowProcW(hwnd, msg, wparam, lparam)
+
+    def frame(self):
+        state, locked = self.app.status()
+        if state:
+            self.state, self.locked = state, locked  # keep the last look while fading out
+        if not state and self.alpha == 0:
+            return
+        self.alpha = min(self.alpha + 40, 255) if state else max(self.alpha - 28, 0)
+        self.draw()
+        s = self.s
+        x = (user32.GetSystemMetrics(0) - self.bw) // 2
+        y = user32.GetSystemMetrics(1) - round(95 * s) - self.bh // 2
+        user32.UpdateLayeredWindow(self.hwnd, None, ctypes.byref(wt.POINT(x, y)), ctypes.byref(wt.SIZE(self.bw, self.bh)),
+                                   self.dc, ctypes.byref(wt.POINT(0, 0)), 0,
+                                   ctypes.byref(BLENDFUNCTION(0, 0, self.alpha, 1)), 2)  # AC_SRC_ALPHA, ULW_ALPHA
+        visible = user32.IsWindowVisible(self.hwnd)
+        if self.alpha and not visible:
+            user32.ShowWindow(self.hwnd, 4)  # SW_SHOWNOACTIVATE
+        elif not self.alpha and visible:
+            user32.ShowWindow(self.hwnd, 0)
+
+    def draw(self):
+        g, s = self.g, self.s
+        gdiplus.GdipGraphicsClear(g, 0)
+        x0, y0, w, h = self.MARGIN * s, self.MARGIN * s, self.W * s, self.H * s
+        for i in range(4, 0, -1):  # soft shadow, slightly lower than the pill
+            _capsule(g, x0 - i * s, y0 - i * s + 2 * s, w + 2 * i * s, h + 2 * i * s, (0x1C - 5 * i) << 24)
+        error = self.state == "error"
+        _capsule(g, x0, y0, w, h, 0xFF5A2320 if error else 0xFF303030)  # hairline edge
+        _capsule(g, x0 + s, y0 + s, w - 2 * s, h - 2 * s, 0xFFB3261E if error else 0xFF0F0F0F)
+
+        n = BARS - 3 if self.locked else BARS
+        bar, gap, tallest = 3 * s, 2.4 * s, 20 * s
+        left = x0 + (w - (n * bar + (n - 1) * gap)) / 2 + (7 * s if self.locked else 0)
+        if self.locked:  # toggle mode: the mic stays on until the next press
+            dot, brush = 6 * s, _P()
+            gdiplus.GdipCreateSolidFill(0xFFFF453A, ctypes.byref(brush))
+            gdiplus.GdipFillEllipse(g, brush, x0 + 13 * s, y0 + (h - dot) / 2, dot, dot)
+            gdiplus.GdipDeleteBrush(brush)
+        levels, t = list(self.app.levels)[-n:], time.perf_counter()
+        for i in range(n):
+            if self.state == "recording":
+                v, color = levels[i], 0xF2FFFFFF
+            elif self.state == "processing":
+                v, color = 0.16 + 0.14 * math.sin(t * 7 - i * 0.55), 0x9CFFFFFF
+            else:
+                v, color = 0.0, 0x9CFFFFFF
+            height = bar + v * (tallest - bar)
+            _capsule(g, left + i * (bar + gap), y0 + (h - height) / 2, bar, height, color)
+        gdiplus.GdipFlush(g, 1)
+
+
+def run_overlay(app):
+    overlay = Overlay(app)  # noqa: F841  (kept alive for its window procedure)
+    msg = wt.MSG()
+    while user32.GetMessageW(ctypes.byref(msg), None, 0, 0) > 0:
+        user32.TranslateMessage(ctypes.byref(msg))
+        user32.DispatchMessageW(ctypes.byref(msg))
 
 
 def main():
+    user32.SetProcessDpiAwarenessContext(_P(-4))  # per-monitor v2: crisp overlay on scaled displays
     HOME.mkdir(exist_ok=True)
     logging.basicConfig(filename=HOME / "voicetype.log", level=logging.INFO, encoding="utf-8",
                         format="%(asctime)s %(levelname)s %(message)s")
@@ -461,7 +621,7 @@ def main():
     threading.Thread(target=run_key_hook, args=(settings["hotkey"], lambda e: loop.call_soon_threadsafe(app.on_key, e)),
                      daemon=True).start()
     log.info("started, hotkey=0x%X", settings["hotkey"])
-    show_overlay(app)
+    run_overlay(app)
 
 
 if __name__ == "__main__":
