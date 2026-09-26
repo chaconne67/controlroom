@@ -513,10 +513,15 @@ class FieldReader:
         ole32.CoCreateInstance(ctypes.byref(_guid("{ff48dba4-60ef-4201-aa87-54103eef594e}")), None, 1,
                                ctypes.byref(_guid("{30cbe57d-d9d0-452a-ab13-7ac5ac4825ee}")), ctypes.byref(self.uia))
 
-    def focused(self):
+    def read_focused(self):
         el = ctypes.c_void_p()
-        _com(self.uia, 8, _PP)(self.uia, ctypes.byref(el))  # GetFocusedElement
-        return el
+        try:
+            _com(self.uia, 8, _PP)(self.uia, ctypes.byref(el))  # GetFocusedElement
+            return self.read(el) if el else None
+        except OSError:
+            return None
+        finally:
+            _release(el)
 
     def read(self, el):
         """Field text, or None if it can no longer be read. Input boxes expose a value; editors and
@@ -579,10 +584,9 @@ class EditWatcher:
             job = self._follow(reader, job) if job else None
 
     def _follow(self, reader, pasted):
-        el, best, nxt = ctypes.c_void_p(), [], None
+        best, nxt = [], None
         try:
-            el = reader.focused()
-            before = reader.read(el) if el else None
+            before = reader.read_focused()
             if before is None or pasted not in before or len(before) > 200_000:  # huge documents: not worth re-reading
                 return None
             deadline = time.monotonic() + self.LIMIT
@@ -591,7 +595,9 @@ class EditWatcher:
                     nxt, stop = self.jobs.get(timeout=self.POLL), True
                 except queue.Empty:
                     stop = False
-                after = reader.read(el)  # one last look when the next dictation starts
+                # Always the field that has focus now: web editors rebuild their input element as you type,
+                # and when focus moves elsewhere the text no longer matches, which ends the watch.
+                after = reader.read_focused()  # one last look when the next dictation starts
                 fixes = fixes_in_field(pasted, before, after) if after is not None else None
                 if fixes is None:
                     break
@@ -600,8 +606,6 @@ class EditWatcher:
                     break
         except Exception:
             log.exception("edit watcher")
-        finally:
-            _release(el)
         for old, new in best:
             self.notes.record(old, new)
         return nxt
