@@ -26,7 +26,7 @@ async def realtime_chunks(path, marks):
 
 async def main(paths):
     s = voicetype.load_settings()
-    polisher = voicetype.Polisher(s["gemini_api_key"], s["terms"])
+    polisher = voicetype.Polisher(s)
     for path in paths:
         marks = {}
         raw = await voicetype.transcribe(realtime_chunks(path, marks), s["soniox_api_key"], s["terms"])

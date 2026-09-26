@@ -1,13 +1,18 @@
-# VoiceType
+# Thock Voice Typing
 
-CapsLock으로 어느 입력창에서나 한국어를 받아 적는 Windows 프로그램입니다.
+CapsLock으로 어느 입력창에서나 말을 받아 적는 Windows 프로그램입니다. (폴더·파일 이름은 이전 이름 `voicetype`을 유지합니다.)
 
 ## 쓰는 법
 
 - **누르고 말하기**: CapsLock을 누른 채 말하고 떼면, 교정된 글이 커서 위치에 들어갑니다.
 - **켜 두고 말하기**: CapsLock을 짧게 한 번 누르면 녹음이 켜집니다. 다 말한 뒤 한 번 더 누르면 끝납니다.
 - **대문자 고정**: Shift+CapsLock
-- 화면 아래 가운데에 검은 알약 모양 표시가 뜹니다.
+- 작업 표시줄 바로 위 가운데에 작은 막대가 늘 떠 있습니다.
+  - 마우스를 올리면 알약으로 커지고, 위에 톱니바퀴가 뜹니다. 톱니바퀴를 누르면 설정 창이 열립니다.
+  - 오른쪽 클릭: 설정 / 위치 초기화 / Thock 종료
+  - 끌어서 옮길 수 있고, 옮긴 위치를 기억합니다.
+  - 눌러도 쓰던 입력창의 초점을 빼앗지 않습니다.
+- 받아쓰는 동안 알약 모양이 바뀝니다.
   - 흰 막대 파형이 흐름: 듣는 중. 목소리 크기를 따라 움직입니다.
   - 왼쪽에 빨간 점: 켜 두고 말하기 방식이라 다시 누를 때까지 계속 듣습니다.
   - 흐린 막대가 물결침: 글로 바꾸고 다듬는 중
@@ -22,12 +27,12 @@ CapsLock → 마이크 → Soniox 실시간 인식(`stt-rt-v5`) → Gemini 교�
 
 | 파일 | 내용 |
 |---|---|
-| `secrets.toml` | `soniox_api_key`, `gemini_api_key` (필수) |
-| `config.toml` | 선택. `hotkey = "capslock"` 또는 `"scrolllock"`, `polish = false`(교정 끄기), `terms = ["추가 용어"]` |
+| `secrets.toml` | `soniox_api_key`, `gemini_api_key`. 설정 창에서 붙여 넣으면 저장됨 |
+| `settings.json` | 단축키, 교정 켜기/끄기, 용어 사전, 표시 위치. 설정 창에서 바꿈 |
 | `history.jsonl` | 받아 적은 글, 교정된 글, 걸린 시간. 음성은 저장하지 않음 |
 | `voicetype.log` | 오류 기록 |
 
-설정을 바꾼 뒤에는 다시 시작해야 적용됩니다.
+설정 창에서 저장하면 다시 시작하지 않아도 바로 적용됩니다. 키가 없으면 켤 때 설정 창이 자동으로 열립니다.
 
 ## 설치·시작·중지
 
@@ -38,7 +43,7 @@ cd ~/controlroom/voicetype; uv sync
 - 로그인 시 자동 시작: 시작프로그램 폴더의 `VoiceType.lnk`
   - 대상: `.venv\Scripts\pythonw.exe voicetype.py`
 - 지금 시작: 위 바로가기를 실행합니다. Claude 데스크톱 셸에서 띄우면 격리 환경에서 실행되므로, 바로가기나 탐색기로 실행합니다.
-- 중지:
+- 중지: 작은 막대 오른쪽 클릭 → "Thock 종료", 또는
 
 ```powershell
 Get-CimInstance Win32_Process -Filter "Name='pythonw.exe'" | Where-Object CommandLine -match 'voicetype\.py' | ForEach-Object { Stop-Process -Id $_.ProcessId }

@@ -1,0 +1,261 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Thock 설정</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 36 36'%3E%3Crect x='1' y='1' width='34' height='34' rx='9' fill='%23101010'/%3E%3Cg fill='%23fff'%3E%3Crect x='8.6' y='15.2' width='2.8' height='5.6' rx='1.4'/%3E%3Crect x='12.9' y='12.4' width='2.8' height='11.2' rx='1.4'/%3E%3Crect x='17.2' y='9.4' width='2.8' height='17.2' rx='1.4'/%3E%3Crect x='21.5' y='13.5' width='2.8' height='9' rx='1.4'/%3E%3Crect x='25.8' y='11.3' width='2.8' height='13.4' rx='1.4'/%3E%3C/g%3E%3C/svg%3E">
+<style>
+  :root {
+    --bg: #f4f4f6; --card: #ffffff; --text: #111113; --muted: #66666d; --line: #e4e4e8;
+    --field: #f7f7f9; --primary: #111113; --on-primary: #ffffff; --ok: #1a7f37; --bad: #c4291c;
+    --ring: #3b82f6; --seg: #ececef;
+    color-scheme: light;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #0e0e10; --card: #18181b; --text: #f4f4f5; --muted: #a1a1aa; --line: #2a2a2f;
+      --field: #111114; --primary: #f4f4f5; --on-primary: #111113; --ok: #4ade80; --bad: #f87171;
+      --ring: #60a5fa; --seg: #232328;
+      color-scheme: dark;
+    }
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; background: var(--bg); color: var(--text); }
+  body {
+    font: 14px/1.5 "Segoe UI Variable Text", "Segoe UI", "Malgun Gothic", sans-serif;
+    min-height: 100vh; display: flex; flex-direction: column;
+  }
+  main { flex: 1; padding: 24px 20px 12px; display: grid; gap: 14px; align-content: start; }
+  header { display: flex; align-items: center; gap: 12px; margin-bottom: 4px; }
+  header svg { width: 36px; height: 36px; flex: none; }
+  h1 { font-size: 18px; margin: 0; letter-spacing: -0.01em; }
+  header p { margin: 0; color: var(--muted); font-size: 12.5px; }
+  section { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 16px; }
+  h2 { font-size: 13px; font-weight: 600; margin: 0 0 12px; color: var(--muted); letter-spacing: 0.02em; }
+  .row { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+  .row ~ .row { margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--line); }
+  #hotkey-hint { margin-top: 8px; }
+  .label { font-weight: 600; }
+  .hint { color: var(--muted); font-size: 12.5px; margin-top: 2px; }
+
+  .seg { display: inline-flex; background: var(--seg); border-radius: 10px; padding: 3px; }
+  .seg input { position: absolute; opacity: 0; pointer-events: none; }
+  .seg label { padding: 6px 12px; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 13px; color: var(--muted); }
+  .seg input:checked + label { background: var(--card); color: var(--text); box-shadow: 0 1px 2px rgba(0,0,0,.12); }
+  .seg input:focus-visible + label { outline: 2px solid var(--ring); outline-offset: 1px; }
+
+  .switch { position: relative; width: 44px; height: 26px; flex: none; }
+  .switch input { appearance: none; margin: 0; width: 44px; height: 26px; border-radius: 13px; background: var(--seg);
+    border: 1px solid var(--line); cursor: pointer; transition: background .15s; }
+  .switch input:checked { background: var(--primary); border-color: var(--primary); }
+  .switch input::after { content: ""; position: absolute; top: 3px; left: 3px; width: 20px; height: 20px; border-radius: 50%;
+    background: var(--card); box-shadow: 0 1px 2px rgba(0,0,0,.25); transition: transform .15s; }
+  .switch input:checked::after { transform: translateX(18px); background: var(--on-primary); }
+  .switch input:focus-visible { outline: 2px solid var(--ring); outline-offset: 2px; }
+
+  textarea, input[type=password], input[type=text] {
+    width: 100%; background: var(--field); color: var(--text); border: 1px solid var(--line); border-radius: 10px;
+    padding: 10px 12px; font: inherit;
+  }
+  textarea { min-height: 128px; resize: vertical; }
+  textarea:focus-visible, input:focus-visible { outline: 2px solid var(--ring); outline-offset: 0; border-color: transparent; }
+  .field { display: grid; gap: 6px; }
+  .field + .field { margin-top: 12px; }
+  .field label { font-weight: 600; font-size: 13px; }
+  .field .sub { color: var(--muted); font-weight: 400; }
+  .key { display: flex; gap: 6px; }
+  .count { color: var(--muted); font-size: 12px; text-align: right; margin-top: 6px; }
+
+  button { font: inherit; font-weight: 600; border-radius: 10px; cursor: pointer; min-height: 40px; padding: 0 16px; }
+  button:focus-visible { outline: 2px solid var(--ring); outline-offset: 2px; }
+  .secondary { background: transparent; color: var(--text); border: 1px solid var(--line); }
+  .secondary:hover { background: var(--field); }
+  .icon { width: 40px; padding: 0; display: grid; place-items: center; flex: none; }
+  .icon svg { width: 18px; height: 18px; }
+  .primary { background: var(--primary); color: var(--on-primary); border: 0; min-width: 96px; }
+  .primary:disabled { opacity: .35; cursor: default; }
+  .checks { display: flex; gap: 14px; align-items: center; margin-top: 12px; flex-wrap: wrap; }
+  .result { font-size: 12.5px; font-weight: 600; }
+  .result.ok { color: var(--ok); } .result.bad { color: var(--bad); }
+
+  footer { position: sticky; bottom: 0; background: var(--bg); border-top: 1px solid var(--line);
+    padding: 12px 20px; display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+  #status { color: var(--muted); font-size: 13px; }
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <svg viewBox="0 0 36 36" aria-hidden="true">
+      <rect x="1" y="1" width="34" height="34" rx="9" fill="#101010" stroke="#3a3a3a" stroke-width="1"/>
+      <g fill="#fff">
+        <rect x="8.6" y="15.2" width="2.8" height="5.6" rx="1.4"/><rect x="12.9" y="12.4" width="2.8" height="11.2" rx="1.4"/>
+        <rect x="17.2" y="9.4" width="2.8" height="17.2" rx="1.4"/><rect x="21.5" y="13.5" width="2.8" height="9" rx="1.4"/>
+        <rect x="25.8" y="11.3" width="2.8" height="13.4" rx="1.4"/>
+      </g>
+    </svg>
+    <div>
+      <h1>Thock</h1>
+      <p>Voice Typing</p>
+    </div>
+  </header>
+
+  <section aria-labelledby="h-dictation">
+    <h2 id="h-dictation">받아쓰기</h2>
+    <div class="row">
+      <div class="label" id="l-hotkey">단축키</div>
+      <div class="seg" role="radiogroup" aria-labelledby="l-hotkey">
+        <input type="radio" name="hotkey" id="hk-caps" value="capslock"><label for="hk-caps">CapsLock</label>
+        <input type="radio" name="hotkey" id="hk-scroll" value="scrolllock"><label for="hk-scroll">ScrollLock</label>
+      </div>
+    </div>
+    <div class="hint" id="hotkey-hint"></div>
+    <div class="row">
+      <div>
+        <label class="label" for="polish">AI 교정</label>
+        <div class="hint">군말·띄어쓰기·용어 표기를 다듬습니다</div>
+      </div>
+      <span class="switch"><input type="checkbox" id="polish" role="switch"></span>
+    </div>
+  </section>
+
+  <section aria-labelledby="h-terms">
+    <h2 id="h-terms">용어 사전</h2>
+    <div class="field">
+      <label for="terms">자주 틀리게 적히는 이름·전문용어 <span class="sub">(한 줄에 하나)</span></label>
+      <textarea id="terms" spellcheck="false"></textarea>
+    </div>
+    <div class="count" id="terms-count"></div>
+  </section>
+
+  <section aria-labelledby="h-keys">
+    <h2 id="h-keys">API 키</h2>
+    <div class="field">
+      <label for="soniox">Soniox <span class="sub">— 음성 인식</span></label>
+      <div class="key">
+        <input type="password" id="soniox" autocomplete="off" spellcheck="false">
+        <button class="secondary icon" type="button" data-reveal="soniox" aria-label="Soniox 키 보기"></button>
+      </div>
+    </div>
+    <div class="field">
+      <label for="gemini">Gemini <span class="sub">— 교정</span></label>
+      <div class="key">
+        <input type="password" id="gemini" autocomplete="off" spellcheck="false">
+        <button class="secondary icon" type="button" data-reveal="gemini" aria-label="Gemini 키 보기"></button>
+      </div>
+    </div>
+    <div class="checks">
+      <button class="secondary" type="button" id="check">연결 확인</button>
+      <span class="result" id="r-soniox" aria-live="polite"></span>
+      <span class="result" id="r-gemini" aria-live="polite"></span>
+    </div>
+  </section>
+
+  <section aria-labelledby="h-display">
+    <h2 id="h-display">표시</h2>
+    <div class="row">
+      <div>
+        <div class="label">위치</div>
+        <div class="hint">작업 표시줄 위 작은 막대를 끌어서 옮길 수 있습니다</div>
+      </div>
+      <button class="secondary" type="button" id="reset">위치 초기화</button>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <span id="status" role="status" aria-live="polite"></span>
+  <button class="primary" type="button" id="save" disabled>저장</button>
+</footer>
+
+<script>
+const TOKEN = "__TOKEN__";
+const $ = (id) => document.getElementById(id);
+const EYE = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>';
+
+async function api(path, body) {
+  const res = await fetch(path, {
+    method: body ? "POST" : "GET",
+    headers: { "X-Token": TOKEN, "Content-Type": "application/json" },
+    body: body ? JSON.stringify(body) : undefined,
+  });
+  if (!res.ok) throw new Error(res.status);
+  return res.json();
+}
+
+function termsList() { return $("terms").value.split("\n").map((t) => t.trim()).filter(Boolean); }
+function hotkey() { return document.querySelector("input[name=hotkey]:checked").value; }
+function setStatus(text) { $("status").textContent = text; }
+function dirty() { $("save").disabled = false; setStatus(""); }
+
+function renderHint() {
+  const key = hotkey() === "capslock" ? "CapsLock" : "ScrollLock";
+  $("hotkey-hint").textContent = `${key}을 누른 채 말하고 떼면 입력됩니다. 짧게 누르면 켜 두고, 한 번 더 누르면 끝납니다.`
+    + (key === "CapsLock" ? " 대문자 고정은 Shift+CapsLock." : "");
+  $("terms-count").textContent = `${termsList().length}개`;
+}
+
+function fill(s) {
+  document.querySelector(`input[name=hotkey][value=${s.hotkey}]`).checked = true;
+  $("polish").checked = s.polish;
+  $("terms").value = s.terms.join("\n");
+  for (const k of ["soniox", "gemini"]) {
+    $(k).value = "";
+    $(k).placeholder = s[`${k}_key`] ? `저장됨 ${s[`${k}_key`]}` : "여기에 붙여 넣기";
+  }
+  renderHint();
+}
+
+document.querySelectorAll("[data-reveal]").forEach((btn) => {
+  btn.innerHTML = EYE;
+  btn.addEventListener("click", () => {
+    const input = $(btn.dataset.reveal);
+    input.type = input.type === "password" ? "text" : "password";
+  });
+});
+document.querySelectorAll("input, textarea").forEach((el) => el.addEventListener("input", () => { dirty(); renderHint(); }));
+
+$("save").addEventListener("click", async () => {
+  $("save").disabled = true;
+  setStatus("저장 중…");
+  try {
+    fill(await api("/api/settings", {
+      hotkey: hotkey(), polish: $("polish").checked, terms: termsList(),
+      soniox_api_key: $("soniox").value, gemini_api_key: $("gemini").value,
+    }));
+    setStatus("저장했습니다. 바로 적용됩니다.");
+  } catch (e) {
+    $("save").disabled = false;
+    setStatus("저장하지 못했습니다. Thock이 켜져 있는지 확인해 주세요.");
+  }
+});
+
+$("check").addEventListener("click", async () => {
+  for (const k of ["soniox", "gemini"]) { $(`r-${k}`).textContent = ""; $(`r-${k}`).className = "result"; }
+  $("check").disabled = true;
+  setStatus("확인 중…");
+  try {
+    const r = await api("/api/check", { soniox_api_key: $("soniox").value, gemini_api_key: $("gemini").value });
+    for (const [k, name] of [["soniox", "Soniox"], ["gemini", "Gemini"]]) {
+      $(`r-${k}`).textContent = r[k] ? `${name} ✓ 연결됨` : `${name} ✕ 키를 확인해 주세요`;
+      $(`r-${k}`).className = `result ${r[k] ? "ok" : "bad"}`;
+    }
+    setStatus("");
+  } catch (e) {
+    setStatus("확인하지 못했습니다. 인터넷 연결을 확인해 주세요.");
+  } finally {
+    $("check").disabled = false;
+  }
+});
+
+$("reset").addEventListener("click", async () => {
+  await api("/api/settings", { position: null });
+  setStatus("위치를 처음 자리로 되돌렸습니다.");
+});
+
+api("/api/settings").then(fill).catch(() => setStatus("설정을 불러오지 못했습니다. Thock이 켜져 있는지 확인해 주세요."));
+</script>
+</body>
+</html>
